@@ -6,6 +6,4 @@ interface NMSNetwork {
 
     fun placeNewPlayer(player: Player): NMSServerGamePacketListener
 
-    fun getServerGamePacketListener(): NMSServerGamePacketListener
-
 }

@@ -2,18 +2,18 @@ package com.coderxi.plugin.fakeplayer.scope
 
 import com.coderxi.plugin.fakeplayer.context.PluginContext
 import com.coderxi.plugin.fakeplayer.entity.FakePlayer
-import com.coderxi.plugin.fakeplayer.event.FakePlayerEvent
-import com.coderxi.plugin.fakeplayer.manager.FakePlayerRegistry
+import com.coderxi.plugin.fakeplayer.api.event.FakePlayerEvent.*
 import com.coderxi.plugin.fakeplayer.utils.InetAddressUtil
+import org.bukkit.Location
 import org.bukkit.scheduler.BukkitTask
 import java.util.UUID
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
 abstract class AbstractFakePlayerScope(override val uniqueId: UUID): FakePlayerScope, PluginContext {
 
     companion object {
         val ipGenerator = InetAddressUtil.Generator()
-        val registry = FakePlayerRegistry
     }
 
     init {
@@ -26,22 +26,57 @@ abstract class AbstractFakePlayerScope(override val uniqueId: UUID): FakePlayerS
 
     protected fun uuid(name: String): UUID = UUID.nameUUIDFromBytes("FakePlayer:$uniqueId:$name".toByteArray())
 
-    final override fun spawn(name: String): FakePlayer {
-        val uuid = uuid(name)
-        fakeplayers[uuid]?.let { return it }
+    abstract fun checkSpawnLimit(): Boolean
 
-        val nmsPlayer = nmsServer.newPlayer(uuid, name).apply {
-            setPlayBefore()
-            disableAdvancements(plugin)
-        }
-        val nmsNetwork = bridge.createNetwork(ipGenerator.next(), plugin)
-        return FakePlayer(nmsPlayer, nmsNetwork, this).also {
-            onFakePlayerSpawn(it)
-            registry.registerFakePlayer(it)
-            it.on<FakePlayerEvent.Quit> {
+    protected abstract fun getFakePlayerSpawnLocation(): Location
+
+    protected fun create(uuid: UUID, name: String): CompletableFuture<FakePlayer?> {
+        return CompletableFuture.supplyAsync {
+            val nmsPlayer = nmsServer.newPlayer(uuid, name).apply {
+                setPlayBefore()
+                disableAdvancements(plugin)
+            }
+            val nmsNetwork = bridge.createNetwork(ipGenerator.next(), plugin)
+            val spawnLocation = getFakePlayerSpawnLocation()
+            Triple(nmsPlayer, nmsNetwork, spawnLocation)
+        }.thenComposeAsync({ (nmsPlayer, nmsNetwork, spawnLocation) ->
+            val fakePlayer = FakePlayer(nmsPlayer)
+            fakePlayer.emit(PreSpawn)
+            fakePlayer.connection = nmsNetwork.placeNewPlayer(fakePlayer.player)
+            onFakePlayerSpawn(fakePlayer)
+            fakeplayers[uuid] = fakePlayer
+            registry.registerFakePlayer(fakePlayer)
+            fakePlayer.on<PostQuit> {
+                fakeplayers.remove(uuid)
                 registry.unregisterFakePlayer(uuid)
             }
+            fakePlayer.emit(PostSpawn)
+            fakePlayer.teleportAsync(spawnLocation).thenApply { success ->
+                if (success == true) {
+                    startTicker()
+                    notify(tl("fakeplayer.spawn.success",fakePlayer.name,fakePlayer.player.world.name,"%.2f, %.2f, %.2f".format(spawnLocation.x, spawnLocation.y, spawnLocation.z)))
+                    fakePlayer.emit(AfterSpawn)
+                    fakePlayer
+                } else {
+                    fakePlayer.quit("Spawn failed")
+                    fakeplayers.remove(uuid)
+                    registry.unregisterFakePlayer(uuid)
+                    null
+                }
+            }
+        }, scheduler.getMainThreadExecutor(plugin))
+    }
+
+    private val spawnAsyncNull = CompletableFuture.completedFuture<FakePlayer?>(null)
+
+    final override fun spawnAsync(name: String): CompletableFuture<FakePlayer?> {
+        if (!checkSpawnLimit()) return spawnAsyncNull
+        val uuid = uuid(name)
+        if (fakeplayers.containsKey(uuid)) {
+            notify(tl("fakeplayer.spawn.exists",name))
+            return spawnAsyncNull
         }
+        return create(uuid,name)
     }
 
     protected abstract fun onFakePlayerSpawn(fakePlayer: FakePlayer)

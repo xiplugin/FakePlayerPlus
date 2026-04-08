@@ -4,7 +4,6 @@ import com.coderxi.plugin.fakeplayer.api.nms.NMSNetwork
 import com.coderxi.plugin.fakeplayer.api.nms.NMSServerGamePacketListener
 import com.coderxi.plugin.fakeplayer.network.FakeConnection
 import net.minecraft.server.network.CommonListenerCookie
-import org.bukkit.Server
 import org.bukkit.craftbukkit.CraftServer
 import org.bukkit.craftbukkit.entity.CraftPlayer
 import org.bukkit.entity.Player
@@ -29,11 +28,6 @@ class NMSNetworkImpl(address: InetAddress, private val plugin: JavaPlugin) : NMS
             serverGamePacketListener = this
             handle.connection = this
         }
-    }
-
-    override fun getServerGamePacketListener(): NMSServerGamePacketListener {
-        if (!::serverGamePacketListener.isInitialized) throw IllegalStateException("not initialized")
-        return serverGamePacketListener
     }
 
 }

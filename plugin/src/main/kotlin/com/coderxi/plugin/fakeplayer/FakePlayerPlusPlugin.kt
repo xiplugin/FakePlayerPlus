@@ -3,7 +3,7 @@ package com.coderxi.plugin.fakeplayer
 import com.coderxi.plugin.fakeplayer.api.nms.NMSBridge
 import com.coderxi.plugin.fakeplayer.config.PluginConfig
 import com.coderxi.plugin.fakeplayer.context.PluginContext
-import com.coderxi.plugin.fakeplayer.event.FakePlayerEvent
+import com.coderxi.plugin.fakeplayer.event.FakePlayerEventListener
 import com.coderxi.plugin.fakeplayer.manager.FakePlayerRegistry
 import com.coderxi.plugin.fakeplayer.manager.PluginConfigManager
 import com.coderxi.plugin.fakeplayer.nms.v1_21_11.NMSBridgeImpl
@@ -12,7 +12,7 @@ import com.coderxi.plugin.fakeplayer.utils.MessagesUtil
 import org.bukkit.command.Command
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
-import org.bukkit.event.Listener
+import org.bukkit.event.HandlerList
 import org.bukkit.plugin.java.JavaPlugin
 
 class FakePlayerPlusPlugin : JavaPlugin() {
@@ -20,15 +20,15 @@ class FakePlayerPlusPlugin : JavaPlugin() {
     lateinit var bridge: NMSBridge private set
     lateinit var config : PluginConfig private set
     lateinit var messages : MessagesUtil private set
-    lateinit var listeners: Collection<Listener>
+    val listeners = listOf(
+        FakePlayerEventListener()
+    )
 
     override fun onEnable() {
         bridge = NMSBridgeImpl()
         messages = MessagesUtil()
-        listeners = listOf(
-            FakePlayerEvent.ForwardListener()
-        )
         config = PluginConfigManager.load<PluginConfig>("config.yml")
+        messages.updateLocale(config.language)
         PluginContext.emit("Enable")
     }
 
@@ -39,6 +39,7 @@ class FakePlayerPlusPlugin : JavaPlugin() {
     }
 
     override fun onDisable() {
+        listeners.forEach { HandlerList.unregisterAll(it) }
         PluginContext.emit("Disable")
     }
 
@@ -52,7 +53,10 @@ class FakePlayerPlusPlugin : JavaPlugin() {
         }
         val scope = FakePlayerRegistry.getScope((sender as Player).uniqueId) ?: PersonalFakePlayerScope(sender)
         when (args[0]) {
-            "spawn" -> scope.spawn(args[1])
+            "spawn" -> scope.spawnAsync(args[1]).exceptionally { e ->
+                e.printStackTrace()
+                null
+            }
         }
         return true
     }

@@ -1,5 +1,6 @@
 package com.coderxi.plugin.fakeplayer.api.nms
 
+import net.kyori.adventure.text.Component
 import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
 import org.bukkit.plugin.Plugin
@@ -221,4 +222,8 @@ interface NMSServerPlayer {
      * 交换主副手物品
      */
     fun requestSwapItemWithOffhand()
+
+    //向玩家展示虚拟nametag
+    fun showVirtualNameTag(player: Player, content: Component)
+    fun hideVirtualNameTag(player: Player)
 }

@@ -3,6 +3,7 @@ package com.coderxi.plugin.fakeplayer.context
 import com.coderxi.plugin.fakeplayer.FakePlayerPlusPlugin
 import com.coderxi.plugin.fakeplayer.utils.EventBus
 import org.bukkit.NamespacedKey
+import org.bukkit.entity.Player
 import org.bukkit.plugin.java.JavaPlugin
 import org.jetbrains.annotations.PropertyKey
 
@@ -15,6 +16,7 @@ interface PluginContext {
     val logger get() = plugin.logger
     val namespace get() = Vars.namespace
     val scheduler get() = plugin.server.scheduler
+    fun schedulerRun(action: () -> Unit) = scheduler.runTask(plugin, action)
     fun tl(@PropertyKey(resourceBundle = "messages.messages") key: String, vararg args: Any) = plugin.messages.translate(key, *args)
     fun onPluginEnable(priority: Int = 0, action: (Any) -> Unit) = eventBus.registerEvent("Enable",priority,action)
     fun onPluginReload(priority: Int = 0, action: (Any) -> Unit) = eventBus.registerEvent("Reload",priority,action)

@@ -3,11 +3,7 @@ package com.coderxi.plugin.fakeplayer.manager
 import com.coderxi.plugin.fakeplayer.context.PluginContext
 import com.coderxi.plugin.fakeplayer.entity.FakePlayer
 import com.coderxi.plugin.fakeplayer.scope.FakePlayerScope
-import org.bukkit.event.EventHandler
-import org.bukkit.event.EventPriority
-import org.bukkit.event.HandlerList
 import org.bukkit.event.Listener
-import org.bukkit.event.player.PlayerQuitEvent
 import java.util.concurrent.ConcurrentHashMap
 import java.util.UUID
 
