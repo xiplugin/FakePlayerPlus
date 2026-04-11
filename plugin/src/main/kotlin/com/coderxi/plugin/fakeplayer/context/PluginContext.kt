@@ -18,7 +18,6 @@ interface PluginContext {
     val scheduler get() = plugin.server.scheduler
     fun schedulerRun(action: () -> Unit) = scheduler.runTask(plugin, action)
     fun schedulerRunLaterAsync(delay: Long = 1, action: () -> Unit) = scheduler.runTaskLaterAsynchronously(plugin, action, delay)
-    fun miniMessage(text: String) = MiniMessage.miniMessage().deserialize(text)
     fun tl(@PropertyKey(resourceBundle = "messages.messages") key: String, vararg args: Any) = plugin.messages.translate(key, *args)
     fun onPluginEnable(priority: Int = 0, action: (Any) -> Unit) = eventBus.registerEvent("Enable",priority,action)
     fun onPluginReload(priority: Int = 0, action: (Any) -> Unit) = eventBus.registerEvent("Reload",priority,action)

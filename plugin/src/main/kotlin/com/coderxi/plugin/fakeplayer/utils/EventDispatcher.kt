@@ -7,6 +7,7 @@ interface EventDispatcher<E : Any> {
     }
 
     val on: Listen get() = Listen(eventBus)
+    fun on(classSimpleName: String,priority: Int = 0, action: (Any)-> Unit) = eventBus.registerEvent(classSimpleName, priority,action)
 
     class Listen(val bus: EventBus) {
         inline operator fun <reified E : Any> invoke(
