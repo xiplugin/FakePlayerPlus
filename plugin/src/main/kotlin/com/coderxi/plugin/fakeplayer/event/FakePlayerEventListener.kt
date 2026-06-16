@@ -1,9 +1,8 @@
 package com.coderxi.plugin.fakeplayer.event
 
-import com.coderxi.plugin.fakeplayer.api.event.FakePlayerEvent.*
-import com.coderxi.plugin.fakeplayer.context.PluginContext
-import com.coderxi.plugin.fakeplayer.manager.FakePlayerManager
-import com.coderxi.plugin.fakeplayer.utils.ChunkExtensions.fakePlayerCount
+import com.coderxi.plugin.fakeplayer.api.event.*
+import com.coderxi.plugin.fakeplayer.utils.PluginComponent
+import com.coderxi.plugin.fakeplayer.api.manager.FakePlayerManager
 import io.papermc.paper.event.packet.PlayerChunkLoadEvent
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
@@ -12,51 +11,50 @@ import org.bukkit.event.Listener
 import org.bukkit.event.entity.*
 import org.bukkit.event.player.*
 
-class FakePlayerEventListener(private val manager: FakePlayerManager): PluginContext, Listener {
+class FakePlayerEventListener(private val fpm: FakePlayerManager): PluginComponent, Listener {
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
     fun onFakePlayerQuit(event: PlayerQuitEvent) {
-        manager.get(event.player.uniqueId)?.emit(Quit(event.quitMessage()))
+        fpm.get(event.player.uniqueId)?.let { FakePlayerQuitEvent(it,event.quitMessage()).call() }
     }
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     fun onFakePlayerPostQuit(event: PlayerQuitEvent) {
-        manager.get(event.player.uniqueId)?.let { scheduler.runTaskLater(plugin, Runnable { it.emit(PostQuit) }, 1) }
+        fpm.get(event.player.uniqueId)?.let { scheduler.runTaskLater(plugin, Runnable { FakePlayerQuitedEvent(it).call() }, 1) }
     }
     @EventHandler
     fun onFakePlayerDeath(event: PlayerDeathEvent) {
-        manager.get(event.player.uniqueId)?.let { event.deathMessage(null); it.emit(Death(event.player.location)) }
+        fpm.get(event.player.uniqueId)?.let { event.deathMessage(null); FakePlayerDeathEvent(it,event.player.location).call() }
     }
     @EventHandler
     fun onFakePlayerRespawn(event: PlayerRespawnEvent) {
-        manager.get(event.player.uniqueId)?.emit(Respawn)
+        fpm.get(event.player.uniqueId)?.let { FakePlayerRespawnEvent(it).call() }
     }
     @EventHandler
     fun onFakePlayerDamage(event: EntityDamageEvent) {
-        if (event.entity is Player) manager.get(event.entity.uniqueId)?.emit(Damage(event.finalDamage))
+        if (event.entity is Player) fpm.get(event.entity.uniqueId)?.let { FakePlayerDamageEvent(it,event.finalDamage).call() }
     }
     @EventHandler
     fun onFakePlayerDamage(event: EntityRegainHealthEvent) {
-        if (event.entity is Player) manager.get(event.entity.uniqueId)?.emit(RegainHealth(event.amount))
+        if (event.entity is Player) fpm.get(event.entity.uniqueId)?.let { FakePlayerRegainHealthEvent(it,event.amount).call() }
     }
     @EventHandler
     fun onFakePlayerLevelChange(event: PlayerLevelChangeEvent) {
-        manager.get(event.player.uniqueId)?.emit(LevelChange)
+        fpm.get(event.player.uniqueId)?.let { FakePlayerLevelChangeEvent(it).call() }
     }
     @EventHandler
     fun onFakePlayerExpChange(event: PlayerExpChangeEvent) {
-        manager.get(event.player.uniqueId)?.emit(ExpChange)
+        fpm.get(event.player.uniqueId)?.let { FakePlayerExpChangeEvent(it).call() }
     }
 
     @EventHandler
     fun onFakePlayerInteract(event: PlayerInteractEntityEvent) {
-        manager.get(event.rightClicked.uniqueId)?.emit(Interact(event.player, event.hand))
+        fpm.get(event.rightClicked.uniqueId)?.let { FakePlayerInteractedEvent(it,event.player,event.hand).call() }
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     fun onPlayerChunkLoad(event: PlayerChunkLoadEvent) {
-        if (event.chunk.fakePlayerCount<=0 || event.chunk.entities.isEmpty()) return
-        event.chunk.entities.filterIsInstance<Player>().forEach {
-            manager.get(it.uniqueId)?.emit(EnterView(event.player))
+        event.chunk.entities.filterIsInstance<Player>().forEach { player ->
+            fpm.get(player.uniqueId)?.let { FakePlayerWatchedEvent(it,event.player).call() }
         }
     }
 

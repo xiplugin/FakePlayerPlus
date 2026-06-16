@@ -1,9 +1,10 @@
 package com.coderxi.plugin.fakeplayer.manager
 
-import com.coderxi.plugin.fakeplayer.context.PluginContext
+import com.coderxi.plugin.fakeplayer.api.manager.FakePlayerManager
+import com.coderxi.plugin.fakeplayer.utils.PluginComponent
 import org.bukkit.scheduler.BukkitTask
 
-class FakePlayerTicker(private val manager: FakePlayerManager) : PluginContext {
+class FakePlayerTicker(private val fpm: FakePlayerManager) : PluginComponent {
 
     init { onPluginDisable { stop() } }
 
@@ -15,8 +16,8 @@ class FakePlayerTicker(private val manager: FakePlayerManager) : PluginContext {
     }
 
     private fun run() {
-        if (manager.getOnlineFakePlayersCount() <= 0) return
-        manager.getOnlineFakePlayers().forEach { fakePlayer ->
+        if (fpm.fakeplayersCount() <= 0) return
+        fpm.fakeplayers().forEach { fakePlayer ->
             try {
                 fakePlayer.doTick()
             } catch (e: Exception) {

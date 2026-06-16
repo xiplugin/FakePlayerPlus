@@ -1,12 +1,13 @@
 package com.coderxi.plugin.fakeplayer.repository
 
-import com.coderxi.plugin.fakeplayer.context.PluginContext
-import com.coderxi.plugin.fakeplayer.entity.FakePlayer
+import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
+import com.coderxi.plugin.fakeplayer.utils.PluginComponent
+import com.coderxi.plugin.fakeplayer.entity.StandardFakePlayer
 import com.coderxi.plugin.fakeplayer.repository.po.FakePlayerPO
 import org.sql2o.Connection
 import java.util.UUID
 
-class FakePlayerRepository : PluginContext {
+class FakePlayerRepository : PluginComponent {
 
     fun open(): Connection = plugin.sql2o.open()
 
@@ -34,16 +35,14 @@ class FakePlayerRepository : PluginContext {
             .map { UUID.fromString(it) }
     }
 
-    private fun mapToEntity(po: FakePlayerPO, owners: List<UUID>): FakePlayer {
-        return FakePlayer(
-            name = po.name,
-            uuid = UUID.fromString(po.uuid),
-            skin = po.skin,
-            ownerUuids = owners
-        )
-    }
+    private fun mapToEntity(po: FakePlayerPO, owners: List<UUID>): FakePlayer = StandardFakePlayer(
+        name = po.name,
+        uuid = UUID.fromString(po.uuid),
+        skin = po.skin,
+        ownerUuids = owners
+    )
 
-    fun save(fakePlayer: FakePlayer, updateOwners: Boolean = false) {
+    fun save(fakePlayer: FakePlayer, updateOwners: Boolean = true) {
         val sql = "INSERT INTO fakeplayer (name, uuid, skin) VALUES (:name, :uuid, :skin)" +
                  "ON CONFLICT(uuid) DO UPDATE SET name = excluded.name, skin = excluded.skin"
         if (!updateOwners) {

@@ -1,12 +1,12 @@
 package com.coderxi.plugin.fakeplayer.utils
 
-import com.coderxi.plugin.fakeplayer.context.PluginContext
 import org.bukkit.event.Listener
+import org.bukkit.plugin.java.JavaPlugin
 
-object ListenerExtensions: PluginContext {
+object ListenerExtensions {
 
-    fun Listener.register() {
-        plugin.server.pluginManager.registerEvents(this,plugin)
+    fun Listener.registerMyEvents(plugin: JavaPlugin = PluginComponent.plugin) {
+        plugin.server.pluginManager.registerEvents(this, plugin)
     }
 
 }

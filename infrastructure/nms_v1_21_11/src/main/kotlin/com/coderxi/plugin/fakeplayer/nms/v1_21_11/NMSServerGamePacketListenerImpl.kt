@@ -26,12 +26,14 @@ class NMSServerGamePacketListenerImpl(
     private val plugin: JavaPlugin
 ) : ServerGamePacketListenerImpl(server, connection, handle, cookie), NMSServerGamePacketListener {
 
-    private var ping = 0
-    override fun latency(): Int = this.ping
-    override fun setPing(ping: Int) {
-        this.ping = ping
-        this.serverBroadcast(ClientboundPlayerInfoUpdatePacket(EnumSet.of(ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LATENCY),listOf(handle)))
-    }
+    override fun latency(): Int = this._ping
+    private var _ping = 0
+    override var ping: Int
+        get() = this._ping
+        set(value) {
+            this._ping = value
+            this.serverBroadcast(ClientboundPlayerInfoUpdatePacket(EnumSet.of(ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LATENCY),listOf(handle)))
+        }
 
     override fun send(packet: Packet<*>) {
         when (packet) {

@@ -5,7 +5,7 @@ import java.util.UUID
 
 interface NMSServer {
 
-    fun getServer(): Server
+    val server: Server
 
     fun newPlayer(uuid: UUID, name: String): NMSServerPlayer
 

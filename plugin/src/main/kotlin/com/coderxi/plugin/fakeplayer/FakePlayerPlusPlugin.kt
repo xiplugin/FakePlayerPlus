@@ -1,5 +1,7 @@
 package com.coderxi.plugin.fakeplayer
 
+import com.coderxi.plugin.fakeplayer.api.FakePlayerPlusPluginApi
+import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
 import com.coderxi.plugin.fakeplayer.api.nms.NMSBridge
 import com.coderxi.plugin.fakeplayer.api.nms.NMSServer
 import com.coderxi.plugin.fakeplayer.command.FakePlayerCommand
@@ -8,16 +10,14 @@ import com.coderxi.plugin.fakeplayer.command.annotaion.SelectFlag
 import com.coderxi.plugin.fakeplayer.command.annotaion.SelectFlagReplacer
 import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandExceptionHandler
 import com.coderxi.plugin.fakeplayer.config.PluginConfig
-import com.coderxi.plugin.fakeplayer.entity.FakePlayer
 import com.coderxi.plugin.fakeplayer.event.FakePlayerEventListener
-import com.coderxi.plugin.fakeplayer.manager.FakePlayerManager
+import com.coderxi.plugin.fakeplayer.api.manager.FakePlayerManager
 import com.coderxi.plugin.fakeplayer.manager.FakePlayerTicker
-import com.coderxi.plugin.fakeplayer.manager.impl.FakePlayerManagerImpl
+import com.coderxi.plugin.fakeplayer.manager.FakePlayerManagerImpl
 import com.coderxi.plugin.fakeplayer.nms.v1_21_11.NMSBridgeImpl
-import com.coderxi.plugin.fakeplayer.repository.FakePlayerRepository
-import com.coderxi.plugin.fakeplayer.utils.EventEmitter
-import com.coderxi.plugin.fakeplayer.utils.ListenerExtensions.register
+import com.coderxi.plugin.fakeplayer.utils.ListenerExtensions.registerMyEvents
 import com.coderxi.plugin.fakeplayer.utils.Localizer
+import com.coderxi.plugin.fakeplayer.utils.PluginComponent
 import eu.okaeri.configs.ConfigManager
 import eu.okaeri.configs.yaml.bukkit.YamlBukkitConfigurer
 import org.bukkit.event.HandlerList
@@ -27,12 +27,10 @@ import revxrsal.commands.Lamp
 import revxrsal.commands.bukkit.BukkitLamp
 import java.io.File
 
-class FakePlayerPlusPlugin: JavaPlugin() {
+class FakePlayerPlusPlugin: FakePlayerPlusPluginApi, JavaPlugin() {
 
-    val emitter = EventEmitter<Any>()
-
-    lateinit var nms: NMSBridge private set
-    lateinit var nmsServer: NMSServer private set
+    override lateinit var nms: NMSBridge private set
+    override lateinit var nmsServer: NMSServer private set
 
     lateinit var config : PluginConfig private set
     lateinit var messages : Localizer private set
@@ -40,7 +38,7 @@ class FakePlayerPlusPlugin: JavaPlugin() {
     lateinit var sql2o: Sql2o private set
     lateinit var lamp: Lamp<*> private set
 
-    lateinit var fakePlayerManager: FakePlayerManager;
+    override lateinit var fakePlayerManager: FakePlayerManager;
 
     override fun onEnable() {
         nms = NMSBridgeImpl()
@@ -66,9 +64,10 @@ class FakePlayerPlusPlugin: JavaPlugin() {
             @Suppress("SqlSourceToSinkFlow")
             sql2o.open().use { conn -> sqlStatements.forEach { sql -> conn.createQuery(sql).executeUpdate() } }
         }
-        fakePlayerManager = FakePlayerManagerImpl(FakePlayerRepository()).also {
-            FakePlayerTicker(it).start()
-            FakePlayerEventListener(it).register()
+        fakePlayerManager = FakePlayerManagerImpl().also { fpm ->
+            FakePlayerTicker(fpm).start()
+            FakePlayerEventListener(fpm).registerMyEvents()
+            fpm.registerMyEvents()
         }
         lamp = BukkitLamp.builder(this)
             .annotationReplacer(SelectFlag::class.java, SelectFlagReplacer())
@@ -77,17 +76,16 @@ class FakePlayerPlusPlugin: JavaPlugin() {
             .exceptionHandler(FakePlayerCommandExceptionHandler())
             .build()
             .apply { register(FakePlayerCommand()) }
-        emitter.emit("Enable")
     }
 
     fun onReload() {
         config.load()
         messages.locale(config.language)
-        emitter.emit("Reload")
+        PluginComponent.executeReload()
     }
 
     override fun onDisable() {
         HandlerList.unregisterAll(this)
-        emitter.emit("Disable")
+        PluginComponent.executeDisable()
     }
 }

@@ -1,6 +1,5 @@
 package com.coderxi.plugin.fakeplayer.utils
 
-import com.coderxi.plugin.fakeplayer.context.PluginContext
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.minimessage.MiniMessage
 import java.io.File
@@ -8,7 +7,7 @@ import java.text.MessageFormat
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
-class Localizer: PluginContext {
+class Localizer: PluginComponent {
     private val bundleName = "messages"
     private var currentLocale = Locale.getDefault()
     

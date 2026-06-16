@@ -4,6 +4,11 @@ import revxrsal.commands.exception.CommandErrorException
 
 abstract class FakePlayerCommandException : CommandErrorException() {
 
-    class NotExits(val name: String) : FakePlayerCommandException()
+    class NotExitsException(val name: String) : FakePlayerCommandException()
+    class NotOwnerException(val name: String) : FakePlayerCommandException()
+
+    class SpawnServerLimitedException : FakePlayerCommandException()
+    class SpawnPlayerLimitedException : FakePlayerCommandException()
+    class SpawnAlreadyExistsException(val name: String) : FakePlayerCommandException()
 
 }
