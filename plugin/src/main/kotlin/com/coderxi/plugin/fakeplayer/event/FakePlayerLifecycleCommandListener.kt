@@ -40,14 +40,14 @@ class FakePlayerLifecycleCommandListener (private val fpm: FakePlayerManager): L
 
     private fun commandWithVars(command: String, fakePlayer: FakePlayer, spawner: Player? = null, owner: Player? = null): String {
         var cmd = command
-            .replace("%name%", fakePlayer.name)
-            .replace("%uuid%", fakePlayer.uuid.toString())
+            .replace("{name}", fakePlayer.name)
+            .replace("{uuid}", fakePlayer.uuid.toString())
         if (spawner != null) cmd = cmd
-            .replace("%spawner_name%", spawner.name)
-            .replace("%spawner_uuid%", spawner.uniqueId.toString())
+            .replace("{spawner_name}", spawner.name)
+            .replace("{spawner_uuid}", spawner.uniqueId.toString())
         if (owner != null) cmd = cmd
-            .replace("%owner_name%", owner.name)
-            .replace("%owner_uuid%", owner.uniqueId.toString())
+            .replace("{owner_name}", owner.name)
+            .replace("{owner_uuid}", owner.uniqueId.toString())
         return cmd
     }
 
