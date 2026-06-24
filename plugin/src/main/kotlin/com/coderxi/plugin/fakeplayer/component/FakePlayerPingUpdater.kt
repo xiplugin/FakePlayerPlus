@@ -22,8 +22,8 @@ class FakePlayerPingUpdater(private val fpm: FakePlayerManager) : PluginComponen
 
     init {
         onload()
-        onPluginReload { onload() }
-        onPluginDisable { dispose() }
+        onPluginReload(::onload)
+        onPluginDisable(::dispose)
     }
 
     fun onload() {

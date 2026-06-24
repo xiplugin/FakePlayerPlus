@@ -18,11 +18,13 @@ interface PluginComponent {
     fun tl(@PropertyKey(resourceBundle = "messages.messages") key: String, vararg args: Any) = plugin.messages.translate(key, *args)
     fun tlp(@PropertyKey(resourceBundle = "messages.messages") key: String, vararg args: Any) = plugin.messages.translateWithPrefix(key, *args)
     fun tls(@PropertyKey(resourceBundle = "messages.messages") key: String, vararg args: Any) = plugin.messages.translateStringWithArgs(key, *args)
-    fun onPluginReload(priority: Int = 0, action: () -> Unit) = synchronized(reloadHandlers) {
+    fun onPluginReload(action: () -> Unit) = onPluginReload(0,action)
+    fun onPluginReload(priority: Int, action: () -> Unit) = synchronized(reloadHandlers) {
         reloadHandlers.add(Hook(action, priority))
         reloadHandlers.sortWith(compareByDescending { it.priority })
     }
-    fun onPluginDisable(priority: Int = 0, action: () -> Unit) = synchronized(disableHandlers) {
+    fun onPluginDisable(action: () -> Unit) = onPluginDisable(0,action)
+    fun onPluginDisable(priority: Int, action: () -> Unit) = synchronized(disableHandlers) {
         disableHandlers.add(Hook(action, priority))
         disableHandlers.sortWith(compareByDescending { it.priority })
     }

@@ -27,8 +27,8 @@ class FakePlayerLimiter(private val fpm: FakePlayerManager) : PluginComponent, L
 
     init {
         onload()
-        onPluginReload { onload() }
-        onPluginDisable { dispose() }
+        onPluginReload(::onload)
+        onPluginDisable(::dispose)
     }
 
     fun onload() {

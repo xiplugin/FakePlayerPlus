@@ -71,7 +71,7 @@ class FakePlayerPlusPlugin: FakePlayerPlusPluginApi, JavaPlugin() {
         }
         var fakePlayerLimiter : FakePlayerLimiter
         fakePlayerManager = FakePlayerManagerImpl().also { fpm ->
-            FakePlayerTicker(fpm).start()
+            FakePlayerTicker(fpm)
             FakePlayerEventDispatcher(fpm).registerEvents()
             FakePlayerBehaviorImplementListener(fpm).registerEvents()
             FakePlayerLifecycleCommandListener().registerEvents()

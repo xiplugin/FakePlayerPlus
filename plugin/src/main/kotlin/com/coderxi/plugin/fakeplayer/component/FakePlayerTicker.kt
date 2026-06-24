@@ -2,19 +2,12 @@ package com.coderxi.plugin.fakeplayer.component
 
 import com.coderxi.plugin.fakeplayer.api.manager.FakePlayerManager
 import com.coderxi.plugin.fakeplayer.utils.PluginComponent
-import org.bukkit.scheduler.BukkitTask
 
 class FakePlayerTicker(private val fpm: FakePlayerManager) : PluginComponent {
 
-    private var tickerTask: BukkitTask? = null
-
     init {
-        onPluginDisable(0,this::stop)
-    }
-
-    fun start() {
-        if (tickerTask != null) return
-        tickerTask = scheduler.runTaskTimer(plugin, this::tick, 0L, 1L)
+        val ticker = scheduler.runTaskTimer(plugin, ::tick, 0L, 1L)
+        onPluginDisable(ticker::cancel)
     }
 
     private fun tick() {
@@ -27,11 +20,6 @@ class FakePlayerTicker(private val fpm: FakePlayerManager) : PluginComponent {
                 e.printStackTrace()
             }
         }
-    }
-
-    fun stop() {
-        tickerTask?.cancel()
-        tickerTask = null
     }
 
 }
