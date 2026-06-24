@@ -16,7 +16,7 @@ class FakePlayerRepository : PluginComponent {
     private val gson = Gson()
 
     fun findByUuid(uuid: UUID): FakePlayer? = open().use { conn ->
-        val po = conn.createQuery("SELECT id, name, uuid, skin, settings FROM fakeplayer WHERE uuid = :uuid LIMIT 1")
+        val po = conn.createQuery("SELECT id, name, uuid, creator_uuid AS creatorUuid, skin, settings FROM fakeplayer WHERE uuid = :uuid LIMIT 1")
             .addParameter("uuid", uuid.toString())
             .executeAndFetch(FakePlayerPO::class.java)
             .firstOrNull() ?: return null
@@ -24,7 +24,7 @@ class FakePlayerRepository : PluginComponent {
     }
 
     fun findByName(name: String): FakePlayer? = open().use { conn ->
-        val po = conn.createQuery("SELECT id, name, uuid, skin, settings FROM fakeplayer WHERE LOWER(name) = LOWER(:name) LIMIT 1")
+        val po = conn.createQuery("SELECT id, name, uuid, creator_uuid AS creatorUuid, skin, settings FROM fakeplayer WHERE LOWER(name) = LOWER(:name) LIMIT 1")
             .addParameter("name", name)
             .executeAndFetch(FakePlayerPO::class.java)
             .firstOrNull() ?: return null
@@ -44,17 +44,18 @@ class FakePlayerRepository : PluginComponent {
         val skinSplit = po.skin?.split("|")
         val skin = if (skinSplit != null && skinSplit .size > 1) { FakePlayer.SkinInfo(skinSplit[0],skinSplit[1]) } else null
         val settings = if (po.settings != null) gson.fromJson(po.settings, FakePlayerSettings::class.java) else plugin.config.defaultSettings.clone()
-        return StandardFakePlayer(po.name, UUID.fromString(po.uuid),owners, skin, settings)
+        return StandardFakePlayer(po.name, UUID.fromString(po.uuid), po.creatorUuid,owners, skin, settings)
     }
 
     fun save(fakePlayer: FakePlayer, saveOwners: Boolean) {
-        val sql = "INSERT INTO fakeplayer (name, uuid, skin, settings) VALUES (:name, :uuid, :skin, :settings)" +
-                 "ON CONFLICT(uuid) DO UPDATE SET name = excluded.name, skin = excluded.skin, settings = excluded.settings"
+        val sql = "INSERT INTO fakeplayer (name, uuid, creator_uuid, skin, settings) VALUES (:name, :uuid, :creatorUuid, :skin, :settings)" +
+                 "ON CONFLICT(uuid) DO UPDATE SET name = excluded.name, creator_uuid = excluded.creator_uuid, skin = excluded.skin, settings = excluded.settings"
         if (!saveOwners) {
             open().use { conn ->
                 conn.createQuery(sql, false)
                     .addParameter("name", fakePlayer.name)
                     .addParameter("uuid", fakePlayer.uuid.toString())
+                    .addParameter("creatorUuid", fakePlayer.creatorUuid?.toString())
                     .addParameter("skin", if (fakePlayer.skin == null) null else "${fakePlayer.skin!!.textures}|${fakePlayer.skin!!.signature}")
                     .addParameter("settings", if (plugin.config.defaultSettings.equals2(fakePlayer.settings)) null else gson.toJson(fakePlayer.settings))
                     .executeUpdate()
@@ -66,6 +67,7 @@ class FakePlayerRepository : PluginComponent {
                 val fakePlayerId = conn.createQuery(sql, true)
                     .addParameter("name", fakePlayer.name)
                     .addParameter("uuid", fakePlayer.uuid.toString())
+                    .addParameter("creatorUuid", fakePlayer.creatorUuid?.toString())
                     .addParameter("skin", if (fakePlayer.skin == null) null else "${fakePlayer.skin!!.textures}|${fakePlayer.skin!!.signature}")
                     .addParameter("settings", if (plugin.config.defaultSettings.equals2(fakePlayer.settings)) null else gson.toJson(fakePlayer.settings))
                     .executeUpdate()

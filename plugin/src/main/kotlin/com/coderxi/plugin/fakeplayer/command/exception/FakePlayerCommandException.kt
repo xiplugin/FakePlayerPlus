@@ -18,4 +18,9 @@ abstract class FakePlayerCommandException : CommandErrorException() {
     class SpawnNameAlreadyUsedException(val name: String) : FakePlayerCommandException()
     class SpawnNoAvailableSequenceNameException : FakePlayerCommandException()
 
+    class OwnerMustBeHumanException(val ownerName: String, val fakePlayerName: String) : FakePlayerCommandException()
+    class OwnerAlreadyBoundException(val ownerName: String, val fakePlayerName: String) : FakePlayerCommandException()
+    class OwnerIsCreatorCannotBeRemovedException(val ownerName: String, val fakePlayerName: String) : FakePlayerCommandException()
+    class OwnerNotBoundCannotBeRemovedException(val ownerName: String, val fakePlayerName: String) : FakePlayerCommandException()
+
 }

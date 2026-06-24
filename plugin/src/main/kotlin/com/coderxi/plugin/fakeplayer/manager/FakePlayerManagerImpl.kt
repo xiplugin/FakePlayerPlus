@@ -56,7 +56,7 @@ class FakePlayerManagerImpl : FakePlayerManager, PluginComponent, Listener {
         val spawnLocation = location ?: spawnerAsPlayer?.location ?: plugin.server.worlds.first().spawnLocation
         val fakePlayer = withContext(Dispatchers.IO) {
             repository.findByName(name)
-        } ?: StandardFakePlayer(name, uuid(name),mutableSetOf(spawnerUuid),null, plugin.config.defaultSettings.clone()).also {
+        } ?: StandardFakePlayer(name, uuid(name),spawnerUuid, mutableSetOf(spawnerUuid),null, plugin.config.defaultSettings.clone()).also {
             withContext(Dispatchers.IO) { repository.save(it, true) }
         }
         withContext(Dispatchers.BukkitMain) {
@@ -107,8 +107,9 @@ class FakePlayerManagerImpl : FakePlayerManager, PluginComponent, Listener {
             }
             if (fakePlayer == null || fakePlayer.ownerUuids.contains(spawner.uniqueId)) {
                 return checkName
-            } else if (fakePlayer.ownerUuids.isEmpty()) {
+            } else if (fakePlayer.creatorUuid == null || fakePlayer.ownerUuids.isEmpty()) {
                 //方便老数据迁移,如果通过序号召唤出来的假人有数据但无所有者,将第一个召唤者变为所有者
+                fakePlayer.creatorUuid = spawner.uniqueId
                 fakePlayer.ownerUuids.add(spawner.uniqueId)
                 withContext(Dispatchers.IO) {
                     repository.save(fakePlayer, true)
@@ -142,4 +143,15 @@ class FakePlayerManagerImpl : FakePlayerManager, PluginComponent, Listener {
         withContext(Dispatchers.IO) {repository.saveSettings(fakePlayer)}
     }
 
+    override suspend fun addOwner(fakePlayer: FakePlayer, ownerUuid: UUID) {
+        fakePlayer.ownerUuids.add(ownerUuid)
+        registry.register(fakePlayer)
+        withContext(Dispatchers.IO) {repository.save(fakePlayer, true)}
+    }
+
+    override suspend fun removeOwner(fakePlayer: FakePlayer, ownerUuid: UUID) {
+        fakePlayer.ownerUuids.remove(ownerUuid)
+        registry.register(fakePlayer)
+        withContext(Dispatchers.IO) {repository.save(fakePlayer, true)}
+    }
 }

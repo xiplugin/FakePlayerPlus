@@ -100,6 +100,17 @@ class FakePlayerCommand: PluginComponent {
     fun Player.remove(@Select fakePlayer: FakePlayer) {
         fpm.get(fakePlayer.name)?.quit("Removed by $name")
         sendMessage(tlp("fakeplayer.remove.success", fakePlayer.name))
+        fakePlayer.owners.forEach {
+            if (it.uniqueId!=uniqueId) it.sendMessage(tlp("fakeplayer.remove.success.with-operator", name, fakePlayer.name))
+        }
+    }
+
+    @Subcommand("remove-all")
+    @Permission(REMOVE,BASIC)
+    fun Player.removeAll() {
+        fpm.fakeplayersByOwnerUuid(uniqueId).forEach { fakePlayer ->
+            remove(fakePlayer)
+        }
     }
 
     @Subcommand("invsee")
@@ -171,5 +182,28 @@ class FakePlayerCommand: PluginComponent {
             }
         })
     }
+
+    @Subcommand("owner add")
+    @Permission(OWNER_ADD,BASIC)
+    fun Player.addOwner(@Named("player") owner: Player, @Select fakePlayer: FakePlayer) {
+        if (fpm.get(owner.uniqueId)!= null) throw OwnerMustBeHumanException(owner.name, fakePlayer.name)
+        if (fakePlayer.ownerUuids.contains(owner.uniqueId)) throw OwnerAlreadyBoundException(owner.name ,fakePlayer.name)
+        launch {
+            fpm.addOwner(fakePlayer,owner.uniqueId)
+            sendMessage(tlp("fakeplayer.owner.add.success", owner.name,fakePlayer.name))
+        }
+    }
+
+    @Subcommand("owner remove")
+    @Permission(OWNER_REMOVE,BASIC)
+    fun Player.removeOwner(@Named("player") owner: Player, @Select fakePlayer: FakePlayer) {
+        if (owner.uniqueId == fakePlayer.creatorUuid) throw OwnerIsCreatorCannotBeRemovedException(owner.name ,fakePlayer.name)
+        if (!fakePlayer.ownerUuids.contains(owner.uniqueId)) throw OwnerNotBoundCannotBeRemovedException(owner.name ,fakePlayer.name)
+        launch {
+            fpm.removeOwner(fakePlayer,owner.uniqueId)
+            sendMessage(tlp("fakeplayer.owner.remove.success", owner.name,fakePlayer.name))
+        }
+    }
+
 
 }

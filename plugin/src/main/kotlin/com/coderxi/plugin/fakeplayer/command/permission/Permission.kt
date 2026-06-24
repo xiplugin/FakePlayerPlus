@@ -29,4 +29,7 @@ enum class Permission(val value: String) {
     ACTION_JUMP("fakeplayer.action.jump"),
     ACTION_SNEAK("fakeplayer.action.sneak"),
 
+    OWNER_ADD("fakeplayer.owner.add"),
+    OWNER_REMOVE("fakeplayer.owner.remove"),
+
 }

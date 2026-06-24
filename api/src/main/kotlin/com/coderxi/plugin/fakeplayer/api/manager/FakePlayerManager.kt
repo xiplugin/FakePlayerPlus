@@ -44,4 +44,8 @@ interface FakePlayerManager {
 
     suspend fun saveSettings(fakePlayer: FakePlayer)
 
+    suspend fun addOwner(fakePlayer: FakePlayer, ownerUuid: UUID)
+
+    suspend fun removeOwner(fakePlayer: FakePlayer, ownerUuid: UUID)
+
 }

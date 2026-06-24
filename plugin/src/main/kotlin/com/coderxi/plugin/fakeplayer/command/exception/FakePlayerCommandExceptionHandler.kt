@@ -46,6 +46,10 @@ class FakePlayerCommandExceptionHandler : BukkitExceptionHandler(), PluginCompon
             is SpawnNameAlreadyUsedException -> tlp("fakeplayer.spawn.failed.name-already-used", e.name)
             is SpawnNoAvailableSequenceNameException -> tlp("fakeplayer.spawn.failed.no-available-sequence-name")
             is SpawnTpsAdaptiveLimitedException -> tlp("fakeplayer.spawn.failed.tps-adaptive-limited")
+            is OwnerMustBeHumanException -> tlp("fakeplayer.owner.add.failed.must-be-human", e.ownerName, e.fakePlayerName)
+            is OwnerAlreadyBoundException -> tlp("fakeplayer.owner.add.failed.already-bound", e.ownerName, e.fakePlayerName)
+            is OwnerIsCreatorCannotBeRemovedException -> tlp("fakeplayer.owner.remove.failed.is-creator", e.ownerName, e.fakePlayerName)
+            is OwnerNotBoundCannotBeRemovedException -> tlp("fakeplayer.owner.remove.failed.not-bound", e.ownerName, e.fakePlayerName)
             else -> return e.printStackTrace()
         }
         actor.sender().sendMessage(message)
