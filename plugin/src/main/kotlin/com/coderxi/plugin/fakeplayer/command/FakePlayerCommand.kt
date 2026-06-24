@@ -1,6 +1,5 @@
 package com.coderxi.plugin.fakeplayer.command
 
-import com.coderxi.plugin.fakeplayer.api.action.UseItemOnce
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
 import com.coderxi.plugin.fakeplayer.utils.PluginComponent
 import com.coderxi.plugin.fakeplayer.api.manager.FakePlayerManager
@@ -171,16 +170,6 @@ class FakePlayerCommand: PluginComponent {
                 fpm.saveSettings(fakePlayer)
             }
         })
-    }
-
-    @Subcommand("use-item-once")
-    fun Player.useOnce(@Select fakePlayer: FakePlayer) {
-        fakePlayer.actions.dispatch(UseItemOnce)
-    }
-
-    @Subcommand("stop use-item-once")
-    fun Player.stopUseOnce(@Select fakePlayer: FakePlayer) {
-        fakePlayer.actions.stop(UseItemOnce.track)
     }
 
 }

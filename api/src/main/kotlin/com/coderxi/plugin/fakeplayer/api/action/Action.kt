@@ -2,7 +2,6 @@ package com.coderxi.plugin.fakeplayer.api.action
 
 import com.coderxi.plugin.fakeplayer.api.action.ActionTrigger.*
 import org.bukkit.block.Block
-import org.bukkit.entity.Entity
 
 object AttackOnce : AttackAction, Once
 data class AttackInterval(override val intervalTicks: Int) : AttackAction, Interval
@@ -19,8 +18,3 @@ data class JumpInterval(override val intervalTicks: Int) : JumpAction, Interval
 
 object SneakOnce : SneakAction, Interval { override val intervalTicks get() = 1 }
 object SneakContinuous : SneakAction, Continuous
-
-object TurnAroundOnce : TurnAroundAction, Once
-data class TurnAroundInterval(override val intervalTicks: Int) : TurnAroundAction, Interval
-
-class LookAtEntityContinuous(var target: Entity) : Continuous, LookAtEntityAction
