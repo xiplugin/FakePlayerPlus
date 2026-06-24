@@ -1,6 +1,5 @@
 package com.coderxi.plugin.fakeplayer.nms.v1_21_11
 
-import com.coderxi.plugin.fakeplayer.api.FakePlayerPlusPluginApi.Companion.javaPlugin
 import com.coderxi.plugin.fakeplayer.api.nms.NMSBridge
 import com.coderxi.plugin.fakeplayer.api.nms.NMSEntity
 import com.coderxi.plugin.fakeplayer.api.nms.NMSNetwork
@@ -25,6 +24,6 @@ class NMSBridgeImpl: NMSBridge {
 
     override fun fromPlayer(player: Player): NMSServerPlayer = NMSServerPlayerImpl(player)
 
-    override fun createNetwork(address: InetAddress): NMSNetwork = NMSNetworkImpl(address, javaPlugin)
+    override fun createNetwork(address: InetAddress): NMSNetwork = NMSNetworkImpl(address)
 
 }

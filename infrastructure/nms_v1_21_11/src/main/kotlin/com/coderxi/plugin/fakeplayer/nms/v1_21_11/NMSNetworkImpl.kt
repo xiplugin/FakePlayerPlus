@@ -7,10 +7,9 @@ import net.minecraft.server.network.CommonListenerCookie
 import org.bukkit.craftbukkit.CraftServer
 import org.bukkit.craftbukkit.entity.CraftPlayer
 import org.bukkit.entity.Player
-import org.bukkit.plugin.java.JavaPlugin
 import java.net.InetAddress
 
-class NMSNetworkImpl(address: InetAddress, private val plugin: JavaPlugin) : NMSNetwork {
+class NMSNetworkImpl(address: InetAddress) : NMSNetwork {
 
     private val connection = FakeConnection(address)
 
@@ -24,7 +23,7 @@ class NMSNetworkImpl(address: InetAddress, private val plugin: JavaPlugin) : NMS
 
         serverHandle.placeNewPlayer(connection, handle, cookie)
 
-        return NMSServerGamePacketListenerImpl(server.server, connection, handle, cookie, plugin).apply {
+        return NMSServerGamePacketListenerImpl(server.server, connection, handle, cookie).apply {
             serverGamePacketListener = this
             handle.connection = this
         }
