@@ -8,9 +8,8 @@ CREATE TABLE IF NOT EXISTS fakeplayer (
 );
 
 CREATE TABLE IF NOT EXISTS ref_fakeplayer_owner (
-  owner_uuid    TEXT NOT NULL,
-  fakeplayer_id INTEGER NOT NULL,
-  PRIMARY KEY (owner_uuid, fakeplayer_id)
+  owner_uuid       TEXT NOT NULL,
+  fakeplayer_uuid  TEXT NOT NULL,
+  PRIMARY KEY (owner_uuid, fakeplayer_uuid),
+  FOREIGN KEY (fakeplayer_uuid) REFERENCES fakeplayer(uuid) ON DELETE CASCADE
 );
-
-CREATE INDEX IF NOT EXISTS idx_owner_uuid ON ref_fakeplayer_owner(owner_uuid);
