@@ -51,7 +51,7 @@ class FakePlayerPlusPluginConfig : OkaeriConfig() {
     @Comment("假人行为设置")
     var behavior = BehaviorConfig()
     class BehaviorConfig : OkaeriConfig() {
-        @Comment("假人背包查看器")
+        @Comment("假人背包查看器", "VANILLA:原版(不支持查看装备栏)", "OPENINV:需单独安装 https://github.com/Jikoo/OpenInv/releases")
         @CustomKey("invsee-type")
         var invseeType =  InvseeProviderType.VANILLA
         @Comment("假人死亡时动作","NONE:无操作 QUIT:退出 RESPAWN:重生 RESPAWN_BACK:重生并返回上一次死亡地点")
