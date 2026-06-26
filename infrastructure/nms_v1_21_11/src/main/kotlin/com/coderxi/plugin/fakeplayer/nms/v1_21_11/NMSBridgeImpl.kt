@@ -14,8 +14,6 @@ import java.net.InetAddress
 
 open class NMSBridgeImpl: NMSBridge {
 
-    override fun supportVersion(): String  = "1.21.11"
-
     override fun fromEntity(entity: Entity): NMSEntity = NMSEntityImpl(entity)
 
     override fun fromServer(server: Server): NMSServer = NMSServerImpl(server)

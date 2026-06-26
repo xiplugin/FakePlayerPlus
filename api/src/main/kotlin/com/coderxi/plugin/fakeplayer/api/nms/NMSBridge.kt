@@ -8,8 +8,6 @@ import java.net.InetAddress
 
 interface NMSBridge {
 
-    fun supportVersion(): String
-
     fun fromEntity(entity: Entity): NMSEntity
 
     fun fromServer(server: Server): NMSServer
