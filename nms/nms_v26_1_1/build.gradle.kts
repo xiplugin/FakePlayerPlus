@@ -4,8 +4,6 @@ plugins {
 
 dependencies {
     implementation(project(":api"))
-    api(project(":infrastructure:nms_v1_21_11")) {
-        exclude(group = "io.papermc.paper", module = "dev-bundle")
-    }
+    api(project(":nms:nms_v1_21_11")) { exclude(group = "io.papermc.paper", module = "dev-bundle") }
     paperweight.paperDevBundle("26.1.1.build.+")
 }

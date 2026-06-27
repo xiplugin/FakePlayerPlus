@@ -9,7 +9,7 @@ repositories {
     maven("https://jitpack.io/")
 }
 
-val nmsProjects = rootProject.subprojects.filter { it.path.startsWith(":infrastructure:nms_") }
+val nmsProjects = rootProject.subprojects.filter { it.path.startsWith(":nms:nms_") }
 
 dependencies {
     implementation(project(":api"))

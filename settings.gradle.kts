@@ -5,5 +5,5 @@ rootProject.name = "FakePlayerPlus"
 
 include("api")
 include("plugin")
-include("infrastructure:nms_v1_21_11")
-include("infrastructure:nms_v26_1_1")
+include("nms:nms_v1_21_11")
+include("nms:nms_v26_1_1")
