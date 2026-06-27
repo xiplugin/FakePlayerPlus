@@ -5,6 +5,7 @@ import com.coderxi.plugin.fakeplayer.api.event.FakePlayerInteractedEvent
 import com.coderxi.plugin.fakeplayer.api.manager.FakePlayerManager
 import com.coderxi.plugin.fakeplayer.command.permission.Permission.INVSEE
 import com.coderxi.plugin.fakeplayer.command.permission.Permission.BASIC
+import com.coderxi.plugin.fakeplayer.command.permission.Permission.ADMIN
 import com.coderxi.plugin.fakeplayer.command.permission.Permission.ENDER_CHEST
 import com.coderxi.plugin.fakeplayer.config.DeathEventAction
 import com.coderxi.plugin.fakeplayer.provider.invsee.InvseeProvider
@@ -24,7 +25,7 @@ class FakePlayerBehaviorImplementListener(private val fpm: FakePlayerManager): L
     @EventHandler
     fun implementInteractedInvsee(event: FakePlayerInteractedEvent) {
         if (event.hand != EquipmentSlot.HAND) return
-        if (!event.fakePlayer.ownerUuids.contains(event.player.uniqueId)) return
+        if (!event.fakePlayer.ownerUuids.contains(event.player.uniqueId) && !event.player.hasPermission(ADMIN)) return
         if (!event.player.isSneaking) {
             if (!event.player.hasPermission(INVSEE,BASIC)) return
             InvseeProvider.current.openInventory(event.player, event.fakePlayer.player)
