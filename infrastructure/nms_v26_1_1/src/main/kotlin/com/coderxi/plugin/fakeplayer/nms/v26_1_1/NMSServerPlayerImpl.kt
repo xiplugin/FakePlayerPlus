@@ -4,7 +4,7 @@ import org.bukkit.block.Block
 import org.bukkit.craftbukkit.block.CraftBlock
 import org.bukkit.entity.Player
 
-class NMSServerPlayerImpl(override val player: Player) : com.coderxi.plugin.fakeplayer.nms.v1_21_11.NMSServerPlayerImpl(player) {
+open class NMSServerPlayerImpl(override val player: Player) : com.coderxi.plugin.fakeplayer.nms.v1_21_11.NMSServerPlayerImpl(player) {
 
     override fun getDestroyProgress(target: Block): Float {
         val block = target as CraftBlock

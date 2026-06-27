@@ -5,8 +5,8 @@ plugins {
 dependencies {
     implementation(project(":api"))
     compileOnly(project(":infrastructure:common"))
-    api(project(":infrastructure:nms_v1_21_11")) {
+    api(project(":infrastructure:nms_v26_1_1")) {
         exclude(group = "io.papermc.paper", module = "dev-bundle")
     }
-    paperweight.paperDevBundle("26.1.1.build.+")
+    paperweight.paperDevBundle("26.2.build.+")
 }

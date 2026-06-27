@@ -16,7 +16,7 @@ class FakePlayerAdvancements(
     filePath: Path,
     owner: ServerPlayer
 ) : PlayerAdvancements(dataFixer, playerManager, advancementLoader, filePath, owner) {
-    init { super.stopListening() }
+    init { runCatching { super.stopListening() } }
     override fun setPlayer(owner: ServerPlayer) {}
     override fun stopListening() {}
     override fun reload(advancementLoader: ServerAdvancementManager) {}
