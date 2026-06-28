@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.2.0](https://github.com/xiplugin/FakePlayerPlus/compare/v1.1.4...v1.2.0) (2026-06-28)
+
+
+### Features
+
+* implement fakeplayer default skin option ([54e94ac](https://github.com/xiplugin/FakePlayerPlus/commit/54e94ac92addfea1861b4b996613ea4b02e4ffef))
+
+
+### Bug Fixes
+
+* admin cannot select unowned fakeplayer ([5835328](https://github.com/xiplugin/FakePlayerPlus/commit/583532802a2e88c26f4d0c71b154720d6274bdd9))
+* unable to remove fake players in 26.2 ([c916968](https://github.com/xiplugin/FakePlayerPlus/commit/c9169682604a4880dfeaf415eb2f9739e7e613e8))
+
 ## [1.1.4](https://github.com/xiplugin/FakePlayerPlus/compare/v1.1.3...v1.1.4) (2026-06-27)
 
 
