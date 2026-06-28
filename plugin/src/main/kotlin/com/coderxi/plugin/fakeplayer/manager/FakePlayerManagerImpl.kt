@@ -84,12 +84,9 @@ class FakePlayerManagerImpl : FakePlayerManager, PluginComponent, Listener {
             FakePlayerConnectedEvent(fakePlayer).callEvent()
         }
         val spawned = fakePlayer.player.teleportAsync(spawnLocation).await()
-        if (!spawned) {
-            fakePlayer.quit("Spawn failed")
-            return null
-        }
         withContext(Dispatchers.BukkitMain) {
-            FakePlayerSpawnedEvent(fakePlayer).callEvent()
+            if (spawned) FakePlayerSpawnedEvent(fakePlayer).callEvent()
+            else fakePlayer.quit("Spawn failed")
         }
         return fakePlayer
     }
