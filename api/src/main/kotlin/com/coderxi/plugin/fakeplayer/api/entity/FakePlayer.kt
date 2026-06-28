@@ -41,6 +41,6 @@ interface FakePlayer {
     var ping: Int
 
     // 快捷调用
-    fun quit(cause: String = "") = player.kick(Component.text(cause))
+    fun quit(cause: String = "") = nms.quit(Component.text(cause))
 
 }

@@ -1,5 +1,6 @@
 package com.coderxi.plugin.fakeplayer.api.nms
 
+import net.kyori.adventure.text.Component
 import org.bukkit.block.Block
 import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
@@ -92,5 +93,8 @@ interface NMSServerPlayer {
     enum class BlockBreakActionType { START, ABORT, STOP }
     fun useItem(type: EquipmentSlot, onSuccess: (() -> Unit)? = null)
     fun releaseUsingItem()
+
+    // 退出方法
+    fun quit(cause: Component)
 
 }
