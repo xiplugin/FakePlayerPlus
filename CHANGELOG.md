@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.4.0](https://github.com/xiplugin/FakePlayerPlus/compare/v1.3.1...v1.4.0) (2026-06-29)
+
+
+### Features
+
+* save exp on death and add expme command ([7045f7e](https://github.com/xiplugin/FakePlayerPlus/commit/7045f7e2632e466ecec664ecb8dbe4eab194df9e))
+
+
+### Performance Improvements
+
+* avoid redundant metadata and address creation per channel ([9ed8b63](https://github.com/xiplugin/FakePlayerPlus/commit/9ed8b63831337b0facc820ade1e6a438c5202c46))
+* remove redundant player.isOnline check in fake player ticker ([2d47298](https://github.com/xiplugin/FakePlayerPlus/commit/2d47298cbb2f0ca437260daa5311e43dc919336b))
+
 ## [1.3.1](https://github.com/xiplugin/FakePlayerPlus/compare/v1.3.0...v1.3.1) (2026-06-29)
 
 
