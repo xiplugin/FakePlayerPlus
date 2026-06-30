@@ -47,6 +47,7 @@ class FakePlayerCommandExceptionHandler : BukkitExceptionHandler(), PluginCompon
             is SpawnNoAvailableSequenceNameException -> tlp("fakeplayer.spawn.failed.no-available-sequence-name")
             is SpawnTpsAdaptiveLimitedException -> tlp("fakeplayer.spawn.failed.tps-adaptive-limited")
             is SpawnDisallowedException -> tlp("fakeplayer.spawn.failed.disallowed").append(e.causeMessage)
+            is SpawnDuplicateSpawningException -> tlp("fakeplayer.spawn.failed.duplicate-spawning", e.name)
             is HasNoMoreExperience -> tlp("fakeplayer.expme.failed.has-no-experience",e.name)
             is OwnerMustBeHumanException -> tlp("fakeplayer.owner.add.failed.must-be-human", e.ownerName, e.fakePlayerName)
             is OwnerAlreadyBoundException -> tlp("fakeplayer.owner.add.failed.already-bound", e.ownerName, e.fakePlayerName)

@@ -19,6 +19,7 @@ abstract class FakePlayerCommandException : CommandErrorException() {
     class SpawnNameAlreadyUsedException(val name: String) : FakePlayerCommandException()
     class SpawnNoAvailableSequenceNameException : FakePlayerCommandException()
     class SpawnDisallowedException(val causeMessage: Component) : FakePlayerCommandException()
+    class SpawnDuplicateSpawningException(val name: String) : FakePlayerCommandException()
 
     class HasNoMoreExperience(val name: String) : FakePlayerCommandException()
 

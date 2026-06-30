@@ -7,6 +7,7 @@ import com.coderxi.plugin.fakeplayer.api.event.FakePlayerQuitedEvent
 import com.coderxi.plugin.fakeplayer.api.event.FakePlayerSpawnedEvent
 import com.coderxi.plugin.fakeplayer.api.manager.FakePlayerManager
 import com.coderxi.plugin.fakeplayer.api.nms.NMSServerPlayer
+import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandException.SpawnDuplicateSpawningException
 import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandException.SpawnDisallowedException
 import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandException.SpawnNoAvailableSequenceNameException
 import com.coderxi.plugin.fakeplayer.command.permission.Permission
@@ -67,6 +68,9 @@ class FakePlayerManagerImpl : FakePlayerManager, PluginComponent, Listener {
         } ?: StandardFakePlayer(name, uuid(name),spawnerUuid, mutableSetOf(spawnerUuid),null, plugin.config.defaultSettings.clone()).also {
             withContext(Dispatchers.IO) { repository.save(it, true) }
         }
+        if (pendingSpawn.getIfPresent(fakePlayer.uuid) == true) {
+            throw SpawnDuplicateSpawningException(fakePlayer.name)
+        }
         pendingSpawn.put(fakePlayer.uuid,true)
         val address = IPGenerator.next()
         AsyncPlayerPreLoginEvent(name,address, fakePlayer.uuid, false).let { event ->
@@ -102,8 +106,8 @@ class FakePlayerManagerImpl : FakePlayerManager, PluginComponent, Listener {
                 scheduler.runTaskLater(plugin, Runnable {pendingSpawn.invalidate(fakePlayer.uuid)}, 20)
             }
             else {
-                fakePlayer.quit("Spawn failed")
                 pendingSpawn.invalidate(fakePlayer.uuid)
+                fakePlayer.quit("Spawn failed")
             }
         }
         return fakePlayer
