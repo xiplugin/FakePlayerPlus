@@ -20,13 +20,13 @@ object FakePlayerSelector: Listener {
         get() = selectedMap[selectedKey]
         set(value) {
             if(value == null) selectedMap.remove(selectedKey)
-            selectedMap[selectedKey] = value!!
+            else selectedMap[selectedKey] = value
         }
 
     @EventHandler
     private fun cleanup(event: FakePlayerQuitedEvent) {
-        val selectorUuids = selectedMap.filter { (_, fakePlayer) -> fakePlayer.uuid == event.fakePlayer.uuid }.keys
-        selectorUuids.forEach(selectedMap::remove)
+        val uuid = event.fakePlayer.uuid
+        selectedMap.entries.removeIf { it.value.uuid == uuid }
     }
 
 }

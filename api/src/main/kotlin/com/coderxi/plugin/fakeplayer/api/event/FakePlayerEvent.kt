@@ -45,14 +45,6 @@ data class FakePlayerDeathEvent(override val fakePlayer: FakePlayer, val locatio
     companion object { @JvmStatic val HANDLERS = HandlerList() ; @JvmStatic fun getHandlerList() = HANDLERS }
     override fun getHandlers() = HANDLERS
 }
-data class FakePlayerDamageEvent(override val fakePlayer: FakePlayer, val finalDamage: Double): FakePlayerEvent() {
-    companion object { @JvmStatic val HANDLERS = HandlerList() ; @JvmStatic fun getHandlerList() = HANDLERS }
-    override fun getHandlers() = HANDLERS
-}
-data class FakePlayerRegainHealthEvent(override val fakePlayer: FakePlayer, val amount: Double): FakePlayerEvent() {
-    companion object { @JvmStatic val HANDLERS = HandlerList() ; @JvmStatic fun getHandlerList() = HANDLERS }
-    override fun getHandlers() = HANDLERS
-}
 // 与Player交互的事件
 data class FakePlayerInteractedEvent(override val fakePlayer: FakePlayer, val player: Player, val hand: EquipmentSlot) : FakePlayerEvent() {
     companion object { @JvmStatic val HANDLERS = HandlerList() ; @JvmStatic fun getHandlerList() = HANDLERS }

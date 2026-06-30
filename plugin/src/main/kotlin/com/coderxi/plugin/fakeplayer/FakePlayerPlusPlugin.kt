@@ -97,7 +97,7 @@ class FakePlayerPlusPlugin: FakePlayerPlusPluginApi, JavaPlugin() {
             .annotationReplacer(Select::class.java, SelectReplacer())
             .dependency(FakePlayerManager::class.java,fakePlayerManager)
             .dependency(FakePlayerLimiter::class.java,fakePlayerLimiter)
-            .parameterTypes { parameters -> parameters.addParameterType(FakePlayer::class.java, FakePlayerParameterType()) }
+            .parameterTypes { parameters -> parameters.addParameterType(FakePlayer::class.java, FakePlayerParameterType(fakePlayerManager)) }
             .suggestionProviders { providers -> providers.addProviderForAnnotation(SuggestCommands::class.java, SuggestCommandsProvider()) }
             .exceptionHandler(FakePlayerCommandExceptionHandler())
             .build()

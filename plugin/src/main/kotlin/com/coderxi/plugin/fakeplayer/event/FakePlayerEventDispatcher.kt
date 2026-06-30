@@ -37,14 +37,6 @@ class FakePlayerEventDispatcher(private val fpm: FakePlayerManager): Listener, P
         fpm.get(event.player.uniqueId)?.let { FakePlayerRespawnEvent(it).callEvent() }
     }
     @EventHandler
-    fun onFakePlayerDamage(event: EntityDamageEvent) {
-        if (event.entity is Player) fpm.get(event.entity.uniqueId)?.let { FakePlayerDamageEvent(it,event.finalDamage).callEvent() }
-    }
-    @EventHandler
-    fun onFakePlayerRegainHealth(event: EntityRegainHealthEvent) {
-        if (event.entity is Player) fpm.get(event.entity.uniqueId)?.let { FakePlayerRegainHealthEvent(it,event.amount).callEvent() }
-    }
-    @EventHandler
     fun onFakePlayerInteract(event: PlayerInteractEntityEvent) {
         if (event.rightClicked is Player) fpm.get(event.rightClicked.uniqueId)?.let { FakePlayerInteractedEvent(it,event.player,event.hand).callEvent() }
     }
