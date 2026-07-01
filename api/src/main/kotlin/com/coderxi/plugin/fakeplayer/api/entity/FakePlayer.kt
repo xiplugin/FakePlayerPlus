@@ -26,6 +26,7 @@ interface FakePlayer {
     var spawnerName: String
     var spawnerUuid: UUID
     var spawnerIp: String
+    var spawnTime: Long
 
     // 是否执行doTick和actions.doTick
     var ticking: Boolean

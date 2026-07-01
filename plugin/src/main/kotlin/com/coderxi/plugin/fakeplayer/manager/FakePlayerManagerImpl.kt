@@ -42,7 +42,7 @@ class FakePlayerManagerImpl : FakePlayerManager, PluginComponent, Listener {
 
     val repository = FakePlayerRepository()
     val registry = FakePlayerRegistry()
-    override fun fakeplayers() = registry.fakeplayers.values
+    override fun fakeplayers() = registry.sortedFakeplayers
     override fun fakeplayersCount() = registry.fakeplayers.count()
     override fun fakeplayersByOwners(): Map<UUID, Collection<UUID>> = registry.fakeplayersByOwnerUuids
 
@@ -83,6 +83,7 @@ class FakePlayerManagerImpl : FakePlayerManager, PluginComponent, Listener {
             fakePlayer.spawnerName = spawnerName
             fakePlayer.spawnerUuid = spawnerUuid
             fakePlayer.spawnerIp = spawnerIp
+            fakePlayer.spawnTime = System.currentTimeMillis()
             FakePlayerPreparingEvent(fakePlayer).callEvent()
             val nmsPlayer =  plugin.nmsServer.newPlayer(fakePlayer.uuid, fakePlayer.name).apply {
                 disableAdvancements()

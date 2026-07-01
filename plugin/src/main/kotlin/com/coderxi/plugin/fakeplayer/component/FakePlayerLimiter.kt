@@ -96,7 +96,7 @@ class FakePlayerLimiter(private val fpm: FakePlayerManager) : PluginComponent, L
             val activeFakePlayers = fpm.fakeplayersByOwnerUuid(player.uniqueId)
             val overflowCount = activeFakePlayers.size - playerMaxLimit
             if (overflowCount > 0) {
-                activeFakePlayers.sortedByDescending { it.player.lastLogin }.take(overflowCount).forEach { fakePlayer ->
+                activeFakePlayers.sortedByDescending { it.spawnTime }.take(overflowCount).forEach { fakePlayer ->
                     fakePlayer.quit("Tps Adaptive Limit")
                 }
             }

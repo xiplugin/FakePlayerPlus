@@ -11,7 +11,7 @@ interface FakePlayerManager {
 
     // 假人列表(仅在线)
 
-    fun fakeplayers(): Collection<FakePlayer>
+    fun fakeplayers(): List<FakePlayer>
 
     fun fakeplayersCount(): Int
 

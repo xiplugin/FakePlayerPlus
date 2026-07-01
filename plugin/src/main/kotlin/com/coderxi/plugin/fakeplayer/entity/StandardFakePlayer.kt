@@ -18,6 +18,8 @@ class StandardFakePlayer(
     private var _settings: FakePlayerSettings
 ) : FakePlayer {
 
+    override var spawnTime: Long = -1
+
     override var skin: SkinInfo?
         get() = _skin;
         set(skin) {
@@ -58,7 +60,6 @@ class StandardFakePlayer(
             isInvulnerable = settings.invulnerable
             health = 20.0
             foodLevel = 20
-
         }
     }
 

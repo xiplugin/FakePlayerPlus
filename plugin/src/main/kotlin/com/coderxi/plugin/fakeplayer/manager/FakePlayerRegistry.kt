@@ -10,7 +10,10 @@ class FakePlayerRegistry {
     internal val fakeplayersByName = ConcurrentHashMap<String, FakePlayer>()
     internal val fakeplayersByOwnerUuids = ConcurrentHashMap<UUID, MutableSet<UUID>>()
 
-    fun register(fp: FakePlayer) {
+    private val writeLock = Any()
+    @Volatile var sortedFakeplayers: List<FakePlayer> = emptyList(); private set
+
+    fun register(fp: FakePlayer) = synchronized(writeLock) {
         fakeplayers[fp.uuid]?.let { oldFp ->
             oldFp.ownerUuids.forEach { oldOwnerId ->
                 fakeplayersByOwnerUuids.computeIfPresent(oldOwnerId) { _, fpUuids ->
@@ -24,16 +27,19 @@ class FakePlayerRegistry {
         fp.ownerUuids.forEach { ownerId ->
             fakeplayersByOwnerUuids.computeIfAbsent(ownerId) { ConcurrentHashMap.newKeySet() }.add(fp.uuid)
         }
+        sortedFakeplayers = fakeplayers.values.sortedBy { it.spawnTime }
     }
 
-    fun unregister(uuid: UUID) = fakeplayers[uuid]?.let { fp ->
-        fakeplayers.remove(fp.uuid)
-        fakeplayersByName.remove(fp.name)
-        fp.ownerUuids.forEach { ownerId ->
-            fakeplayersByOwnerUuids.computeIfPresent(ownerId) { _, fpUuids ->
-                fpUuids.remove(fp.uuid)
-                if (fpUuids.isEmpty()) null else fpUuids
+    fun unregister(uuid: UUID) = synchronized(writeLock) {
+        fakeplayers.remove(uuid)?.let { fp ->
+            fakeplayersByName.remove(fp.name)
+            fp.ownerUuids.forEach { ownerId ->
+                fakeplayersByOwnerUuids.computeIfPresent(ownerId) { _, fpUuids ->
+                    fpUuids.remove(fp.uuid)
+                    if (fpUuids.isEmpty()) null else fpUuids
+                }
             }
+            sortedFakeplayers = fakeplayers.values.sortedBy { it.spawnTime }
         }
     }
 
