@@ -59,6 +59,38 @@ jobs:
           APP_VERSION: ${{ needs.release-please.outputs.tag_name }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Extract Support Versions
+        id: parse_versions
+        run: |
+            unzip -p build/libs/*.jar META-INF/MANIFEST.MF | perl -0777 -pe 's/\r?\n //g' > manifest.tmp
+            
+            SUMMARY_TEXT="### Supported Versions"$'\n'
+            
+            HAS_DATA=false
+            while IFS= read -r line; do
+              if [[ -z "$line" ]]; then continue; fi
+              
+              PLATFORM=$(echo "$line" | cut -d':' -f1 | sed 's/Support-Versions-//' | xargs)
+              VERSIONS=$(echo "$line" | cut -d':' -f2- | xargs)
+              
+              SUMMARY_TEXT="$SUMMARY_TEXT""* **$PLATFORM**: $VERSIONS"$'\n'
+              HAS_DATA=true
+            done < <(grep "^Support-Versions-" manifest.tmp || true)
+            
+            if [ "$HAS_DATA" = false ]; then
+              SUMMARY_TEXT=""
+            else
+              SUMMARY_TEXT="$SUMMARY_TEXT"$'\n'"---"$'\n'
+            fi
+            
+            ORIGINAL_BODY=$(gh release view "${{ needs.release-please.outputs.tag_name }}" --json body -q .body)
+            echo "versions_body<<EOF" >> $GITHUB_OUTPUT
+            echo "$SUMMARY_TEXT" >> $GITHUB_OUTPUT
+            echo "$ORIGINAL_BODY" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Upload jar
         uses: actions/upload-artifact@v4
         with:
@@ -70,3 +102,5 @@ jobs:
         with:
           tag_name: ${{ needs.release-please.outputs.tag_name }}
           files: build/libs/*.jar
+          append_body: false
+          body: ${{ steps.parse_versions.outputs.versions_body }}
