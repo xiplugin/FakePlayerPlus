@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/xiplugin/FakePlayerPlus/compare/v1.5.0...v1.6.0) (2026-07-04)
+
+
+### Features
+
+* overhaul scheduler implementation and add Folia support ([e0416b8](https://github.com/xiplugin/FakePlayerPlus/commit/e0416b8a51e8b4659d7283db2bf884db786fbf39))
+
 ## [1.5.0](https://github.com/xiplugin/FakePlayerPlus/compare/v1.4.3...v1.5.0) (2026-07-01)
 
 
