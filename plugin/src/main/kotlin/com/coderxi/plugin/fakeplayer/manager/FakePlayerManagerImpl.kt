@@ -17,6 +17,7 @@ import com.coderxi.plugin.fakeplayer.repository.FakePlayerRepository
 import com.coderxi.plugin.fakeplayer.utils.*
 import com.google.common.cache.CacheBuilder
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.withContext
 import org.bukkit.Bukkit
@@ -33,7 +34,7 @@ import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.math.pow
 
-class FakePlayerManagerImpl : FakePlayerManager, PluginComponent, Listener {
+class FakePlayerManagerImpl : FakePlayerManager, Listener {
 
     companion object {
         const val MAX_NAME_LENGTH: Int = 16
@@ -59,8 +60,8 @@ class FakePlayerManagerImpl : FakePlayerManager, PluginComponent, Listener {
 
     override suspend fun spawn(name: String, spawner: CommandSender, location: Location?) : FakePlayer {
         val spawnerAsPlayer = spawner as? Player
-        val spawnerName = spawnerAsPlayer?.name ?: "system"
-        val spawnerUuid = spawnerAsPlayer?.uniqueId ?: EMPTY_UUID
+        val spawnerName = spawner.name
+        val spawnerUuid = spawner.uniqueId()
         val spawnerIp = spawnerAsPlayer?.address?.address?.hostAddress ?: "127.0.0.1"
         val spawnLocation = location ?: spawnerAsPlayer?.location ?: plugin.server.worlds.first().spawnLocation
         val fakePlayer = withContext(Dispatchers.IO) {
@@ -80,7 +81,7 @@ class FakePlayerManagerImpl : FakePlayerManager, PluginComponent, Listener {
                 throw SpawnDisallowedException(event.kickMessage())
             }
         }
-        withContext(Dispatchers.BukkitMain) {
+        withContext(spawnLocation.dispatcher) {
             fakePlayer.spawnerName = spawnerName
             fakePlayer.spawnerUuid = spawnerUuid
             fakePlayer.spawnerIp = spawnerIp
@@ -101,11 +102,12 @@ class FakePlayerManagerImpl : FakePlayerManager, PluginComponent, Listener {
             FakePlayerConnectedEvent(fakePlayer).callEvent()
         }
         val spawned = fakePlayer.player.teleportAsync(spawnLocation).await()
-        withContext(Dispatchers.BukkitMain) {
+        withContext(fakePlayer.dispatcher) {
             if (spawned) {
                 fakePlayer.ticking = true
                 FakePlayerSpawnedEvent(fakePlayer).callEvent()
-                scheduler.runTaskLater(plugin, Runnable {pendingSpawn.invalidate(fakePlayer.uuid)}, 20)
+                delay(1000)
+                pendingSpawn.invalidate(fakePlayer.uuid)
             }
             else {
                 pendingSpawn.invalidate(fakePlayer.uuid)

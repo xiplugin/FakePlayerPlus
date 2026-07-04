@@ -3,19 +3,21 @@ package com.coderxi.plugin.fakeplayer.component
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
 import com.coderxi.plugin.fakeplayer.api.event.FakePlayerConnectedEvent
 import com.coderxi.plugin.fakeplayer.api.manager.FakePlayerManager
-import com.coderxi.plugin.fakeplayer.utils.PluginComponent
+import com.coderxi.plugin.fakeplayer.utils.onPluginDisable
+import com.coderxi.plugin.fakeplayer.utils.onPluginReload
+import com.coderxi.plugin.fakeplayer.utils.plugin
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
-import org.bukkit.scheduler.BukkitTask
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ThreadLocalRandom
 
-class FakePlayerPingUpdater(private val fpm: FakePlayerManager) : PluginComponent, Listener {
+class FakePlayerPingUpdater(private val fpm: FakePlayerManager) : Listener {
 
     private val firstPingMap = ConcurrentHashMap<UUID, Int>()
 
-    private var pingJitterTask: BukkitTask? = null
+    private var pingJitterTask: ScheduledTask? = null
     private var pingInitIsFixed = true
     private var pingInitMin = -1
     private var pingInitMax = -1
@@ -41,7 +43,7 @@ class FakePlayerPingUpdater(private val fpm: FakePlayerManager) : PluginComponen
         val pingJitterInterval = b.pingJitterInterval
         if (!pingJitter||pingJitterInterval <= 0) return
         val ticks = pingJitterInterval.toLong() * 20
-        pingJitterTask = scheduler.runTaskTimer(plugin,Runnable{fpm.fakeplayers().forEach{it.pingJitter()}}, ticks, ticks)
+        pingJitterTask = plugin.server.globalRegionScheduler.runAtFixedRate(plugin,{fpm.fakeplayers().forEach{it.pingJitter()}}, ticks, ticks)
     }
 
     @EventHandler

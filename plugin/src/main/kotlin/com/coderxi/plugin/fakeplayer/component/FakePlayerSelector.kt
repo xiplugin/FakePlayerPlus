@@ -2,9 +2,8 @@ package com.coderxi.plugin.fakeplayer.component
 
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
 import com.coderxi.plugin.fakeplayer.api.event.FakePlayerQuitedEvent
-import com.coderxi.plugin.fakeplayer.utils.EMPTY_UUID
+import com.coderxi.plugin.fakeplayer.utils.uniqueId
 import org.bukkit.command.CommandSender
-import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import java.util.UUID
@@ -14,7 +13,7 @@ object FakePlayerSelector: Listener {
 
     private val selectedMap by lazy { ConcurrentHashMap<UUID, FakePlayer>() }
 
-    private val CommandSender.selectedKey get() = if (this is Player) uniqueId else EMPTY_UUID
+    private val CommandSender.selectedKey get() = uniqueId()
 
     var CommandSender.selected : FakePlayer?
         get() = selectedMap[selectedKey]

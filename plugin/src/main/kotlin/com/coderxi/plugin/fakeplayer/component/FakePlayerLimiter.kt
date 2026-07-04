@@ -4,21 +4,24 @@ import com.coderxi.plugin.fakeplayer.api.event.FakePlayerConnectedEvent
 import com.coderxi.plugin.fakeplayer.api.event.FakePlayerQuitedEvent
 import com.coderxi.plugin.fakeplayer.api.manager.FakePlayerManager
 import com.coderxi.plugin.fakeplayer.command.permission.Permission
-import com.coderxi.plugin.fakeplayer.utils.PluginComponent
+import com.coderxi.plugin.fakeplayer.utils.onPluginDisable
+import com.coderxi.plugin.fakeplayer.utils.onPluginReload
+import com.coderxi.plugin.fakeplayer.utils.plugin
+import com.coderxi.plugin.fakeplayer.utils.tlp
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
-import org.bukkit.scheduler.BukkitTask
 import java.util.concurrent.ConcurrentHashMap
 
-class FakePlayerLimiter(private val fpm: FakePlayerManager) : PluginComponent, Listener {
+class FakePlayerLimiter(private val fpm: FakePlayerManager) : Listener {
 
     private val ip2Count = ConcurrentHashMap<String, Int>()
 
     private val limit get() = plugin.config.limit
 
-    private var tpsLimitTask: BukkitTask? = null
+    private var tpsLimitTask: ScheduledTask? = null
     private var tpsLimitThreshold = -1.0
     private var tpsLimitMinCount = 1
 
@@ -41,7 +44,7 @@ class FakePlayerLimiter(private val fpm: FakePlayerManager) : PluginComponent, L
             return
         }
         val ticks = tpsLimit.interval.toLong() * 20
-        tpsLimitTask = scheduler.runTaskTimer(plugin, this::run, ticks, ticks)
+        tpsLimitTask = plugin.server.globalRegionScheduler.runAtFixedRate(plugin, {run()}, ticks, ticks)
     }
 
     fun isServerLimited(): Boolean {

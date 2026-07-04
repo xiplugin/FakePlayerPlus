@@ -2,7 +2,7 @@ package com.coderxi.plugin.fakeplayer.utils
 
 import com.coderxi.plugin.fakeplayer.api.nms.NMSBridge
 
-object NMSBridgeLoader : PluginComponent {
+object NMSBridgeLoader {
 
     // https://docs.papermc.io/paper/dev/internals/#getting-the-current-minecraft-version
     fun load(minecraftVersion: String): NMSBridge {

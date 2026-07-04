@@ -9,8 +9,12 @@ import com.coderxi.plugin.fakeplayer.command.permission.Permission.ADMIN
 import com.coderxi.plugin.fakeplayer.command.permission.Permission.ENDER_CHEST
 import com.coderxi.plugin.fakeplayer.config.DeathEventAction
 import com.coderxi.plugin.fakeplayer.provider.invsee.InvseeProvider
-import com.coderxi.plugin.fakeplayer.utils.PluginComponent
+import com.coderxi.plugin.fakeplayer.utils.dispatcher
 import com.coderxi.plugin.fakeplayer.utils.hasPermission
+import com.coderxi.plugin.fakeplayer.utils.launch
+import com.coderxi.plugin.fakeplayer.utils.plugin
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import org.bukkit.Bukkit
 import org.bukkit.Sound
 import org.bukkit.event.EventHandler
@@ -18,7 +22,7 @@ import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.inventory.EquipmentSlot
 
-class FakePlayerBehaviorImplementListener(private val fpm: FakePlayerManager): Listener, PluginComponent {
+class FakePlayerBehaviorImplementListener(private val fpm: FakePlayerManager): Listener {
 
     val config get() = plugin.config
 
@@ -42,18 +46,20 @@ class FakePlayerBehaviorImplementListener(private val fpm: FakePlayerManager): L
         when (config.behavior.deathAction) {
             DeathEventAction.NONE -> { }
             DeathEventAction.QUIT -> {
-                plugin.server.scheduler.runTaskLater( plugin, Runnable {
-                    event.fakePlayer.quit()
-                },1)
+                event.fakePlayer.player.scheduler.execute(plugin, { event.fakePlayer.quit() }, null, 1)
             }
             DeathEventAction.RESPAWN -> {
                 event.fakePlayer.nms.respawn()
             }
             DeathEventAction.RESPAWN_BACK -> {
-                plugin.server.scheduler.runTaskLater( plugin, Runnable {
+                event.fakePlayer.player.location.dispatcher.launch {
+                    delay(1000)
                     event.fakePlayer.nms.respawn()
-                    event.fakePlayer.player.lastDeathLocation?.let(event.fakePlayer.player::teleportAsync)
-                },20)
+                    delay(50)
+                    withContext(event.fakePlayer.dispatcher) {
+                        event.fakePlayer.player.lastDeathLocation?.let(event.fakePlayer.player::teleportAsync)
+                    }
+                }
             }
         }
     }
@@ -61,19 +67,19 @@ class FakePlayerBehaviorImplementListener(private val fpm: FakePlayerManager): L
     @EventHandler
     fun implementFollowQuiting(event: PlayerQuitEvent) {
         if (!config.behavior.followQuiting) return
-        val isAdmin = event.player.hasPermission(ADMIN)
         val uuid = event.player.uniqueId
-        scheduler.runTaskLater(plugin, Runnable {
-            val targets = if (isAdmin) {
-                fpm.fakeplayers().filter { it.spawnerUuid == uuid }
-            } else {
-                fpm.fakeplayersByOwnerUuid(uuid)
-            }
+        val targets = if (event.player.hasPermission(ADMIN)) {
+            fpm.fakeplayers().filter { it.spawnerUuid == uuid }
+        } else {
+            fpm.fakeplayersByOwnerUuid(uuid)
+        }
+        event.player.location.dispatcher.launch {
+            delay(config.behavior.followQuitingDelay*1000L)
             targets.forEach { fakePlayer ->
                 if (fakePlayer.ownerUuids.any { Bukkit.getPlayer(it) != null }) return@forEach
                 fakePlayer.quit("Follow Quiting")
             }
-        }, (config.behavior.followQuitingDelay * 20).coerceAtLeast(0).toLong())
+        }
     }
 
 }

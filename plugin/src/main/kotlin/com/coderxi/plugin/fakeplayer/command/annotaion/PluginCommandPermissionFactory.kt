@@ -1,13 +1,12 @@
 package com.coderxi.plugin.fakeplayer.command.annotaion
 
-import com.coderxi.plugin.fakeplayer.utils.PluginComponent
 import com.coderxi.plugin.fakeplayer.utils.hasPermission
 import revxrsal.commands.Lamp
 import revxrsal.commands.annotation.list.AnnotationList
 import revxrsal.commands.bukkit.actor.BukkitCommandActor
 import revxrsal.commands.command.CommandPermission
 
-class PluginCommandPermissionFactory : CommandPermission.Factory<BukkitCommandActor>, PluginComponent {
+class PluginCommandPermissionFactory : CommandPermission.Factory<BukkitCommandActor> {
     override fun create(
         annotations: AnnotationList,
         lamp: Lamp<BukkitCommandActor?>

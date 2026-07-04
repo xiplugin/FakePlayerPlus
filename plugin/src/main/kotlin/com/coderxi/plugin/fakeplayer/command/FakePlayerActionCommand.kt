@@ -4,17 +4,17 @@ import com.coderxi.plugin.fakeplayer.api.action.*
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
 import com.coderxi.plugin.fakeplayer.command.annotaion.Select
 import com.coderxi.plugin.fakeplayer.component.FakePlayerDialog
-import com.coderxi.plugin.fakeplayer.utils.PluginComponent
 import org.bukkit.entity.Player
 import revxrsal.commands.annotation.Command
 import revxrsal.commands.annotation.Subcommand
 import com.coderxi.plugin.fakeplayer.command.annotaion.PluginCommandPermission as Permission
 import com.coderxi.plugin.fakeplayer.command.permission.Permission.*
 import com.coderxi.plugin.fakeplayer.utils.hasPermission
+import com.coderxi.plugin.fakeplayer.utils.tl
 import net.kyori.adventure.text.Component
 
 @Command("fakeplayer","fp")
-class FakePlayerActionCommand: PluginComponent {
+class FakePlayerActionCommand {
 
     @Subcommand("action")
     @Permission(ACTION, BASIC)

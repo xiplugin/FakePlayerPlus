@@ -3,9 +3,9 @@ package com.coderxi.plugin.fakeplayer.repository
 import com.coderxi.plugin.fakeplayer.api.config.FakePlayerSettings
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
 import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandException
-import com.coderxi.plugin.fakeplayer.utils.PluginComponent
 import com.coderxi.plugin.fakeplayer.entity.StandardFakePlayer
 import com.coderxi.plugin.fakeplayer.repository.po.FakePlayerPO
+import com.coderxi.plugin.fakeplayer.utils.plugin
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -14,7 +14,7 @@ import org.sql2o.Sql2o
 import java.io.File
 import java.util.UUID
 
-class FakePlayerRepository : PluginComponent {
+class FakePlayerRepository {
 
     fun open(): Connection = plugin.sql2o.open()
 

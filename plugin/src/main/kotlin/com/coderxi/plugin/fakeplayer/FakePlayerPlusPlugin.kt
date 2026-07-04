@@ -19,15 +19,18 @@ import com.coderxi.plugin.fakeplayer.command.annotaion.SuggestCommands
 import com.coderxi.plugin.fakeplayer.command.annotaion.SuggestCommandsProvider
 import com.coderxi.plugin.fakeplayer.expansion.FakePlayerPlaceholderExpansion
 import com.coderxi.plugin.fakeplayer.manager.FakePlayerManagerImpl
-import com.coderxi.plugin.fakeplayer.utils.registerEvents
 import com.coderxi.plugin.fakeplayer.utils.Localizer
 import com.coderxi.plugin.fakeplayer.utils.NMSBridgeLoader
-import com.coderxi.plugin.fakeplayer.utils.PluginComponent
 import com.coderxi.plugin.fakeplayer.utils.RegexTransformer
+import com.coderxi.plugin.fakeplayer.utils.executeDisable
+import com.coderxi.plugin.fakeplayer.utils.executeReload
+import com.coderxi.plugin.fakeplayer.utils.globalCoroutineScope
 import eu.okaeri.configs.ConfigManager
 import eu.okaeri.configs.yaml.bukkit.YamlBukkitConfigurer
+import kotlinx.coroutines.cancel
 import org.bukkit.Bukkit
 import org.bukkit.event.HandlerList
+import org.bukkit.event.Listener
 import org.bukkit.plugin.java.JavaPlugin
 import org.sql2o.Sql2o
 import revxrsal.commands.Lamp
@@ -75,18 +78,20 @@ class FakePlayerPlusPlugin: FakePlayerPlusPluginApi, JavaPlugin() {
             sql2o.open().use { conn -> sqlStatements.forEach { sql -> conn.createQuery(sql).executeUpdate() } }
         }
         var fakePlayerLimiter : FakePlayerLimiter
-        fakePlayerManager = FakePlayerManagerImpl().also { fpm ->
-            FakePlayerTicker(fpm)
-            FakePlayerEventDispatcher(fpm).registerEvents()
-            FakePlayerBehaviorImplementListener(fpm).registerEvents()
-            FakePlayerLifecycleCommandListener().registerEvents()
-            fakePlayerLimiter = FakePlayerLimiter(fpm).apply { registerEvents() }
-            FakePlayerPingUpdater(fpm).registerEvents()
-            FakePlayerSelector.registerEvents()
-            FakePlayerReplenishListener(fpm).registerEvents()
-            FakePlayerDummyVarsNotifyListener(fpm).registerEvents()
-            FakePlayerAutoFishListener(fpm).registerEvents()
-            fpm.registerEvents()
+        fakePlayerManager = FakePlayerManagerImpl().also { fpm -> listOf(
+            FakePlayerTicker(fpm),
+            FakePlayerEventDispatcher(fpm),
+            FakePlayerBehaviorImplementListener(fpm),
+            FakePlayerLifecycleCommandListener(),
+            FakePlayerLimiter(fpm).also { fakePlayerLimiter = it },
+            FakePlayerPingUpdater(fpm),
+            FakePlayerSelector,
+            FakePlayerReplenishListener(fpm),
+            FakePlayerDummyVarsNotifyListener(fpm),
+            FakePlayerAutoFishListener(fpm),
+            fpm
+        ).forEach { component ->
+            server.pluginManager.registerEvents(component, this) }
         }.also { fpm ->
             if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
                 FakePlayerPlaceholderExpansion(fpm).register()
@@ -110,11 +115,13 @@ class FakePlayerPlusPlugin: FakePlayerPlusPluginApi, JavaPlugin() {
     fun onReload() {
         config.load()
         messages.locale(config.language)
-        PluginComponent.executeReload()
+        executeReload()
     }
 
     override fun onDisable() {
+        globalCoroutineScope.cancel()
         HandlerList.unregisterAll(this)
-        PluginComponent.executeDisable()
+        executeDisable()
     }
+
 }

@@ -11,12 +11,14 @@ import com.coderxi.plugin.fakeplayer.component.FakePlayerDialog
 import com.coderxi.plugin.fakeplayer.component.FakePlayerLimiter
 import com.coderxi.plugin.fakeplayer.component.FakePlayerSelector.selected
 import com.coderxi.plugin.fakeplayer.provider.invsee.InvseeProvider
-import com.coderxi.plugin.fakeplayer.utils.BukkitMain
-import com.coderxi.plugin.fakeplayer.utils.PluginComponent
+import com.coderxi.plugin.fakeplayer.utils.dispatcher
 import com.coderxi.plugin.fakeplayer.utils.SkinFetcher
 import com.coderxi.plugin.fakeplayer.utils.hasPermission
-import com.coderxi.plugin.fakeplayer.utils.teleportAsyncWithSound
+import com.coderxi.plugin.fakeplayer.utils.plugin
+import com.coderxi.plugin.fakeplayer.utils.teleportAsync
+import com.coderxi.plugin.fakeplayer.utils.tlp
 import kotlinx.coroutines.Dispatchers
+import com.coderxi.plugin.fakeplayer.utils.launch
 import kotlinx.coroutines.withContext
 import org.bukkit.Bukkit
 import org.bukkit.Location
@@ -30,7 +32,7 @@ import kotlin.math.ceil
 import com.coderxi.plugin.fakeplayer.command.annotaion.PluginCommandPermission as Permission
 
 @Command("fakeplayer","fp")
-class FakePlayerCommand: PluginComponent {
+class FakePlayerCommand {
 
     @Dependency lateinit var fpm: FakePlayerManager
     @Dependency lateinit var fpl: FakePlayerLimiter
@@ -44,10 +46,10 @@ class FakePlayerCommand: PluginComponent {
 
     @Subcommand("spawn")
     @Permission(SPAWN, BASIC)
-    fun Player.spawn(commandContext: CommandContext) {
+    fun Player.spawn(context: CommandContext) {
         val player = this
         assertNoSpawnLimited()
-        launch(commandContext) {
+        launch(context) {
             val name = fpm.sequenceName(player, ceil((fpl.getPlayerSpawnLimit(player)/10.0)).toInt())
             executeSpawn(name)
         }
@@ -56,11 +58,11 @@ class FakePlayerCommand: PluginComponent {
 
     @Subcommand("spawn")
     @Permission(SPAWN_WITH_NAME, ADMIN)
-    fun CommandSender.spawn(@Named("name") name: String, commandContext: CommandContext) {
+    fun CommandSender.spawn(@Named("name") name: String, context: CommandContext) {
         val player = this as? Player
         if (!plugin.config.name.pattern.matches(name)) throw SpawnNameInvalidException(name)
         assertNoSpawnLimited()
-        launch(commandContext) {
+        launch(context) {
             if (fpm.get(name) != null) throw SpawnAlreadyExistsException(name)
             if (player != null && fpm.isNameUsed(name)) {
                 val fakePlayer = fpm.getFromRepository(name)
@@ -86,7 +88,7 @@ class FakePlayerCommand: PluginComponent {
         val locationText = "%.2f, %.2f, %.2f".format(fakePlayer.nms.x, fakePlayer.nms.y, fakePlayer.nms.z)
         sendMessage(tlp("fakeplayer.spawn.success", name, fakePlayer.player.world.name, locationText))
         selected = fakePlayer
-        withContext(Dispatchers.BukkitMain) {
+        withContext(fakePlayer.dispatcher) {
             fakePlayer.player.apply { world.playSound(location, Sound.ENTITY_ENDERMAN_TELEPORT, 1f, 1f) }
         }
     }
@@ -145,27 +147,29 @@ class FakePlayerCommand: PluginComponent {
     @Subcommand("tp")
     @Permission(TP,BASIC)
     fun Player.tp(@Select fakePlayer: FakePlayer) {
-        teleportAsyncWithSound(fakePlayer.player.location)
+        teleportAsync(fakePlayer.player.location, Sound.ENTITY_ENDERMAN_TELEPORT)
     }
 
     @Subcommand("tphere")
     @Permission(TP,BASIC)
     fun Player.tphere(@Select fakePlayer: FakePlayer) {
-        fakePlayer.player.teleportAsyncWithSound(location)
+        fakePlayer.player.teleportAsync(location, Sound.ENTITY_ENDERMAN_TELEPORT)
     }
 
     @Subcommand("tpswap")
     @Permission(TP,BASIC)
     fun Player.tpswap(@Select fakePlayer: FakePlayer) {
-        val playerLocation = location
-        teleportAsyncWithSound(fakePlayer.player.location)
-        fakePlayer.player.teleportAsyncWithSound(playerLocation)
+        val that = fakePlayer.player
+        val thatLocation = that.location
+        val thisLocation = this.location
+        this.teleportAsync(thatLocation, Sound.ENTITY_ENDERMAN_TELEPORT)
+        that.teleportAsync(thisLocation, Sound.ENTITY_ENDERMAN_TELEPORT)
     }
 
     @Subcommand("tppos")
     @Permission(TP,BASIC)
     fun Player.tppos(location: Location, @Select fakePlayer: FakePlayer) {
-        fakePlayer.player.teleportAsyncWithSound(location)
+        fakePlayer.player.teleportAsync(location, Sound.ENTITY_ENDERMAN_TELEPORT)
     }
 
     @Subcommand("expme")
@@ -185,7 +189,7 @@ class FakePlayerCommand: PluginComponent {
     fun Player.skin(@Named("name") targetName: String, @Select fakePlayer: FakePlayer) {
         launch {
             val skin = SkinFetcher.getPlayerSkinInfoByName(targetName)
-            withContext(Dispatchers.BukkitMain) {
+            withContext(fakePlayer.dispatcher) {
                 fakePlayer.skin = skin
                 fakePlayer.player.world.playSound(fakePlayer.player.location, Sound.ITEM_ARMOR_EQUIP_GENERIC, 1f, 1f)
             }
@@ -253,10 +257,10 @@ class FakePlayerCommand: PluginComponent {
 
     @Subcommand("import")
     @Permission(ADMIN)
-    fun Player.importFakePlayerData(@Named("database") databaseName: String, @Named("table") tableName: String, commandContext: CommandContext) {
+    fun Player.importFakePlayerData(@Named("database") databaseName: String, @Named("table") tableName: String, context: CommandContext) {
         val databaseFile = File(plugin.dataFolder, databaseName)
         if (!databaseFile.exists()) throw MissingDatabaseFileException(databaseName)
-        launch(commandContext) {
+        launch(context) {
             val result = fpm.importFakePlayerData(databaseFile, tableName)
             sendMessage(tlp("fakeplayer.database.import-data.success", result))
         }

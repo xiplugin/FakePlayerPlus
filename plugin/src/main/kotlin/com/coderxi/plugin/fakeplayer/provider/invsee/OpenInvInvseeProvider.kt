@@ -1,11 +1,11 @@
 package com.coderxi.plugin.fakeplayer.provider.invsee
 
-import com.coderxi.plugin.fakeplayer.utils.PluginComponent
+import com.coderxi.plugin.fakeplayer.utils.plugin
 import org.bukkit.entity.Player
 import com.lishid.openinv.IOpenInv
 import org.bukkit.inventory.InventoryView
 
-class OpenInvInvseeProvider: InvseeProvider, PluginComponent {
+class OpenInvInvseeProvider: InvseeProvider {
 
     val openInvAPI by lazy { plugin.server.pluginManager.getPlugin("OpenInv") as IOpenInv? }
 

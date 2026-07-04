@@ -1,3 +1,8 @@
+import org.gradle.internal.extensions.core.serviceOf
+import org.gradle.internal.logging.progress.ProgressLoggerFactory
+import xyz.jpenilla.runtask.service.DownloadsAPIService
+import xyz.jpenilla.runtask.service.DownloadsAPIService.Companion.folia
+
 plugins {
     id("com.gradleup.shadow") version "9.2.0"
     id("xyz.jpenilla.run-paper") version "3.0.2"
@@ -9,11 +14,9 @@ repositories {
     maven("https://jitpack.io/")
 }
 
-val nmsProjects = rootProject.subprojects.filter { it.path.startsWith(":nms:nms_") }
-
 dependencies {
     implementation(project(":api"))
-    nmsProjects.forEach(::implementation)
+    rootProject.subprojects.filter { it.path.startsWith(":nms:nms_") }.forEach(::implementation)
     compileOnly("io.papermc.paper:paper-api:${project.findProperty("paper-api.version.base")}")
     implementation("eu.okaeri:okaeri-configs-yaml-bukkit:6.1.0-beta.1")
     implementation("io.github.revxrsal:lamp.common:4.0.0-rc.17")
@@ -25,22 +28,29 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
 }
 
-// Add standalone Minecraft/Paper versions here (e.g., "1.20.4") to
-// test them quickly without creating a local NMS module.
-// Tasks will be registered automatically.
-val testVersions = listOf(
-    "26.2"
+val supportVersions = listOf(
+    "paper-1.21.11",
+    "paper-26.1.1",
+    "paper-26.1.2",
+    "paper-26.2",
+    "folia-1.21.11",
+    "folia-26.1.2",
 )
 
 tasks {
-    nmsProjects.map { it.name.substringAfter("nms_v").replace('_', '.') }.plus(testVersions).toSortedSet().forEach { version ->
-        register<xyz.jpenilla.runpaper.task.RunServer>("runServer_$version") {
-            group = "run paper"
-            runDirectory(layout.projectDirectory.dir("run_$version").asFile)
+    supportVersions.forEach { supportVersion ->
+        val (platform, version) = supportVersion.split("-", limit = 2)
+        register<xyz.jpenilla.runpaper.task.RunServer>(supportVersion) {
+            group = "run"
+            runDirectory(layout.projectDirectory.file("run/$supportVersion").asFile)
             minecraftVersion(version)
+            if (platform == "folia") {
+                val progressLoggerFactory = project.serviceOf<ProgressLoggerFactory>()
+                serverJar(folia(project).get().resolveBuild(progressLoggerFactory,version, DownloadsAPIService.Build.Latest).toFile())
+            }
             pluginJars(shadowJar.flatMap { it.archiveFile })
             doFirst {
-                layout.projectDirectory.file("run_$version/eula.txt").asFile.apply {
+                layout.projectDirectory.file("run/$supportVersion/eula.txt").asFile.apply {
                     parentFile.mkdirs()
                     writeText("eula=true")
                 }
@@ -62,6 +72,11 @@ tasks.processResources {
     }
 }
 
+val platformVersions = supportVersions
+    .map { it.split("-", limit = 2) }
+    .groupBy({ it[0].replaceFirstChar { c -> c.uppercase() } }, { it[1] })
+    .mapValues { (_, versions) -> versions.distinct().sortedDescending().joinToString(", ") }
+
 tasks.jar {
     archiveBaseName.set(rootProject.name)
     archiveClassifier.set("original")
@@ -73,6 +88,11 @@ tasks.shadowJar {
     archiveClassifier.set("")
     archiveVersion.set(project.version.toString())
     relocate("eu.okaeri", "${project.group}.libs.okaeri")
+    manifest {
+        platformVersions.forEach { (platform, versionsStr) ->
+            attributes("Support-Versions-$platform" to versionsStr)
+        }
+    }
     minimize()
     mergeServiceFiles()
     doLast {

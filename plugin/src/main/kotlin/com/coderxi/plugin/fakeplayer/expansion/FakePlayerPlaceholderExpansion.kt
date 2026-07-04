@@ -2,14 +2,17 @@ package com.coderxi.plugin.fakeplayer.expansion
 
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
 import com.coderxi.plugin.fakeplayer.api.manager.FakePlayerManager
-import com.coderxi.plugin.fakeplayer.utils.PluginComponent
+import com.coderxi.plugin.fakeplayer.utils.onPluginReload
+import com.coderxi.plugin.fakeplayer.utils.tls
 import me.clip.placeholderapi.expansion.PlaceholderExpansion
 import org.bukkit.entity.Player
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
-class FakePlayerPlaceholderExpansion(private val fpm: FakePlayerManager) : PlaceholderExpansion(), PluginComponent {
+class FakePlayerPlaceholderExpansion(private val fpm: FakePlayerManager) : PlaceholderExpansion() {
+
+    private val plugin get() = com.coderxi.plugin.fakeplayer.utils.plugin
 
     private lateinit var timeformatter: DateTimeFormatter
 

@@ -1,17 +1,17 @@
 package com.coderxi.plugin.fakeplayer.command.exception
 
-import com.coderxi.plugin.fakeplayer.utils.PluginComponent
 import revxrsal.commands.bukkit.actor.BukkitCommandActor
 import revxrsal.commands.bukkit.exception.BukkitExceptionHandler
 import revxrsal.commands.bukkit.exception.SenderNotPlayerException
 import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandException.*
+import com.coderxi.plugin.fakeplayer.utils.tlp
 import revxrsal.commands.exception.CooldownException
 import revxrsal.commands.exception.NoPermissionException
 import revxrsal.commands.exception.UnknownCommandException
 import revxrsal.commands.node.ExecutionContext
 import java.util.concurrent.TimeUnit
 
-class FakePlayerCommandExceptionHandler : BukkitExceptionHandler(), PluginComponent  {
+class FakePlayerCommandExceptionHandler : BukkitExceptionHandler() {
 
     typealias CommandContext = ExecutionContext<BukkitCommandActor>
 

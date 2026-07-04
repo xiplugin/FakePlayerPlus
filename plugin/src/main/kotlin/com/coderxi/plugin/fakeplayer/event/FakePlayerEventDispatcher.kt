@@ -1,8 +1,8 @@
 package com.coderxi.plugin.fakeplayer.event
 
 import com.coderxi.plugin.fakeplayer.api.event.*
-import com.coderxi.plugin.fakeplayer.utils.PluginComponent
 import com.coderxi.plugin.fakeplayer.api.manager.FakePlayerManager
+import com.coderxi.plugin.fakeplayer.utils.plugin
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
@@ -10,7 +10,7 @@ import org.bukkit.event.Listener
 import org.bukkit.event.entity.*
 import org.bukkit.event.player.*
 
-class FakePlayerEventDispatcher(private val fpm: FakePlayerManager): Listener, PluginComponent {
+class FakePlayerEventDispatcher(private val fpm: FakePlayerManager): Listener {
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
     fun onFakePlayerQuit(event: PlayerQuitEvent) {
@@ -18,7 +18,7 @@ class FakePlayerEventDispatcher(private val fpm: FakePlayerManager): Listener, P
     }
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     fun onFakePlayerPostQuit(event: PlayerQuitEvent) {
-        fpm.get(event.player.uniqueId)?.let { scheduler.runTaskLater(plugin, FakePlayerQuitedEvent(it)::callEvent, 1) }
+        fpm.get(event.player.uniqueId)?.let { fp -> plugin.server.globalRegionScheduler.runDelayed(plugin, {FakePlayerQuitedEvent(fp).callEvent()}, 1) }
     }
     @EventHandler
     fun onFakePlayerDeath(event: PlayerDeathEvent) {

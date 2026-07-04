@@ -5,3 +5,4 @@ api-version: '1.21.11'
 authors: [ coderxi ]
 website: https://github.com/coderxi1/FakePlayerPlus
 softdepend: [ PlaceholderAPI, OpenInv ]
+folia-supported: true

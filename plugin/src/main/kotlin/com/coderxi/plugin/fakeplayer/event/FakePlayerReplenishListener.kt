@@ -2,7 +2,8 @@ package com.coderxi.plugin.fakeplayer.event
 
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
 import com.coderxi.plugin.fakeplayer.api.manager.FakePlayerManager
-import com.coderxi.plugin.fakeplayer.utils.PluginComponent
+import com.coderxi.plugin.fakeplayer.utils.onPluginDisable
+import com.coderxi.plugin.fakeplayer.utils.plugin
 import com.destroystokyo.paper.event.player.PlayerLaunchProjectileEvent
 import org.bukkit.Bukkit
 import org.bukkit.Material
@@ -17,7 +18,7 @@ import org.bukkit.inventory.ItemStack
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
-class FakePlayerReplenishListener(private val fpm: FakePlayerManager) : Listener, PluginComponent {
+class FakePlayerReplenishListener(private val fpm: FakePlayerManager) : Listener {
 
     private val tasks = ConcurrentHashMap.newKeySet<ReplenishTaskMeta>()
 
@@ -28,7 +29,7 @@ class FakePlayerReplenishListener(private val fpm: FakePlayerManager) : Listener
     )
 
     init {
-        val tasksConsumer = Bukkit.getScheduler().runTaskTimer(plugin, ::consume, 1L, 1L)
+        val tasksConsumer = Bukkit.getServer().globalRegionScheduler.runAtFixedRate(plugin, { consume() }, 1L, 1L)
         onPluginDisable(tasksConsumer::cancel)
     }
 
@@ -36,10 +37,17 @@ class FakePlayerReplenishListener(private val fpm: FakePlayerManager) : Listener
         if (tasks.isEmpty()) return
         val iterator = tasks.iterator()
         while (iterator.hasNext()) {
-            iterator.next().apply {
-                val player = Bukkit.getPlayer(playerUuid)?.takeIf { it.isOnline } ?: continue
-                player.replenish(hand, itemType)
+            val meta = iterator.next()
+            val player = Bukkit.getPlayer(meta.playerUuid)?.takeIf { it.isOnline }
+            if (player == null) {
+                iterator.remove()
+                continue
             }
+            player.scheduler.run(plugin, {
+                if (player.isOnline) {
+                    player.replenish(meta.hand, meta.itemType)
+                }
+            }, null)
             iterator.remove()
         }
     }

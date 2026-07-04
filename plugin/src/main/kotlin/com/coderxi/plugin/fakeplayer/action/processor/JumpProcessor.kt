@@ -5,9 +5,8 @@ import com.coderxi.plugin.fakeplayer.api.action.ActionTrigger.Continuous
 import com.coderxi.plugin.fakeplayer.api.action.ActionType
 import com.coderxi.plugin.fakeplayer.api.action.JumpAction
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
-import com.coderxi.plugin.fakeplayer.utils.PluginComponent
 
-object JumpProcessor : ActionProcessor<JumpAction>, PluginComponent {
+object JumpProcessor : ActionProcessor<JumpAction> {
 
     override val supportedType get() = ActionType.JUMP
 

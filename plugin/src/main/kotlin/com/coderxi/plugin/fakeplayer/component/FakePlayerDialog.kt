@@ -2,7 +2,7 @@ package com.coderxi.plugin.fakeplayer.component
 
 import com.coderxi.plugin.fakeplayer.api.config.FakePlayerSettings
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
-import com.coderxi.plugin.fakeplayer.utils.PluginComponent
+import com.coderxi.plugin.fakeplayer.utils.tl
 import io.papermc.paper.dialog.Dialog
 import io.papermc.paper.registry.data.dialog.ActionButton
 import io.papermc.paper.registry.data.dialog.DialogBase
@@ -19,7 +19,7 @@ import net.kyori.adventure.text.event.ClickCallback
 import java.time.Duration
 
 @Suppress("UnstableApiUsage")
-object FakePlayerDialog: PluginComponent {
+object FakePlayerDialog {
 
     private val CANCEL_BTN by lazy { ActionButton.create(tl("fakeplayer.gui.cancel"),null, 100, null) }
     private val ACTION_OPTIONS by lazy { ClickCallback.Options.builder().uses(1).lifetime(Duration.ofMinutes(5)).build() }

@@ -6,27 +6,30 @@ import com.coderxi.plugin.fakeplayer.api.event.FakePlayerPreparingEvent
 import com.coderxi.plugin.fakeplayer.api.event.FakePlayerQuitEvent
 import com.coderxi.plugin.fakeplayer.api.event.FakePlayerQuitedEvent
 import com.coderxi.plugin.fakeplayer.api.event.FakePlayerSpawnedEvent
-import com.coderxi.plugin.fakeplayer.utils.PluginComponent
+import com.coderxi.plugin.fakeplayer.utils.isFolia
+import com.coderxi.plugin.fakeplayer.utils.plugin
 import org.bukkit.Bukkit
+import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
+import kotlin.run
 
-class FakePlayerLifecycleCommandListener: Listener, PluginComponent {
+class FakePlayerLifecycleCommandListener: Listener {
 
     val commands get() = plugin.config.lifecycleCommands
 
     @EventHandler
-    fun onFakePlayerPreparingEvent(event: FakePlayerPreparingEvent) = executeCommands(event.fakePlayer, commands.preparing)
+    fun onFakePlayerPreparingEvent(event: FakePlayerPreparingEvent) = executeCommands(event.fakePlayer, commands.preparing, true)
     @EventHandler
-    fun onFakePlayerConnectedEvent(event: FakePlayerConnectedEvent) = executeCommands(event.fakePlayer, commands.connected)
+    fun onFakePlayerConnectedEvent(event: FakePlayerConnectedEvent) = executeCommands(event.fakePlayer, commands.connected, false)
     @EventHandler
-    fun onFakePlayerSpawnedEvent(event: FakePlayerSpawnedEvent) = executeCommands(event.fakePlayer, commands.spawned)
+    fun onFakePlayerSpawnedEvent(event: FakePlayerSpawnedEvent) = executeCommands(event.fakePlayer, commands.spawned, false)
     @EventHandler
-    fun onFakePlayerQuitEvent(event: FakePlayerQuitEvent) = executeCommands(event.fakePlayer, commands.quit)
+    fun onFakePlayerQuitEvent(event: FakePlayerQuitEvent) = executeCommands(event.fakePlayer, commands.quit, true)
     @EventHandler
-    fun onFakePlayerQuitedEvent(event: FakePlayerQuitedEvent) = executeCommands(event.fakePlayer, commands.quited)
+    fun onFakePlayerQuitedEvent(event: FakePlayerQuitedEvent) = executeCommands(event.fakePlayer, commands.quited, true)
 
-    private fun executeCommands(fakePlayer: FakePlayer, commands: List<String>) {
+    private fun executeCommands(fakePlayer: FakePlayer, commands: List<String>, offlineExecute: Boolean) {
         val name = fakePlayer.name
         val uuid = fakePlayer.uuid.toString()
         val spawnerName = fakePlayer.spawnerName
@@ -50,10 +53,28 @@ class FakePlayerLifecycleCommandListener: Listener, PluginComponent {
                 else -> listOf(fakePlayer.player to command)
             }.forEach { (executor, command) ->
                 if (executor == null || command.isBlank()) return@forEach
-                plugin.logger.info { "${executor.name} executing command: $command" }
-                Bukkit.dispatchCommand(executor, command.removePrefix("/"))
+                if (isFolia) {
+                    when (executor) {
+                        is Player if offlineExecute -> {
+                            plugin.server.regionScheduler.run(plugin, executor.location) { dispatchCommand(executor, command) }
+                        }
+                        is Player -> {
+                            executor.scheduler.run(plugin, { dispatchCommand(executor, command) }, null)
+                        }
+                        else -> {
+                            plugin.server.globalRegionScheduler.run(plugin) { dispatchCommand(executor, command) }
+                        }
+                    }
+                } else {
+                    dispatchCommand(executor, command)
+                }
             }
         }
+    }
+
+    private fun dispatchCommand(executor: org.bukkit.command.CommandSender, command: String) {
+        plugin.logger.info { "${executor.name} executing command: $command" }
+        Bukkit.dispatchCommand(executor, command.removePrefix("/"))
     }
 
 }
