@@ -3,7 +3,10 @@ package com.coderxi.plugin.fakeplayer.nms.v1_21_11
 import com.coderxi.plugin.fakeplayer.api.nms.NMSServerGamePacketListener
 import com.coderxi.plugin.fakeplayer.nms.v1_21_11.network.FakeConnection
 import net.minecraft.network.protocol.Packet
+import net.minecraft.network.protocol.common.ClientboundKeepAlivePacket
+import net.minecraft.network.protocol.common.ServerboundKeepAlivePacket
 import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket
+import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LATENCY
 import net.minecraft.network.protocol.game.ClientboundRespawnPacket
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket
 import net.minecraft.server.dedicated.DedicatedServer
@@ -20,20 +23,20 @@ open class NMSServerGamePacketListenerImpl(
     cookie: CommonListenerCookie
 ) : ServerGamePacketListenerImpl(server, connection, handle, cookie), NMSServerGamePacketListener {
 
-    override fun latency() = _ping
-    private var _ping = 0
-    override var ping: Int
-        get() = this._ping
-        set(value) {
-            this._ping = value
-            server.playerList.broadcastAll(ClientboundPlayerInfoUpdatePacket(EnumSet.of(ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LATENCY),listOf(handle)))
-        }
+    private val serverHandle get() = server.server.handle
 
-    override fun send(packet: Packet<*>) {
-        when (packet) {
-            is ClientboundSetEntityMotionPacket -> { handleClientboundSetEntityMotionPacket(packet) }
-            is ClientboundRespawnPacket -> { handleClientboundRespawnPacket(packet) }
-        }
+    @Volatile private var latency = 0
+    override fun latency() = latency
+    override fun latency(value: Int, flush: Boolean) {
+        latency = value
+        if (flush) serverHandle.broadcastAll(ClientboundPlayerInfoUpdatePacket(EnumSet.of(UPDATE_LATENCY),listOf(handle)))
+    }
+
+    override fun send(packet: Packet<*>) = when (packet) {
+        is ClientboundSetEntityMotionPacket -> handleClientboundSetEntityMotionPacket(packet)
+        is ClientboundRespawnPacket -> handleClientboundRespawnPacket(packet)
+        is ClientboundKeepAlivePacket -> handleClientboundKeepAlivePacket(packet)
+        else -> Unit
     }
 
     // 玩家被击退的动作由客户端完成, 假人没有客户端因此手动完成这个动作
@@ -45,6 +48,11 @@ open class NMSServerGamePacketListenerImpl(
     // 玩家重生时需要完成维度改变，否则玩家将处于无敌状态
     open fun handleClientboundRespawnPacket(packet: ClientboundRespawnPacket) {
         player.hasChangedDimension()
+    }
+
+    // 一些服务端核心需要回复keepAlive保持连接
+    open fun handleClientboundKeepAlivePacket(packet: ClientboundKeepAlivePacket) {
+        handleKeepAlive(ServerboundKeepAlivePacket(packet.id))
     }
 
 }

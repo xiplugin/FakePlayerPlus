@@ -95,8 +95,7 @@ class FakePlayerManagerImpl : FakePlayerManager, PluginComponent, Listener {
                     setupDefaultSkin(spawner)
                 }
             }
-            val nmsNetwork = plugin.nms.createNetwork(address)
-            val nmsConnection = nmsNetwork.placeNewPlayer(nmsPlayer.player)
+            val nmsConnection = plugin.nmsServer.placeNewPlayer(nmsPlayer.player, address)
             registry.register(fakePlayer)
             fakePlayer.onConnected(nmsPlayer, nmsConnection)
             FakePlayerConnectedEvent(fakePlayer).callEvent()

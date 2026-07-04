@@ -2,6 +2,8 @@ package com.coderxi.plugin.fakeplayer.api.nms
 
 interface NMSServerGamePacketListener {
 
-    var ping: Int
+    fun latency(): Int
+
+    fun latency(value: Int, flush: Boolean = false)
 
 }

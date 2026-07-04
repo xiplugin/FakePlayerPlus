@@ -94,7 +94,4 @@ interface NMSServerPlayer {
     fun useItem(type: EquipmentSlot, onSuccess: (() -> Unit)? = null)
     fun releaseUsingItem()
 
-    // 退出方法
-    fun quit(cause: Component)
-
 }

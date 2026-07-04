@@ -56,7 +56,7 @@ class FakePlayerPingUpdater(private val fpm: FakePlayerManager) : PluginComponen
             ThreadLocalRandom.current().nextInt(pingInitMin, pingInitMax+1)
         }
         firstPingMap[fakePlayer.uuid] = firstPing
-        fakePlayer.ping = firstPing
+        fakePlayer.setPing(firstPing, true)
     }
 
     fun FakePlayer.pingJitter() {

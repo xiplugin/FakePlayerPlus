@@ -66,6 +66,8 @@ class StandardFakePlayer(
     override val nms: NMSServerPlayer get() = nmsPlayer
 
     override var ping: Int
-        get() = nmsConnection.ping
-        set(value) {nmsConnection.ping = value}
+        get() = nmsConnection.latency()
+        set(value) {nmsConnection.latency(value)}
+
+    override fun setPing(value: Int, flush: Boolean) = nmsConnection.latency(value, flush)
 }

@@ -222,10 +222,6 @@ open class NMSServerPlayerImpl(override val player: Player) : NMSServerPlayer {
         }
     }
 
-    override fun quit(cause: Component) {
-        player.kick(cause)
-    }
-
     companion object {
         private val advancementsField: Field? = runCatching { ServerPlayer::class.java.getDeclaredField("advancements").apply { isAccessible = true } }.getOrNull()
         fun Player.sendPacket(packet: Packet<*>) {

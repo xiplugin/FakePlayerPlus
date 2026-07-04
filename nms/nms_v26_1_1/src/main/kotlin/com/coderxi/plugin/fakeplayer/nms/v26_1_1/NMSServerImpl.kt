@@ -6,18 +6,18 @@ import net.minecraft.server.dedicated.DedicatedServer
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.server.network.CommonListenerCookie
 import net.minecraft.server.network.ServerGamePacketListenerImpl
-import java.net.InetAddress
+import org.bukkit.Server
 
-open class NMSNetworkImpl(address: InetAddress) : com.coderxi.plugin.fakeplayer.nms.v1_21_11.NMSNetworkImpl(address) {
+open class NMSServerImpl(server: Server) : com.coderxi.plugin.fakeplayer.nms.v1_21_11.NMSServerImpl(server) {
 
     @Suppress("UNCHECKED_CAST")
-    override fun <T> newServerGamePacketListener(
+    override fun <T> newGamePacketListener(
         server: DedicatedServer,
         connection: FakeConnection,
         handle: ServerPlayer,
         cookie: CommonListenerCookie
     ): T where T : ServerGamePacketListenerImpl, T : NMSServerGamePacketListener {
-        return NMSServerGamePacketListenerImpl(server, connection, handle, cookie) as T
+        return NMSServerGamePacketListenerImpl(server,connection,handle,cookie) as T
     }
 
 }

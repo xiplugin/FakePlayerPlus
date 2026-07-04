@@ -51,7 +51,7 @@ open class NMSServerGamePacketListenerImpl(
             return
         }
         handle.quitReason = PlayerQuitEvent.QuitReason.KICKED
-        server.playerList.remove(handle)
+        server.playerList.remove(handle, event.reason())
     }
 
 }
