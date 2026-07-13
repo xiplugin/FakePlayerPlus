@@ -30,7 +30,7 @@ open class NMSServerImpl(override val server: Server) : NMSServer {
             GameProfile(uuid, name),
             ClientInformation.createDefault()
         )
-        serverHandle.loadPlayerData(playerHandle.nameAndId())
+        playerHandle.bukkitEntity.loadData()
         return api.nms.fromPlayer(playerHandle.bukkitEntity)
     }
 
