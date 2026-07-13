@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.1](https://github.com/xiplugin/FakePlayerPlus/compare/v1.6.0...v1.6.1) (2026-07-13)
+
+
+### Bug Fixes
+
+* the inventory be emptied when spawning fakeplayer ([7fe3d9e](https://github.com/xiplugin/FakePlayerPlus/commit/7fe3d9e77db52314d6037154e2fa74a943124105))
+
 ## [1.6.0](https://github.com/xiplugin/FakePlayerPlus/compare/v1.5.0...v1.6.0) (2026-07-04)
 
 
