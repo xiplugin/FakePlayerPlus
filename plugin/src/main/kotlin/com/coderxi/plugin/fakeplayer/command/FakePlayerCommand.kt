@@ -102,7 +102,7 @@ class FakePlayerCommand {
 
     @Subcommand("remove")
     @Permission(REMOVE,BASIC)
-    fun Player.remove(@Select fakePlayer: FakePlayer) {
+    fun CommandSender.remove(@Select fakePlayer: FakePlayer) {
         fpm.get(fakePlayer.name)?.quit("Removed by $name")
         sendMessage(tlp("fakeplayer.remove.success", fakePlayer.name))
         fakePlayer.owners.forEach {
@@ -112,7 +112,7 @@ class FakePlayerCommand {
 
     @Subcommand("remove --all")
     @Permission(REMOVE,BASIC)
-    fun Player.removeAll() {
+    fun CommandSender.removeAll() {
         fpm.fakeplayersByOwnerUuid(uniqueId).forEach { fakePlayer ->
             remove(fakePlayer)
         }
@@ -120,13 +120,13 @@ class FakePlayerCommand {
 
     @Subcommand("kill")
     @Permission(KILL,BASIC)
-    fun Player.kill(@Select fakePlayer: FakePlayer) {
+    fun CommandSender.kill(@Select fakePlayer: FakePlayer) {
         fakePlayer.player.health = 0.0
     }
 
     @Subcommand("kill --all")
     @Permission(KILL,BASIC)
-    fun Player.killAll() {
+    fun CommandSender.killAll() {
         fpm.fakeplayersByOwnerUuid(uniqueId).forEach { kill(it) }
     }
 
@@ -168,7 +168,7 @@ class FakePlayerCommand {
 
     @Subcommand("tppos")
     @Permission(TP,BASIC)
-    fun Player.tppos(location: Location, @Select fakePlayer: FakePlayer) {
+    fun CommandSender.tppos(location: Location, @Select fakePlayer: FakePlayer) {
         fakePlayer.player.teleportAsync(location, Sound.ENTITY_ENDERMAN_TELEPORT)
     }
 
@@ -186,7 +186,7 @@ class FakePlayerCommand {
     @Subcommand("skin")
     @Permission(SKIN,BASIC)
     @Cooldown(value = 1, unit = TimeUnit.MINUTES)
-    fun Player.skin(@Named("name") targetName: String, @Select fakePlayer: FakePlayer) {
+    fun CommandSender.skin(@Named("name") targetName: String, @Select fakePlayer: FakePlayer) {
         launch {
             val skin = SkinFetcher.getPlayerSkinInfoByName(targetName)
             withContext(fakePlayer.dispatcher) {
@@ -199,13 +199,13 @@ class FakePlayerCommand {
 
     @Subcommand("cmd")
     @Permission(CMD,BASIC)
-    fun Player.cmd(@Named("command") @SuggestCommands @Single command: String, @Select fakePlayer: FakePlayer) {
+    fun CommandSender.cmd(@Named("command") @SuggestCommands @Single command: String, @Select fakePlayer: FakePlayer) {
         Bukkit.dispatchCommand(fakePlayer.player, command.removePrefix("/"))
     }
 
     @Subcommand("chat")
     @Permission(CHAT,BASIC)
-    fun Player.message(@Named("message") message: String, @Select fakePlayer: FakePlayer) {
+    fun CommandSender.message(@Named("message") message: String, @Select fakePlayer: FakePlayer) {
         fakePlayer.nms.chat(message)
     }
 
@@ -257,7 +257,7 @@ class FakePlayerCommand {
 
     @Subcommand("import")
     @Permission(ADMIN)
-    fun Player.importFakePlayerData(@Named("database") databaseName: String, @Named("table") tableName: String, context: CommandContext) {
+    fun CommandSender.importFakePlayerData(@Named("database") databaseName: String, @Named("table") tableName: String, context: CommandContext) {
         val databaseFile = File(plugin.dataFolder, databaseName)
         if (!databaseFile.exists()) throw MissingDatabaseFileException(databaseName)
         launch(context) {
