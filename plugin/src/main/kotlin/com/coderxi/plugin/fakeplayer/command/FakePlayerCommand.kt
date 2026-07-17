@@ -126,7 +126,7 @@ class FakePlayerCommand {
 
     @Subcommand("kill --all")
     @Permission(KILL,BASIC)
-    fun CommandSender.killAll() {
+    fun Player.killAll() {
         fpm.fakeplayersByOwnerUuid(uniqueId).forEach { kill(it) }
     }
 
