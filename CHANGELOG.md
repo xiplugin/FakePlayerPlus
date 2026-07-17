@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.2](https://github.com/xiplugin/FakePlayerPlus/compare/v1.6.1...v1.6.2) (2026-07-17)
+
+
+### Bug Fixes
+
+* change some Player commands to CommandSender ([6e1c67c](https://github.com/xiplugin/FakePlayerPlus/commit/6e1c67c021b09b27ff55ad015a4002724960038d))
+
 ## [1.6.1](https://github.com/xiplugin/FakePlayerPlus/compare/v1.6.0...v1.6.1) (2026-07-13)
 
 
