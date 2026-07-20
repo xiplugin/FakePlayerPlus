@@ -23,7 +23,7 @@ class FakePlayerRegistry {
             }
         }
         fakeplayers[fp.uuid] = fp
-        fakeplayersByName[fp.name] = fp
+        fakeplayersByName[fp.name.lowercase()] = fp
         fp.ownerUuids.forEach { ownerId ->
             fakeplayersByOwnerUuids.computeIfAbsent(ownerId) { ConcurrentHashMap.newKeySet() }.add(fp.uuid)
         }
@@ -32,7 +32,7 @@ class FakePlayerRegistry {
 
     fun unregister(uuid: UUID) = synchronized(writeLock) {
         fakeplayers.remove(uuid)?.let { fp ->
-            fakeplayersByName.remove(fp.name)
+            fakeplayersByName.remove(fp.name.lowercase())
             fp.ownerUuids.forEach { ownerId ->
                 fakeplayersByOwnerUuids.computeIfPresent(ownerId) { _, fpUuids ->
                     fpUuids.remove(fp.uuid)

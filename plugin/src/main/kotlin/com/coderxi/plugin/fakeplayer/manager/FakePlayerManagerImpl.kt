@@ -49,7 +49,7 @@ class FakePlayerManagerImpl : FakePlayerManager, Listener {
 
     override fun fakeplayersByOwnerUuid(ownerUuid: UUID) = registry.fakeplayersByOwnerUuid(ownerUuid)
     override fun get(uuid: UUID): FakePlayer? = registry.fakeplayers[uuid]
-    override fun get(name: String): FakePlayer? = registry.fakeplayersByName[name]
+    override fun get(name: String): FakePlayer? = registry.fakeplayersByName[name.lowercase()]
 
     override suspend fun getFromRepository(uuid: UUID): FakePlayer? = withContext(Dispatchers.IO) { repository.findByUuid(uuid) }
     override suspend fun getFromRepository(name: String): FakePlayer? = withContext(Dispatchers.IO) { repository.findByName(name) }

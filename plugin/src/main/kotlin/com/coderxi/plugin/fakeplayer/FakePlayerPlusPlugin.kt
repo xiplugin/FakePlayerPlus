@@ -17,6 +17,7 @@ import com.coderxi.plugin.fakeplayer.command.annotaion.Select
 import com.coderxi.plugin.fakeplayer.command.annotaion.SelectReplacer
 import com.coderxi.plugin.fakeplayer.command.annotaion.SuggestCommands
 import com.coderxi.plugin.fakeplayer.command.annotaion.SuggestCommandsProvider
+import com.coderxi.plugin.fakeplayer.config.StaticFakePlayersConfig
 import com.coderxi.plugin.fakeplayer.expansion.FakePlayerPlaceholderExpansion
 import com.coderxi.plugin.fakeplayer.manager.FakePlayerManagerImpl
 import com.coderxi.plugin.fakeplayer.utils.Localizer
@@ -30,7 +31,6 @@ import eu.okaeri.configs.yaml.bukkit.YamlBukkitConfigurer
 import kotlinx.coroutines.cancel
 import org.bukkit.Bukkit
 import org.bukkit.event.HandlerList
-import org.bukkit.event.Listener
 import org.bukkit.plugin.java.JavaPlugin
 import org.sql2o.Sql2o
 import revxrsal.commands.Lamp
@@ -89,6 +89,16 @@ class FakePlayerPlusPlugin: FakePlayerPlusPluginApi, JavaPlugin() {
             FakePlayerReplenishListener(fpm),
             FakePlayerDummyVarsNotifyListener(fpm),
             FakePlayerAutoFishListener(fpm),
+            StaticFakePlayerManager(fpm, ConfigManager.create(StaticFakePlayersConfig::class.java).apply {
+                configure { opt ->
+                    opt.configurer(YamlBukkitConfigurer().apply {
+                        null
+                    })
+                    opt.bindFile(File(dataFolder, "static-fakeplayers.yml"))
+                    opt.removeOrphans(true)
+                }
+                saveDefaults().load(true)
+            }),
             fpm
         ).forEach { component ->
             server.pluginManager.registerEvents(component, this) }

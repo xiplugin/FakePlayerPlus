@@ -1,6 +1,8 @@
 package com.coderxi.plugin.fakeplayer.utils
 
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer.SkinInfo
+import com.google.common.cache.Cache
+import com.google.common.cache.CacheBuilder
 import com.google.gson.JsonParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -9,7 +11,7 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.time.Duration
-import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 
 object SkinFetcher {
 
@@ -39,12 +41,20 @@ object SkinFetcher {
         return SkinInfo(value, signature)
     }
 
-    private val skinInfoCache = ConcurrentHashMap<String, SkinInfo>()
-    suspend fun getPlayerSkinInfoByName(name: String, cache: Boolean = false): SkinInfo? {
-        val skin = skinInfoCache[name] ?: withContext(Dispatchers.IO) {
+    private val skinInfoCache: Cache<String, SkinInfo> = CacheBuilder.newBuilder()
+        .maximumSize(1000)
+        .expireAfterAccess(1, TimeUnit.HOURS)
+        .build()
+    suspend fun getPlayerSkinInfoByName(name: String?, cache: Boolean = false): SkinInfo? {
+        if (name == null) return null
+        val cachedSkin = skinInfoCache.getIfPresent(name)
+        if (cachedSkin != null) return cachedSkin
+        val skin = withContext(Dispatchers.IO) {
             getOnlinePlayerIdByName(name)?.let { getOnlinePlayerSkinInfoById(it) }
         }
-        if (cache && skin != null) skinInfoCache[name] = skin
+        if (cache && skin != null) {
+            skinInfoCache.put(name, skin)
+        }
         return skin
     }
 
