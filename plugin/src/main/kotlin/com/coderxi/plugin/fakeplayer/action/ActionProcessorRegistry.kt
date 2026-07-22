@@ -1,12 +1,8 @@
 package com.coderxi.plugin.fakeplayer.action
 
-import com.coderxi.plugin.fakeplayer.action.processor.ActionProcessor
-import com.coderxi.plugin.fakeplayer.action.processor.AttackProcessor
-import com.coderxi.plugin.fakeplayer.action.processor.JumpProcessor
-import com.coderxi.plugin.fakeplayer.action.processor.MineProcessor
-import com.coderxi.plugin.fakeplayer.action.processor.SneakProcessor
-import com.coderxi.plugin.fakeplayer.action.processor.UseItemProcessor
+import com.coderxi.plugin.fakeplayer.action.processor.*
 import com.coderxi.plugin.fakeplayer.api.action.Action
+import com.coderxi.plugin.fakeplayer.api.action.ActionType
 
 object ActionProcessorRegistry {
 
@@ -18,7 +14,7 @@ object ActionProcessorRegistry {
         SneakProcessor
     )
 
-    private val registry = processors.associateBy { it.supportedType }
+    private val registry = processors.associateBy { it.actionType.getDeclaredField("type").apply { isAccessible = true }.get(null) as ActionType }
 
     @Suppress("UNCHECKED_CAST")
     fun <T : Action> get(action: T): ActionProcessor<T>? {

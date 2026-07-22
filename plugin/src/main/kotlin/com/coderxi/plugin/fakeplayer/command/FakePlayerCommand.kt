@@ -1,5 +1,6 @@
 package com.coderxi.plugin.fakeplayer.command
 
+import com.coderxi.plugin.fakeplayer.api.action.ActionType
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
 import com.coderxi.plugin.fakeplayer.api.manager.FakePlayerManager
 import com.coderxi.plugin.fakeplayer.command.annotaion.Select
@@ -20,6 +21,7 @@ import com.coderxi.plugin.fakeplayer.utils.tlp
 import com.coderxi.plugin.fakeplayer.utils.uniqueId
 import kotlinx.coroutines.Dispatchers
 import com.coderxi.plugin.fakeplayer.utils.launch
+import com.coderxi.plugin.fakeplayer.utils.tl
 import kotlinx.coroutines.withContext
 import org.bukkit.Bukkit
 import org.bukkit.Location
@@ -29,6 +31,7 @@ import org.bukkit.entity.Player
 import revxrsal.commands.annotation.*
 import java.io.File
 import java.util.concurrent.TimeUnit
+import kotlin.collections.set
 import kotlin.math.ceil
 import com.coderxi.plugin.fakeplayer.command.annotaion.PluginCommandPermission as Permission
 
@@ -265,6 +268,28 @@ class FakePlayerCommand {
             val result = fpm.importFakePlayerData(databaseFile, tableName)
             sendMessage(tlp("fakeplayer.database.import-data.success", result))
         }
+    }
+
+    @Subcommand("action")
+    @Permission(ACTION, BASIC)
+    fun Player.actionUI(@Select fakePlayer: FakePlayer) {
+        val textAndAction = ActionType.entries
+            .filter { hasPermission("fakeplayer.action.${it.name.lowercase()}") }
+            .associateTo((mutableMapOf())) { type -> tl("fakeplayer.action.${type.name.lowercase().replace("_","-")}") to { actionUI(type,fakePlayer) } }
+        if (textAndAction.isNotEmpty()) textAndAction[tl("fakeplayer.gui.action.stop-all")] = {stopAction(fakePlayer)}
+        showDialog(FakePlayerDialog.actionListDialog(fakePlayer,textAndAction))
+    }
+
+    @Subcommand("action")
+    @Permission(ACTION_ATTACK, BASIC)
+    fun Player.actionUI(@Named("type") actionType: ActionType, @Select fakePlayer: FakePlayer) {
+        showDialog(FakePlayerDialog.actionExecuteDialog(fakePlayer, actionType))
+    }
+
+    @Subcommand("action stop")
+    @Permission(ACTION, BASIC)
+    fun stopAction(@Select fakePlayer: FakePlayer) {
+        fakePlayer.actions.stopAll()
     }
 
 }

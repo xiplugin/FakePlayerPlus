@@ -1,16 +1,15 @@
 package com.coderxi.plugin.fakeplayer.action.processor
 
 import com.coderxi.plugin.fakeplayer.api.action.ActionHandler
-import com.coderxi.plugin.fakeplayer.api.action.ActionType
-import com.coderxi.plugin.fakeplayer.api.action.MineContinuous
+import com.coderxi.plugin.fakeplayer.api.action.MineAction
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
 import com.coderxi.plugin.fakeplayer.api.nms.NMSServerPlayer.BlockBreakActionType.*
 
-object MineProcessor : ActionProcessor<MineContinuous> {
+object MineProcessor : ActionProcessor<MineAction> {
 
-    override val supportedType get() = ActionType.MINE
+    override val actionType get() = MineAction::class.java
 
-    override fun process(fakePlayer: FakePlayer, action: MineContinuous, handler: ActionHandler) {
+    override fun process(fakePlayer: FakePlayer, action: MineAction, handler: ActionHandler) {
         if (action.freezeTick > 0) { action.freezeTick--; return }
         val player = fakePlayer.player
         val maxDistance = fakePlayer.nms.blockReachDistance
@@ -32,14 +31,14 @@ object MineProcessor : ActionProcessor<MineContinuous> {
         }
     }
 
-    private fun resetMining(fakePlayer: FakePlayer, action: MineContinuous) {
+    private fun resetMining(fakePlayer: FakePlayer, action: MineAction) {
         val target = action.target ?: return
         fakePlayer.nms.doBlockBreakAction(target, ABORT)
         action.target = null
         action.progress = 0f
     }
 
-    override fun onStop(fakePlayer: FakePlayer, action: MineContinuous) {
+    override fun onStop(fakePlayer: FakePlayer, action: MineAction) {
         resetMining(fakePlayer, action)
     }
 

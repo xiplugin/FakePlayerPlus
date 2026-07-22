@@ -3,7 +3,7 @@ package com.coderxi.plugin.fakeplayer.action
 import com.coderxi.plugin.fakeplayer.api.action.Action
 import com.coderxi.plugin.fakeplayer.api.action.ActionHandler
 import com.coderxi.plugin.fakeplayer.api.action.ActionTrack
-import com.coderxi.plugin.fakeplayer.api.action.ActionTrigger.*
+import com.coderxi.plugin.fakeplayer.api.action.ActionMode.*
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
 import org.bukkit.Bukkit
 import java.util.EnumMap
@@ -30,11 +30,11 @@ class ActionHandlerImpl(private val fakePlayer: FakePlayer) : ActionHandler {
             val state = iterator.next()
             if (currentTick >= state.nextTick) {
                 ActionProcessorRegistry.get(state.action)?.process(fakePlayer, state.action, this)
-                when (val action = state.action) {
+                val action = state.action
+                when (val actionMode = action.mode) {
                     is Once -> iterator.remove().let { stop(action) }
                     is Continuous -> state.nextTick = currentTick + 1
-                    is Interval -> state.nextTick = currentTick + action.intervalTicks
-                    else -> throw Exception("Unhandled action type: ${action.javaClass.canonicalName}")
+                    is Interval -> state.nextTick = currentTick + actionMode.intervalTicks
                 }
             }
         }

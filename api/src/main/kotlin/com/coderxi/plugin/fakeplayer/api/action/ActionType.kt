@@ -1,11 +1,11 @@
 package com.coderxi.plugin.fakeplayer.api.action
 
-enum class ActionType {
+import com.coderxi.plugin.fakeplayer.api.action.ActionTrack.*
 
-    ATTACK,
-    MINE,
-    USE_ITEM,
-    JUMP,
-    SNEAK,
-
+enum class ActionType(val track: ActionTrack) {
+    ATTACK(INTERACTION),
+    MINE(INTERACTION),
+    USE_ITEM(INTERACTION),
+    JUMP(POSTURE),
+    SNEAK(POSTURE);
 }

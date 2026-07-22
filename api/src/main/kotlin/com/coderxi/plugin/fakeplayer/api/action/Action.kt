@@ -1,20 +1,38 @@
 package com.coderxi.plugin.fakeplayer.api.action
 
-import com.coderxi.plugin.fakeplayer.api.action.ActionTrigger.*
-import org.bukkit.block.Block
+import com.coderxi.plugin.fakeplayer.api.utils.Order
+import java.util.concurrent.ConcurrentHashMap
 
-object AttackOnce : AttackAction, Once
-data class AttackInterval(override val intervalTicks: Int) : AttackAction, Interval
-
-class MineContinuous : MineAction, Continuous { var target: Block? = null; var progress: Float = 0f; override var freezeTick: Int = 0 }
-
-object UseItemOnce : UseItemAction, Once { override var freezeTick = 0 }
-object UseItemContinuous : UseItemAction, Continuous { override var freezeTick = 0 }
-data class UseItemInterval(override val intervalTicks: Int) : UseItemAction, Interval { override var freezeTick = 0 }
-
-object JumpOnce : JumpAction, Once
-object JumpContinuous : JumpAction, Continuous
-data class JumpInterval(override val intervalTicks: Int) : JumpAction, Interval
-
-object SneakOnce : SneakAction, Interval { override val intervalTicks get() = 1 }
-object SneakContinuous : SneakAction, Continuous
+sealed interface Action {
+    val type: ActionType
+    val track get() = type.track
+    val supportModes : Collection<Class<out ActionMode>>
+    val mode: ActionMode
+    companion object {
+        private val mapping = listOf(
+            AttackAction::class.java,
+            MineAction::class.java,
+            UseItemAction::class.java,
+            JumpAction::class.java,
+            SneakAction::class.java,
+        ).associateBy {
+            it.getDeclaredField("type").get(null) as ActionType
+        }
+        private val supportModesCache = ConcurrentHashMap<ActionType, List<Class<out ActionMode>>>()
+        fun toClass(type: ActionType) = mapping[type]!!
+        fun getSupportModes(type: ActionType) = supportModesCache.computeIfAbsent(type) { type ->
+            mapping[type]?.declaredConstructors
+                ?.mapNotNull { it.parameterTypes.firstOrNull() }
+                ?.filter { it != ActionMode::class.java && ActionMode::class.java.isAssignableFrom(it) }
+                ?.map { @Suppress("UNCHECKED_CAST") (it as Class<out ActionMode>) }
+                ?.sortedBy { it.getAnnotation(Order::class.java).value }
+                ?:emptyList()
+        }
+    }
+    abstract class Base(
+        override val mode: ActionMode
+    ) : Action {
+        override val type by lazy { this.javaClass.getDeclaredField("type").get(null) as ActionType }
+        override val supportModes by lazy { getSupportModes(type) }
+    }
+}

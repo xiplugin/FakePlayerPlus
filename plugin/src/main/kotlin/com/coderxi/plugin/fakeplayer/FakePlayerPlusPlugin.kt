@@ -11,7 +11,6 @@ import com.coderxi.plugin.fakeplayer.config.FakePlayerPlusPluginConfig
 import com.coderxi.plugin.fakeplayer.event.*
 import com.coderxi.plugin.fakeplayer.component.*
 import com.coderxi.plugin.fakeplayer.api.manager.FakePlayerManager
-import com.coderxi.plugin.fakeplayer.command.FakePlayerActionCommand
 import com.coderxi.plugin.fakeplayer.command.annotaion.PluginCommandPermissionFactory
 import com.coderxi.plugin.fakeplayer.command.annotaion.Select
 import com.coderxi.plugin.fakeplayer.command.annotaion.SelectReplacer
@@ -116,10 +115,7 @@ class FakePlayerPlusPlugin: FakePlayerPlusPluginApi, JavaPlugin() {
             .suggestionProviders { providers -> providers.addProviderForAnnotation(SuggestCommands::class.java, SuggestCommandsProvider()) }
             .exceptionHandler(FakePlayerCommandExceptionHandler())
             .build()
-            .apply {
-                register(FakePlayerCommand())
-                register(FakePlayerActionCommand())
-            }
+            .apply { register(FakePlayerCommand()) }
     }
 
     fun onReload() {

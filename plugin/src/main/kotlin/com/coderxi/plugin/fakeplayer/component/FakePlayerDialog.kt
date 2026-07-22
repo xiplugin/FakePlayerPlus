@@ -1,7 +1,12 @@
 package com.coderxi.plugin.fakeplayer.component
 
+import com.coderxi.plugin.fakeplayer.api.action.Action
+import com.coderxi.plugin.fakeplayer.api.action.ActionMode
+import com.coderxi.plugin.fakeplayer.api.action.ActionMode.*
+import com.coderxi.plugin.fakeplayer.api.action.ActionType
 import com.coderxi.plugin.fakeplayer.api.config.FakePlayerSettings
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
+import com.coderxi.plugin.fakeplayer.api.utils.ParamName
 import com.coderxi.plugin.fakeplayer.utils.tl
 import io.papermc.paper.dialog.Dialog
 import io.papermc.paper.registry.data.dialog.ActionButton
@@ -59,38 +64,42 @@ object FakePlayerDialog {
         }
     }
 
-    fun actionExecuteDialog(fakePlayer: FakePlayer, onClickOnce: (() -> Unit)? = null, onClickInterval: ((Int) -> Unit)? = null, onClickContinuous: (() -> Unit)? = null, onClickStop: (() -> Unit)? = null): DialogLike {
+    fun actionExecuteDialog(fakePlayer: FakePlayer, actionType: ActionType): DialogLike {
         val actionButtons = mutableListOf<ActionButton>()
         var columns = 0
-        if (onClickOnce != null) {
-            actionButtons.add(ActionButton.create(
-                tl("fakeplayer.gui.action.execute-once"), null, 100,
-                DialogAction.customClick({ _, _ -> onClickOnce() }, ACTION_OPTIONS)
-            ))
+        val modes = Action.getSupportModes(actionType)
+        modes.forEach { modeClass ->
+           actionButtons.add(ActionButton.create(
+               tl("fakeplayer.gui.action.execute-${modeClass.simpleName.lowercase()}"), null, 100,
+               DialogAction.customClick({ view, _ ->
+                   val modeConstructor = modeClass.declaredConstructors.first()
+                   val modeInstance = try {
+                       val instanceField = modeClass.getDeclaredField("INSTANCE")
+                       instanceField.isAccessible = true
+                       instanceField.get(null) as ActionMode
+                   } catch (e: NoSuchFieldException) {
+                       modeConstructor.newInstance(*modeConstructor.parameters.map { param ->
+                           val name = param.getAnnotation(ParamName::class.java).value
+                           when (param.type) {
+                               Int::class.java, Int::class.javaPrimitiveType -> view.getFloat(name)?.toInt()
+                               Double::class.java, Double::class.javaPrimitiveType -> view.getFloat(name)?.toDouble()
+                               Float::class.java, Float::class.javaPrimitiveType -> view.getFloat(name)
+                               Boolean::class.java, Boolean::class.javaPrimitiveType -> view.getBoolean(name)
+                               String::class.java -> view.getText(name)
+                               else -> view.getText(name)
+                           }
+                       }.toTypedArray<Any?>())
+                   }
+                   val action = Action.toClass(actionType).getConstructor(modeClass).newInstance(modeInstance)
+                   fakePlayer.actions.dispatch(action) }, ACTION_OPTIONS)))
             columns++
         }
-        if (onClickInterval != null) {
-            actionButtons.add(ActionButton.create(
-                tl("fakeplayer.gui.action.execute-interval"), null, 100,
-                DialogAction.customClick({ view, _ -> onClickInterval(view.getFloat("intervalTicks")!!.toInt()) }, ACTION_OPTIONS)
-            ))
-            columns++
-        }
-        if (onClickContinuous != null) {
-            actionButtons.add(ActionButton.create(
-                tl("fakeplayer.gui.action.execute-continuous"), null, 100,
-                DialogAction.customClick({ _, _ -> onClickContinuous() }, ACTION_OPTIONS)
-            ))
-            columns++
-        }
-        if (onClickStop != null) {
-            actionButtons.add(ActionButton.create(
-                tl("fakeplayer.gui.action.stop"), null, 100,
-                DialogAction.customClick({ _, _ -> onClickStop() }, ACTION_OPTIONS)
-            ))
-        }
+        actionButtons.add(ActionButton.create(
+            tl("fakeplayer.gui.action.stop"), null, 100,
+            DialogAction.customClick({ _, _ -> fakePlayer.actions.stop(actionType.track) }, ACTION_OPTIONS)
+        ))
         val inputs = mutableListOf<DialogInput>()
-        if (onClickInterval != null) {
+        if (modes.contains(Interval::class.java)) {
             inputs.add(numberRange("intervalTicks", tl("fakeplayer.gui.action.interval-ticks"), 1f, 200f).step(1f).initial(20f).width(100).build())
         }
         return Dialog.create { builder -> builder.empty()

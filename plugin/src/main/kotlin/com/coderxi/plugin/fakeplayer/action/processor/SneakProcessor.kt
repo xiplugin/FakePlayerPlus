@@ -1,26 +1,27 @@
 package com.coderxi.plugin.fakeplayer.action.processor
 
 import com.coderxi.plugin.fakeplayer.api.action.ActionHandler
-import com.coderxi.plugin.fakeplayer.api.action.ActionType
+import com.coderxi.plugin.fakeplayer.api.action.ActionMode.Once
 import com.coderxi.plugin.fakeplayer.api.action.SneakAction
-import com.coderxi.plugin.fakeplayer.api.action.SneakOnce
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
+import com.coderxi.plugin.fakeplayer.utils.plugin
 
 object SneakProcessor : ActionProcessor<SneakAction> {
 
-    override val supportedType get() = ActionType.SNEAK
+    override val actionType get() = SneakAction::class.java
 
     override fun process(fakePlayer: FakePlayer, action: SneakAction, handler: ActionHandler) {
-        val player = fakePlayer.player
-        if (player.isSneaking && action is SneakOnce) {
-            handler.stop(action)
-        } else {
-            player.isSneaking = true
-        }
+        fakePlayer.player.isSneaking = !(action.mode is Once && fakePlayer.player.isSneaking)
     }
 
     override fun onStop(fakePlayer: FakePlayer, action: SneakAction) {
-        fakePlayer.player.isSneaking = false
+        if (action.mode !is Once) {
+            fakePlayer.player.isSneaking = false
+        } else {
+            fakePlayer.player.scheduler.runDelayed(plugin,{
+                fakePlayer.player.isSneaking = false
+            }, null,2)
+        }
     }
 
 }

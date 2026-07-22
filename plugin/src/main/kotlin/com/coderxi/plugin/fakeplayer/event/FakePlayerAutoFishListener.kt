@@ -1,6 +1,7 @@
 package com.coderxi.plugin.fakeplayer.event
 
-import com.coderxi.plugin.fakeplayer.api.action.UseItemOnce
+import com.coderxi.plugin.fakeplayer.api.action.ActionMode.Once
+import com.coderxi.plugin.fakeplayer.api.action.UseItemAction
 import com.coderxi.plugin.fakeplayer.api.manager.FakePlayerManager
 import com.coderxi.plugin.fakeplayer.utils.dispatcher
 import com.coderxi.plugin.fakeplayer.utils.launch
@@ -18,9 +19,9 @@ class FakePlayerAutoFishListener(private val fpm: FakePlayerManager) : Listener 
         val fakePlayer = fpm.get(event.player.uniqueId)?.takeIf { it.settings.autoFish } ?: return
         fakePlayer.dispatcher.launch {
             delay(50)
-            fakePlayer.actions.dispatch(UseItemOnce)
+            fakePlayer.actions.dispatch(UseItemAction(Once))
             delay(1000)
-            fakePlayer.actions.dispatch(UseItemOnce)
+            fakePlayer.actions.dispatch(UseItemAction(Once))
         }
     }
 
