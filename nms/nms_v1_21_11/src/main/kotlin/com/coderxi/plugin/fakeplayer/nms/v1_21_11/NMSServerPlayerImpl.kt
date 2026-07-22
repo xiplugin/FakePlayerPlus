@@ -39,6 +39,7 @@ import org.bukkit.inventory.ItemStack
 import org.bukkit.util.Vector
 import java.lang.reflect.Field
 import java.nio.file.Paths
+import kotlin.math.ceil
 import com.coderxi.plugin.fakeplayer.api.FakePlayerPlusPluginApi.Companion.javaPlugin as plugin
 
 open class NMSServerPlayerImpl(override val player: Player) : NMSServerPlayer {
@@ -159,7 +160,7 @@ open class NMSServerPlayerImpl(override val player: Player) : NMSServerPlayer {
         val stack = handle.getItemInHand(hand)
         if (stack.isEmpty) return
         val level = handle.level()
-        val hitResult = handle.getRayTrace(entityReachDistance.toInt(), ClipContext.Fluid.NONE)
+        val hitResult = handle.getRayTrace(ceil(blockReachDistance).toInt(), ClipContext.Fluid.NONE)
         when (hitResult.type) {
             HitResult.Type.MISS -> {}
             HitResult.Type.BLOCK -> {
