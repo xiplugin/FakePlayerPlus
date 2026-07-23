@@ -28,8 +28,8 @@ class StaticFakePlayersConfig : OkaeriConfig() {
     class StaticFakePlayerMeta : OkaeriConfig() {
         var name = "Npc_1"
         var skin: String? = "bot"
+        var ticking: Boolean? = false
         var location: LocationConfig? = null
-        var ticking: Boolean? = null
         var settings: FakePlayerSettingsConfig? = null
     }
 }
