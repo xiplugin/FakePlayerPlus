@@ -80,9 +80,6 @@ class FakePlayerPlusPluginConfig : OkaeriConfig() {
 
         @Comment("如果假人未被/fp skin设置过皮肤则使用此皮肤", "NONE: 不设置皮肤 SPAWNER：跟随生成者 player1:固定为一个皮肤  player1,player2:从数组中随机设置")
         @Comment("Default skin if not set via '/fp skin'.", "NONE: None. SPAWNER: Follow spawner's skin. player1: Fixed skin. player1,player2: Random selection from array.")
-        @Comment("Default skin if fake player has none.",
-            "NONE: None. SPAWNER: Follow spawner. player1: Fixed skin. player1,player2: Randomly select from array."
-        )
         @CustomKey("default")
         var default = "SPAWNER"
 
