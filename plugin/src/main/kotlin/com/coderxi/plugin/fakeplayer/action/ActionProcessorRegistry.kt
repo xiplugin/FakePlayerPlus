@@ -10,6 +10,7 @@ object ActionProcessorRegistry {
         AttackProcessor,
         MineProcessor,
         UseItemProcessor,
+        DropItemProcessor,
         JumpProcessor,
         SneakProcessor
     )

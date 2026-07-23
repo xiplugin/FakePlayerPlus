@@ -26,6 +26,12 @@ class UseItemAction private constructor(mode: ActionMode): Action.Base(mode) {
     var freezeTick = 0
 }
 
+class DropItemAction private constructor(mode: ActionMode): Action.Base(mode) {
+    companion object { @JvmField val type = DROP_ITEM }
+    constructor(mode: Once) : this(mode as ActionMode)
+    constructor(mode: Interval) : this(mode as ActionMode)
+}
+
 class JumpAction private constructor(mode: ActionMode): Action.Base(mode) {
     companion object { @JvmField val type = JUMP }
     constructor(mode: Once) : this(mode as ActionMode)

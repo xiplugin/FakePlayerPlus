@@ -13,6 +13,7 @@ sealed interface Action {
             AttackAction::class.java,
             MineAction::class.java,
             UseItemAction::class.java,
+            DropItemAction::class.java,
             JumpAction::class.java,
             SneakAction::class.java,
         ).associateBy {

@@ -11,6 +11,7 @@ import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.block.BlockPlaceEvent
+import org.bukkit.event.player.PlayerDropItemEvent
 import org.bukkit.event.player.PlayerItemBreakEvent
 import org.bukkit.event.player.PlayerItemConsumeEvent
 import org.bukkit.inventory.EquipmentSlot
@@ -63,6 +64,12 @@ class FakePlayerReplenishListener(private val fpm: FakePlayerManager) : Listener
         val fakePlayer = fpm.get(event.player.uniqueId)?.takeIf { it.settings.autoReplenish } ?: return
         val hand = fakePlayer.getConsumingHand(event.brokenItem.type) ?: return
         tasks.add(ReplenishTaskMeta(fakePlayer.uuid, hand, event.brokenItem.type))
+    }
+
+    @EventHandler
+    fun onItemDrop(event: PlayerDropItemEvent) {
+        val fakePlayer = fpm.get(event.player.uniqueId)?.takeIf { it.settings.autoReplenish } ?: return
+        tasks.add(ReplenishTaskMeta(fakePlayer.uuid, EquipmentSlot.HAND, event.itemDrop.itemStack.type))
     }
 
     @EventHandler

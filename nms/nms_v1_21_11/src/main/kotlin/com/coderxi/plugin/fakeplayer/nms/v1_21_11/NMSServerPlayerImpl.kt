@@ -73,8 +73,7 @@ open class NMSServerPlayerImpl(override val player: Player) : NMSServerPlayer {
     override fun setDeltaMovement(vector: Vector) { handle.deltaMovement = Vec3(vector.x, vector.y, vector.z) }
     override fun startRiding(entity: Entity, force: Boolean, triggerEvents: Boolean): Boolean = handle.startRiding((entity as CraftEntity).handle,force,triggerEvents)
     override fun stopRiding() = handle.stopRiding()
-    override fun drop(allStack: Boolean) = handle.drop(allStack)
-    override fun drop(slot: Int, throwRandomly: Boolean, retainOwnership: Boolean) { handle.drop(handle.inventory.removeItem(slot, handle.inventory.getItem(slot).count), throwRandomly, retainOwnership) }
+    override fun dropInventory() = handle.inventory.dropAll()
     override fun jumpFromGround() = handle.jumpFromGround()
     override fun setJumping(jumping: Boolean) { handle.isJumping = jumping }
     override fun respawn() { handle.connection.handleClientCommand(ServerboundClientCommandPacket(ServerboundClientCommandPacket.Action.PERFORM_RESPAWN)) }

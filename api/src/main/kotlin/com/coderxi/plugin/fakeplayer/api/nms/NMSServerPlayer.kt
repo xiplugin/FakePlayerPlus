@@ -56,10 +56,8 @@ interface NMSServerPlayer {
     /** 取消骑乘实体 */
     fun stopRiding()
 
-    /** 丢弃物品 slot 槽位 */
-    fun drop(slot: Int, throwRandomly: Boolean, retainOwnership: Boolean)
-    /** 丢弃物品 allStack 是否丢弃整组 */
-    fun drop(allStack: Boolean): Boolean
+    /** 丢弃背包 */
+    fun dropInventory()
 
     /** 重生 */
     fun respawn()
