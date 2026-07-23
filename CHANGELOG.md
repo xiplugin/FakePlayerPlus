@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.1](https://github.com/xiplugin/FakePlayerPlus/compare/v1.7.0...v1.7.1) (2026-07-23)
+
+
+### Bug Fixes
+
+* correct action permission check logic ([319970a](https://github.com/xiplugin/FakePlayerPlus/commit/319970a3c73a3aaf10c0177d4c45090d83319348))
+
 ## [1.7.0](https://github.com/xiplugin/FakePlayerPlus/compare/v1.6.2...v1.7.0) (2026-07-23)
 
 
