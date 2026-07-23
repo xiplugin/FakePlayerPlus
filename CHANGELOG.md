@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.7.0](https://github.com/xiplugin/FakePlayerPlus/compare/v1.6.2...v1.7.0) (2026-07-23)
+
+
+### Features
+
+* add DropItemAction and processor, implement item drop functionality ([c10f44a](https://github.com/xiplugin/FakePlayerPlus/commit/c10f44a245df38fc93ba509d2166e0aa9686afc0))
+* allow executing actions directly without gui ([d88008e](https://github.com/xiplugin/FakePlayerPlus/commit/d88008e7739191e345ae69c275607e3c60fc4ee5))
+* static-fakeplayers ([1da3573](https://github.com/xiplugin/FakePlayerPlus/commit/1da3573bfdae20c2e4d4d86200490b9f4ff9a848))
+
+
+### Bug Fixes
+
+* use ceil for block reach distance in useItem ray tracing ([e89eb32](https://github.com/xiplugin/FakePlayerPlus/commit/e89eb325ce9807d833ddca86068565462e9016cb))
+
 ## [1.6.2](https://github.com/xiplugin/FakePlayerPlus/compare/v1.6.1...v1.6.2) (2026-07-17)
 
 
