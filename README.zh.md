@@ -59,7 +59,8 @@
 | /fp chat | 让假人发送聊天消息 | fakeplayer.chat | 消息有空格时需将消息文本使用 `"` 包裹 |
 | **/fp settings** | 打开假人设置 GUI | fakeplayer.settings | |
 | **/fp action** | 打开假人动作列表 GUI | fakeplayer.action | 有对应的动作权限（如下）才能显示动作按钮 |
-| **/fp action \<action\>** | 打开假人动作执行 GUI | fakeplayer.action.\<action\> | |
+| **/fp action start \<action\>** | 打开假人动作执行 GUI | fakeplayer.action.\<action\> | |
+| **/fp action execute \<action\>** | 直接让假人执行动作 | fakeplayer.action.\<action\> | |
 | /fp owner list | 列出假人的所有者列表 | fakeplayer.owner.list | |
 | **/fp owner add** | 将一个玩家添加为假人的所有者 | fakeplayer.owner.add | |
 | /fp owner remove | 取消玩家的所有者权限 | fakeplayer.owner.remove | |

@@ -58,7 +58,8 @@ Please refer to the `config.yml` configuration file in the plugin directory
 | /fp chat | Force fake player to send a chat message | fakeplayer.chat | Wrap the text in `"` if the message contains spaces |
 | **/fp settings** | Open the Settings GUI | fakeplayer.settings | |
 | **/fp action** | Open the Action List GUI | fakeplayer.action | The action buttons will only display if the player has the corresponding permission (see below) |
-| **/fp action \<action\>** | Open the Action Execution GUI | fakeplayer.action.\<action\> | |
+| **/fp action start \<action\>** | Open the Action Execution GUI | fakeplayer.action.\<action\> | |
+| **/fp action execute \<action\>** | Execute Action directly | fakeplayer.action.\<action\> | |
 | /fp owner list | List the owners of the fake player | fakeplayer.owner.list | |
 | **/fp owner add** | Add a player as an owner of the fake player | fakeplayer.owner.add | |
 | /fp owner remove | Revoke a player's owner permissions | fakeplayer.owner.remove | |
