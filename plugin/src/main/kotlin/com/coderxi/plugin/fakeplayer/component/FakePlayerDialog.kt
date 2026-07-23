@@ -20,6 +20,8 @@ import io.papermc.paper.registry.data.dialog.type.DialogType
 import net.kyori.adventure.dialog.DialogLike
 import net.kyori.adventure.text.Component
 import com.coderxi.plugin.fakeplayer.command.permission.Permission.ACTION
+import com.coderxi.plugin.fakeplayer.command.permission.Permission.BASIC
+import com.coderxi.plugin.fakeplayer.utils.hasPermission
 
 import net.kyori.adventure.text.event.ClickCallback
 import org.bukkit.command.CommandSender
@@ -115,8 +117,8 @@ object FakePlayerDialog {
     }
 
     fun actionListDialog(viewer: CommandSender, fakePlayer: FakePlayer): DialogLike {
-        val textAndAction = ActionType.entries
-            .filter { viewer.hasPermission("$ACTION.${it.name.lowercase()}") }
+        val actionTypes = if (viewer.hasPermission(BASIC)) ActionType.entries else ActionType.entries.filter { viewer.hasPermission("${ACTION.value}.${it.name.lowercase()}") }
+        val textAndAction = actionTypes
             .associateTo((mutableMapOf())) { type ->
                 tl("fakeplayer.action.${type.name.lowercase().replace("_","-")}") to
                         { viewer.showDialog(FakePlayerDialog.actionExecuteDialog(fakePlayer, type)) }

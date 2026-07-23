@@ -41,7 +41,7 @@ fun CommandSender.hasPermission(permission: Permission, or: Permission = Permiss
 fun Player.teleportAsync(location: Location, sound: Sound): CompletableFuture<Boolean> =
     teleportAsync(location).thenApply { success -> success.also { if (it) location.world.playSound(location, sound, 1f, 1f) } }
 fun CommandSender.assertPermission(permission: String, or: Permission = Permission.ADMIN) {
-    if (!hasPermission(permission) || !hasPermission(or.value)) throw FakePlayerCommandException.NoPermissionException()
+    if (!(hasPermission(permission) || hasPermission(or.value))) throw FakePlayerCommandException.NoPermissionException()
 }
 
 // Coroutines扩展

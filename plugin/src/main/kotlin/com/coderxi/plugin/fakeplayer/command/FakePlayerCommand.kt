@@ -280,14 +280,14 @@ class FakePlayerCommand {
     @Subcommand("action start")
     @Permission(ACTION, BASIC)
     fun Player.actionUI(type: ActionType, @Select fakePlayer: FakePlayer) {
-        assertPermission("$ACTION.${type.name.lowercase()}")
+        assertPermission("${ACTION.value}.${type.name.lowercase()}", BASIC)
         showDialog(FakePlayerDialog.actionExecuteDialog(fakePlayer, type))
     }
 
     @Subcommand("action execute")
     @Permission(ACTION, BASIC)
     fun CommandSender.executeAction(type: ActionType, mode: ActionMode, @Select fakePlayer: FakePlayer) {
-        assertPermission("$ACTION.${type.name.lowercase()}")
+        assertPermission("${ACTION.value}.${type.name.lowercase()}", BASIC)
         fakePlayer.actions.dispatch(Action.toClass(type).getConstructor(mode.javaClass).newInstance(mode))
     }
 
