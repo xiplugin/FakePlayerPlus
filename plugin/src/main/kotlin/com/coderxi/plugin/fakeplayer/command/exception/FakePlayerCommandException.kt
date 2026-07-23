@@ -5,6 +5,7 @@ import revxrsal.commands.exception.CommandErrorException
 
 abstract class FakePlayerCommandException : CommandErrorException() {
 
+    class NoPermissionException : FakePlayerCommandException()
     class NotExitsException(val name: String) : FakePlayerCommandException()
     class NotOwnerException(val name: String) : FakePlayerCommandException()
     class NoSelectedException : FakePlayerCommandException()
@@ -20,6 +21,8 @@ abstract class FakePlayerCommandException : CommandErrorException() {
     class SpawnNoAvailableSequenceNameException : FakePlayerCommandException()
     class SpawnDisallowedException(val causeMessage: Component) : FakePlayerCommandException()
     class SpawnDuplicateSpawningException(val name: String) : FakePlayerCommandException()
+
+    class UnsupportedActionModeException(val name: String) : FakePlayerCommandException()
 
     class HasNoMoreExperience(val name: String) : FakePlayerCommandException()
 

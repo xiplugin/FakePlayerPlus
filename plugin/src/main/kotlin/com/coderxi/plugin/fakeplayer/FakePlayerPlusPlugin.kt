@@ -1,6 +1,7 @@
 package com.coderxi.plugin.fakeplayer
 
 import com.coderxi.plugin.fakeplayer.api.FakePlayerPlusPluginApi
+import com.coderxi.plugin.fakeplayer.api.action.ActionMode
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
 import com.coderxi.plugin.fakeplayer.api.nms.NMSBridge
 import com.coderxi.plugin.fakeplayer.api.nms.NMSServer
@@ -16,6 +17,7 @@ import com.coderxi.plugin.fakeplayer.command.annotaion.Select
 import com.coderxi.plugin.fakeplayer.command.annotaion.SelectReplacer
 import com.coderxi.plugin.fakeplayer.command.annotaion.SuggestCommands
 import com.coderxi.plugin.fakeplayer.command.annotaion.SuggestCommandsProvider
+import com.coderxi.plugin.fakeplayer.command.parameter.ActionModeParameterType
 import com.coderxi.plugin.fakeplayer.config.StaticFakePlayersConfig
 import com.coderxi.plugin.fakeplayer.expansion.FakePlayerPlaceholderExpansion
 import com.coderxi.plugin.fakeplayer.manager.FakePlayerManagerImpl
@@ -111,7 +113,10 @@ class FakePlayerPlusPlugin: FakePlayerPlusPluginApi, JavaPlugin() {
             .annotationReplacer(Select::class.java, SelectReplacer())
             .dependency(FakePlayerManager::class.java,fakePlayerManager)
             .dependency(FakePlayerLimiter::class.java,fakePlayerLimiter)
-            .parameterTypes { parameters -> parameters.addParameterType(FakePlayer::class.java, FakePlayerParameterType(fakePlayerManager)) }
+            .parameterTypes { parameters ->
+                parameters.addParameterType(FakePlayer::class.java, FakePlayerParameterType(fakePlayerManager))
+                parameters.addParameterType(ActionMode::class.java, ActionModeParameterType())
+            }
             .suggestionProviders { providers -> providers.addProviderForAnnotation(SuggestCommands::class.java, SuggestCommandsProvider()) }
             .exceptionHandler(FakePlayerCommandExceptionHandler())
             .build()

@@ -2,6 +2,7 @@ package com.coderxi.plugin.fakeplayer.utils
 
 import com.coderxi.plugin.fakeplayer.FakePlayerPlusPlugin
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
+import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandException
 import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandExceptionHandler.CommandContext
 import com.coderxi.plugin.fakeplayer.command.permission.Permission
 import com.coderxi.plugin.fakeplayer.utils.coroutine.EntityDispatcher
@@ -39,6 +40,9 @@ fun CommandSender.hasPermission(permission: Permission, or: Permission = Permiss
     hasPermission(permission.value) || hasPermission(or.value)
 fun Player.teleportAsync(location: Location, sound: Sound): CompletableFuture<Boolean> =
     teleportAsync(location).thenApply { success -> success.also { if (it) location.world.playSound(location, sound, 1f, 1f) } }
+fun CommandSender.assertPermission(permission: String, or: Permission = Permission.ADMIN) {
+    if (!hasPermission(permission) || !hasPermission(or.value)) throw FakePlayerCommandException.NoPermissionException()
+}
 
 // Coroutines扩展
 internal val globalDispatcher = ServerDispatcher()

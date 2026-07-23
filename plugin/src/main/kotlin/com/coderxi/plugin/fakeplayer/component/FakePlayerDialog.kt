@@ -19,8 +19,10 @@ import io.papermc.paper.registry.data.dialog.input.DialogInput.bool as boolInput
 import io.papermc.paper.registry.data.dialog.type.DialogType
 import net.kyori.adventure.dialog.DialogLike
 import net.kyori.adventure.text.Component
+import com.coderxi.plugin.fakeplayer.command.permission.Permission.ACTION
 
 import net.kyori.adventure.text.event.ClickCallback
+import org.bukkit.command.CommandSender
 import java.time.Duration
 
 @Suppress("UnstableApiUsage")
@@ -86,7 +88,7 @@ object FakePlayerDialog {
                                Float::class.java, Float::class.javaPrimitiveType -> view.getFloat(name)
                                Boolean::class.java, Boolean::class.javaPrimitiveType -> view.getBoolean(name)
                                String::class.java -> view.getText(name)
-                               else -> view.getText(name)
+                               else -> null
                            }
                        }.toTypedArray<Any?>())
                    }
@@ -112,7 +114,14 @@ object FakePlayerDialog {
         }
     }
 
-    fun actionListDialog(fakePlayer: FakePlayer, textAndAction: Map<Component, () -> Unit>): DialogLike {
+    fun actionListDialog(viewer: CommandSender, fakePlayer: FakePlayer): DialogLike {
+        val textAndAction = ActionType.entries
+            .filter { viewer.hasPermission("$ACTION.${it.name.lowercase()}") }
+            .associateTo((mutableMapOf())) { type ->
+                tl("fakeplayer.action.${type.name.lowercase().replace("_","-")}") to
+                        { viewer.showDialog(FakePlayerDialog.actionExecuteDialog(fakePlayer, type)) }
+            }
+        if (textAndAction.isNotEmpty()) textAndAction[tl("fakeplayer.gui.action.stop-all")] = {fakePlayer.actions.stopAll()}
         val actionButtons = textAndAction.map { (text, action) ->
             ActionButton.create(text, null, 100, DialogAction.customClick({ _, _ -> action() }, ACTION_OPTIONS) )
         }

@@ -34,6 +34,7 @@ class FakePlayerCommandExceptionHandler : BukkitExceptionHandler() {
     @HandleException
     fun handleCommandException(e: FakePlayerCommandException, actor: BukkitCommandActor) {
         val message = when (e) {
+            is FakePlayerCommandException.NoPermissionException -> tlp("fakeplayer.command.no-permission")
             is NotExitsException         -> tlp("fakeplayer.command.not-exists", e.name)
             is NotOwnerException         -> tlp("fakeplayer.command.not-owner", e.name)
             is NoSelectedException       -> tlp("fakeplayer.command.no-selected")
@@ -48,6 +49,7 @@ class FakePlayerCommandExceptionHandler : BukkitExceptionHandler() {
             is SpawnTpsAdaptiveLimitedException -> tlp("fakeplayer.spawn.failed.tps-adaptive-limited")
             is SpawnDisallowedException -> tlp("fakeplayer.spawn.failed.disallowed").append(e.causeMessage)
             is SpawnDuplicateSpawningException -> tlp("fakeplayer.spawn.failed.duplicate-spawning", e.name)
+            is UnsupportedActionModeException -> tlp("fakeplayer.command.unsupported-action-mode", e.name)
             is HasNoMoreExperience -> tlp("fakeplayer.expme.failed.has-no-experience",e.name)
             is OwnerMustBeHumanException -> tlp("fakeplayer.owner.add.failed.must-be-human", e.ownerName, e.fakePlayerName)
             is OwnerAlreadyBoundException -> tlp("fakeplayer.owner.add.failed.already-bound", e.ownerName, e.fakePlayerName)
