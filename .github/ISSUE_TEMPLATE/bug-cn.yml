@@ -12,6 +12,8 @@ body:
           required: true
         - label: 已排查过是否由于其他插件冲突引起
           required: true
+        - label: 已排查过是否由于权限问题引起(尝试/op假人后仍存在此问题)
+          required: true
   - type: input
     id: plugin-version
     attributes:

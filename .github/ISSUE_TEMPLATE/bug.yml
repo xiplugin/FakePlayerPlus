@@ -12,6 +12,8 @@ body:
           required: true
         - label: I have checked and confirmed that this is not caused by conflicts with other plugins.
           required: true
+        - label: I have checked for permission issues (the issue remains after giving /op to the fakeplayer).
+          required: true
   - type: input
     id: plugin-version
     attributes:
