@@ -11,7 +11,7 @@ import net.minecraft.server.level.ClientInformation
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.server.network.CommonListenerCookie
 import net.minecraft.server.network.ServerGamePacketListenerImpl
-import org.bukkit.Bukkit
+import org.bukkit.Location
 import org.bukkit.Server
 import org.bukkit.craftbukkit.CraftServer
 import org.bukkit.craftbukkit.CraftWorld
@@ -22,15 +22,16 @@ import java.util.UUID
 
 open class NMSServerImpl(override val server: Server) : NMSServer {
 
-    override fun newPlayer(uuid: UUID, name: String): NMSServerPlayer {
+    override fun newPlayer(uuid: UUID, name: String, location: Location): NMSServerPlayer {
         val serverHandle = (server as CraftServer).handle
         val playerHandle = ServerPlayer(
             serverHandle.server,
-            (api.nms.fromWorld(Bukkit.getWorlds()[0]).world as CraftWorld).handle,
+            (api.nms.fromWorld(location.world).world as CraftWorld).handle,
             GameProfile(uuid, name),
             ClientInformation.createDefault()
         )
         playerHandle.bukkitEntity.loadData()
+        playerHandle.absSnapTo(location.x,location.y,location.z,location.yaw,location.pitch)
         return api.nms.fromPlayer(playerHandle.bukkitEntity)
     }
 

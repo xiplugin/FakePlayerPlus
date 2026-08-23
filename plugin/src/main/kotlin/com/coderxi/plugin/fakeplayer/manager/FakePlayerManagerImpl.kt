@@ -87,7 +87,7 @@ class FakePlayerManagerImpl : FakePlayerManager, Listener {
             fakePlayer.spawnerIp = spawnerIp
             fakePlayer.spawnTime = System.currentTimeMillis()
             FakePlayerPreparingEvent(fakePlayer).callEvent()
-            val nmsPlayer =  plugin.nmsServer.newPlayer(fakePlayer.uuid, fakePlayer.name).apply {
+            val nmsPlayer = plugin.nmsServer.newPlayer(fakePlayer.uuid, fakePlayer.name, spawnLocation).apply {
                 disableAdvancements()
                 setupClientOptions()
                 fakePlayer.skin?.let {
