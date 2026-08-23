@@ -89,7 +89,7 @@ interface NMSServerPlayer {
     fun getDestroyProgress(target: Block): Float
     fun doBlockBreakAction(target: Block, type: BlockBreakActionType)
     enum class BlockBreakActionType { START, ABORT, STOP }
-    fun useItem(type: EquipmentSlot, onSuccess: (() -> Unit)? = null)
+    fun useItem(type: EquipmentSlot): Boolean
     fun releaseUsingItem()
 
 }

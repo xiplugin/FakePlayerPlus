@@ -13,16 +13,9 @@ object UseItemProcessor : ActionProcessor<UseItemAction> {
     override fun process(fakePlayer: FakePlayer, action: UseItemAction, handler: ActionHandler) {
         if (fakePlayer.nms.isUsingItem) return
         if (action.freezeTick > 0) { action.freezeTick--; return }
-        fakePlayer.nms.useItem(EquipmentSlot.HAND) {
-            if (action.mode is Continuous) {
-                action.freezeTick = 5
-            }
-        }
-        fakePlayer.nms.useItem(EquipmentSlot.OFF_HAND) {
-            if (action.mode is Continuous) {
-                action.freezeTick = 5
-            }
-        }
+        val mainHandUsed = fakePlayer.nms.useItem(EquipmentSlot.HAND)
+        val offHandUsed = fakePlayer.nms.useItem(EquipmentSlot.OFF_HAND)
+        if ((mainHandUsed || offHandUsed) && action.mode is Continuous) { action.freezeTick = 5 }
     }
 
     override fun onStop(fakePlayer: FakePlayer, action: UseItemAction) {

@@ -14,6 +14,7 @@ import net.minecraft.network.protocol.game.*
 import net.minecraft.server.PlayerAdvancements
 import net.minecraft.server.level.ClientInformation
 import net.minecraft.server.level.ParticleStatus
+import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.InteractionHand
 import net.minecraft.world.entity.HumanoidArm
@@ -154,44 +155,63 @@ open class NMSServerPlayerImpl(override val player: Player) : NMSServerPlayer {
         )
     }
 
-    override fun useItem(type: EquipmentSlot, onSuccess: (() -> Unit)?) {
-        val hand = when (type) { EquipmentSlot.HAND -> InteractionHand.MAIN_HAND; EquipmentSlot.OFF_HAND -> InteractionHand.OFF_HAND else -> throw Exception("Invalid equipment slot (Only HAND/OFF_HAND).") }
-        val stack = handle.getItemInHand(hand)
-        if (stack.isEmpty) return
+    open fun slot2hand(type: EquipmentSlot) = when (type) {
+        EquipmentSlot.HAND -> InteractionHand.MAIN_HAND;
+        EquipmentSlot.OFF_HAND -> InteractionHand.OFF_HAND
+        else -> throw Exception("Invalid equipment slot (Only HAND/OFF_HAND).")
+    }
+
+    open fun getRayTraceHitResult() : HitResult {
+        val entityHit = handle.getTargetEntity(ceil(entityReachDistance).toInt())
+        val blockHit = handle.getRayTrace(ceil(blockReachDistance).toInt(), ClipContext.Fluid.NONE)
+        return when {
+            entityHit == null -> blockHit
+            blockHit.type == HitResult.Type.MISS -> entityHit
+            entityHit.location.distanceToSqr(handle.getEyePosition(1.0f)) <
+                    blockHit.location.distanceToSqr(handle.getEyePosition(1.0f)) -> entityHit
+            else -> blockHit
+        }
+    }
+
+    open fun useItemOnBlock(level: ServerLevel, stack: net.minecraft.world.item.ItemStack, hand: InteractionHand, blockHitResult: BlockHitResult): Boolean {
+        val isTooHigh = blockHitResult.blockPos.y >= level.maxY - (if (blockHitResult.direction == Direction.UP) 1 else 0)
+        if (isTooHigh || !level.mayInteract(handle, blockHitResult.blockPos)) return false
+        if (handle.gameMode.useItemOn(handle,level,stack, hand ,blockHitResult).consumesAction()) {
+            handle.swing(hand)
+            return true
+        }
+        return false
+    }
+
+    open fun useItemOnEntity(level: ServerLevel, stack: net.minecraft.world.item.ItemStack, hand: InteractionHand, entityHitResult: EntityHitResult): Boolean {
+        val entity = entityHitResult.entity
+        val relativePos = entityHitResult.location.subtract(entity.x, entity.y, entity.z)
+        if (entity.interactAt(handle, relativePos, hand).consumesAction()) {
+            handle.swing(hand)
+            return true
+        }
+        if (handle.interactOn(entity, hand).consumesAction()) {
+            handle.swing(hand)
+            return true
+        }
+        return false
+    }
+
+    override fun useItem(type: EquipmentSlot): Boolean {
         val level = handle.level()
-        val hitResult = handle.getRayTrace(ceil(blockReachDistance).toInt(), ClipContext.Fluid.NONE)
-        when (hitResult.type) {
-            HitResult.Type.MISS -> {}
-            HitResult.Type.BLOCK -> {
-                val blockHit = hitResult as BlockHitResult
-                val isTooHigh = blockHit.blockPos.y >= level.maxY - (if (blockHit.direction == Direction.UP) 1 else 0)
-                if (isTooHigh || !level.mayInteract(handle, blockHit.blockPos)) return
-                if (handle.gameMode.useItemOn(handle,level,stack, hand ,blockHit).consumesAction()) {
-                    handle.swing(hand)
-                    onSuccess?.invoke()
-                    return
-                }
-            }
-            HitResult.Type.ENTITY -> {
-                val entityHit = hitResult as EntityHitResult
-                val entity = entityHit.entity
-                val relativePos = entityHit.location.subtract(entity.x, entity.y, entity.z)
-                if (entity.interactAt(handle, relativePos, hand).consumesAction()) {
-                    handle.swing(hand)
-                    onSuccess?.invoke()
-                    return
-                }
-                if (handle.interactOn(entity, hand).consumesAction()) {
-                    handle.swing(hand)
-                    onSuccess?.invoke()
-                    return
-                }
-            }
+        val hand = slot2hand(type)
+        val stack = handle.getItemInHand(hand)
+        val hitResult = getRayTraceHitResult()
+        val useResult = when (hitResult.type) {
+            HitResult.Type.MISS -> false
+            HitResult.Type.BLOCK -> useItemOnBlock(level,stack, hand, hitResult as BlockHitResult)
+            HitResult.Type.ENTITY -> useItemOnEntity(level,stack, hand, hitResult as EntityHitResult)
         }
         if (handle.gameMode.useItem(handle,level,stack, hand).consumesAction()) {
             handle.swing(hand)
-            onSuccess?.invoke()
+            return true
         }
+        return useResult
     }
 
     override fun releaseUsingItem() {
