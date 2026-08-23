@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.9.0](https://github.com/xiplugin/FakePlayerPlus/compare/v1.8.0...v1.9.0) (2026-08-23)
+
+
+### Features
+
+* add /fp help command and traditional chinese (zh_TW) support ([2cbe32f](https://github.com/xiplugin/FakePlayerPlus/commit/2cbe32fec9049c3af9dc66ffa422cca2467ae849))
+* add help command and zh_TW language support ([2333244](https://github.com/xiplugin/FakePlayerPlus/commit/2333244ecf1a3081f75d10953e94b537df9212d6))
+
+
+### Bug Fixes
+
+* remove invalid empty @Command annotation on help handler ([7351b15](https://github.com/xiplugin/FakePlayerPlus/commit/7351b15f8562514f053b3ee6dfe5559545a4f06b))
+
 ## [1.8.0](https://github.com/xiplugin/FakePlayerPlus/compare/v1.7.1...v1.8.0) (2026-08-23)
 
 
