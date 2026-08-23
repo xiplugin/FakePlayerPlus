@@ -6,6 +6,7 @@ import revxrsal.commands.bukkit.exception.SenderNotPlayerException
 import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandException.*
 import com.coderxi.plugin.fakeplayer.utils.tlp
 import revxrsal.commands.exception.CooldownException
+import revxrsal.commands.exception.InvalidHelpPageException
 import revxrsal.commands.exception.NoPermissionException
 import revxrsal.commands.exception.UnknownCommandException
 import revxrsal.commands.node.ExecutionContext
@@ -29,6 +30,10 @@ class FakePlayerCommandExceptionHandler : BukkitExceptionHandler() {
 
     override fun onCooldown(e: CooldownException, actor: BukkitCommandActor) {
         actor.sender().sendMessage(tlp("fakeplayer.command.cooldown", e.getTimeLeft(TimeUnit.SECONDS)))
+    }
+
+    override fun onInvalidHelpPage(e: InvalidHelpPageException, actor: BukkitCommandActor) {
+        actor.sender().sendMessage(tlp("fakeplayer.help.error.page-invalid", e.page(), e.numberOfPages()))
     }
 
     @HandleException
