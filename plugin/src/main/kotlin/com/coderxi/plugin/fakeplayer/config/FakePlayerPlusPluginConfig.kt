@@ -71,6 +71,11 @@ class FakePlayerPlusPluginConfig : OkaeriConfig() {
         @CustomKey("spawn-pattern")
         var pattern = Regex("^[a-zA-Z0-9_]+$")
 
+        @Comment("按序号生成假人名称时的前缀")
+        @Comment("Prefix used when generating fake player names sequentially")
+        @CustomKey("sequence-name-prefix")
+        var sequenceNamePrefix = ""
+
     }
 
     @Comment("假人皮肤功能")

@@ -131,9 +131,10 @@ class FakePlayerManagerImpl : FakePlayerManager, Listener {
     }
 
     override suspend fun sequenceName(spawner: Player, reservedSequenceLength: Int): String {
+        val spawnerNameWithSequenceNamePrefix = plugin.config.name.sequenceNamePrefix + spawner.name
         val maxBaseLength = MAX_NAME_LENGTH - 1 - reservedSequenceLength
         val safeBaseLength = maxBaseLength.coerceAtLeast(MIN_NAME_LENGTH)
-        val baseName = if (spawner.name.length > safeBaseLength)  spawner.name.take(safeBaseLength) else spawner.name
+        val baseName = if (spawnerNameWithSequenceNamePrefix.length > safeBaseLength)  spawnerNameWithSequenceNamePrefix.take(safeBaseLength) else spawnerNameWithSequenceNamePrefix
         val regex = Regex("^" + Regex.escape(baseName) + "_(\\d+)$")
         val existingSequences = fakeplayersByOwnerUuid(spawner.uniqueId)
             .map(FakePlayer::name)
