@@ -1,11 +1,14 @@
 import org.gradle.internal.extensions.core.serviceOf
 import org.gradle.internal.logging.progress.ProgressLoggerFactory
-import xyz.jpenilla.runtask.service.DownloadsAPIService
+import xyz.jpenilla.runtask.service.DownloadsAPIService.Build.Latest
+import xyz.jpenilla.runtask.service.DownloadsAPIService.Build.Specific
 import xyz.jpenilla.runtask.service.DownloadsAPIService.Companion.folia
+
+val progressLoggerFactory = project.serviceOf<ProgressLoggerFactory>()
 
 plugins {
     id("com.gradleup.shadow") version "9.2.0"
-    id("xyz.jpenilla.run-paper") version "3.0.2"
+    id("xyz.jpenilla.run-paper") version "3.1.0"
 }
 
 repositories {
@@ -35,26 +38,22 @@ val supportVersions = listOf(
     "paper-26.2",
     "folia-1.21.11",
     "folia-26.1.2",
+    "folia-26.2-5",
 )
 
 tasks {
     supportVersions.forEach { supportVersion ->
-        val (platform, version) = supportVersion.split("-", limit = 2)
+        val (platform, version, buildNumber) = supportVersion.split("-", limit = 3).let { Triple(it[0], it[1], it.getOrNull(2)?.toInt()) }
+        val build = if (buildNumber == null) Latest else Specific(buildNumber)
         register<xyz.jpenilla.runpaper.task.RunServer>(supportVersion) {
             group = "run"
             runDirectory(layout.projectDirectory.file("run/$supportVersion").asFile)
             minecraftVersion(version)
             if (platform == "folia") {
-                val progressLoggerFactory = project.serviceOf<ProgressLoggerFactory>()
-                serverJar(folia(project).get().resolveBuild(progressLoggerFactory,version, DownloadsAPIService.Build.Latest).toFile())
+                serverJar(folia(project).get().resolveBuild(progressLoggerFactory,version,build).toFile())
             }
             pluginJars(shadowJar.flatMap { it.archiveFile })
-            doFirst {
-                layout.projectDirectory.file("run/$supportVersion/eula.txt").asFile.apply {
-                    parentFile.mkdirs()
-                    writeText("eula=true")
-                }
-            }
+            jvmArgs("-Dcom.mojang.eula.agree=true")
         }
     }
 }
@@ -73,7 +72,7 @@ tasks.processResources {
 }
 
 val platformVersions = supportVersions
-    .map { it.split("-", limit = 2) }
+    .map { it.split("-", limit = 3) }
     .groupBy({ it[0].replaceFirstChar { c -> c.uppercase() } }, { it[1] })
     .mapValues { (_, versions) -> versions.distinct().sortedDescending().joinToString(", ") }
 
