@@ -42,6 +42,7 @@
 
 | 命令 | 作用 | 权限 | 备注 |
 | :--- | :--- | :--- | :--- |
+| **/fp help** | 显示帮助指令列表 | fakeplayer.help | 支持 `/fp help [页码]` 分页查看 |
 | **/fp spawn** | 召唤假人 | fakeplayer.spawn | 可在配置文件中配置召唤数量限制 |
 | | | fakeplayer.spawn.limit.\<node\> | 在配置文件中配置 node 来实现为玩家/权限组单独配置召唤数量限制 |
 | /fp spawn \<name\> | 召唤假人时指定名称 | fakeplayer.spawn.name | 不建议给一般玩家权限 因为会占用未注册的真实玩家名额 |
