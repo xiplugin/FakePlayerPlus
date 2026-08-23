@@ -5,6 +5,7 @@ enum class Permission(val value: String) {
     ADMIN("fakeplayer.admin"),
     BASIC("fakeplayer.basic"),
 
+    HELP("fakeplayer.help"),
     RELOAD("fakeplayer.reload"),
 
     SPAWN("fakeplayer.spawn"),

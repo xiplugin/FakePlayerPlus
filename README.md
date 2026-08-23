@@ -41,6 +41,7 @@ Please refer to the `config.yml` configuration file in the plugin directory
 
 | Command | Description | Permission | Notes |
 | :--- | :--- | :--- | :--- |
+| **/fp help** | Display help list | fakeplayer.help | Supports pagination via `/fp help [page]` |
 | **/fp spawn** | Summon a fake player | fakeplayer.spawn | The summon limit can be configured in the configuration file |
 | | | fakeplayer.spawn.limit.\<node\> | Configure node in the configuration file to set custom summon limits for specific players/groups |
 | /fp spawn \<name\> | Summon with a specific name | fakeplayer.spawn.name | Not recommended for regular players because it occupies unregistered real player names |
