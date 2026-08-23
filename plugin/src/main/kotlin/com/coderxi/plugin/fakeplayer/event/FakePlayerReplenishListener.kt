@@ -10,6 +10,7 @@ import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
+import org.bukkit.event.block.BlockFertilizeEvent
 import org.bukkit.event.block.BlockPlaceEvent
 import org.bukkit.event.player.PlayerDropItemEvent
 import org.bukkit.event.player.PlayerItemBreakEvent
@@ -83,6 +84,14 @@ class FakePlayerReplenishListener(private val fpm: FakePlayerManager) : Listener
         val fakePlayer = fpm.get(event.player.uniqueId)?.takeIf { it.settings.autoReplenish } ?: return
         val hand = fakePlayer.getConsumingHand(event.itemStack.type) ?: return
         tasks.add(ReplenishTaskMeta(fakePlayer.uuid, hand, event.itemStack.type))
+    }
+
+    @EventHandler
+    fun onBlockFertilize(event: BlockFertilizeEvent) {
+        val player = event.player ?: return
+        val fakePlayer = fpm.get(player.uniqueId)?.takeIf { it.settings.autoReplenish } ?: return
+        val hand = fakePlayer.getConsumingHand(Material.BONE_MEAL) ?: return
+        tasks.add(ReplenishTaskMeta(fakePlayer.uuid, hand, Material.BONE_MEAL))
     }
 
     private fun FakePlayer.getConsumingHand(itemType: Material): EquipmentSlot? {
