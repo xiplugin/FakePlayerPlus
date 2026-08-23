@@ -56,9 +56,7 @@ class FakePlayerBehaviorImplementListener(private val fpm: FakePlayerManager): L
                     delay(1000)
                     event.fakePlayer.nms.respawn()
                     delay(50)
-                    withContext(event.fakePlayer.dispatcher) {
-                        event.fakePlayer.player.lastDeathLocation?.let(event.fakePlayer.player::teleportAsync)
-                    }
+                    event.fakePlayer.player.lastDeathLocation?.let(event.fakePlayer.player::teleportAsync)
                 }
             }
         }
