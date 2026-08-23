@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.8.0](https://github.com/xiplugin/FakePlayerPlus/compare/v1.7.1...v1.8.0) (2026-08-23)
+
+
+### Features
+
+* add sequence name prefix config for fakeplayer ([4b8568a](https://github.com/xiplugin/FakePlayerPlus/commit/4b8568ac6b6ff37e1f0e1056fbe886e0192c899b)), closes [#33](https://github.com/xiplugin/FakePlayerPlus/issues/33)
+
+
+### Bug Fixes
+
+* make useItem support entity interactions ([2a71155](https://github.com/xiplugin/FakePlayerPlus/commit/2a71155eb7aebd3bbcbd32059a98558929a2b4ef))
+* prevent loadData from overriding the fakeplayer's spawn position ([692a239](https://github.com/xiplugin/FakePlayerPlus/commit/692a23976ff3636864c7d40fd92548ec1d83007e)), closes [#34](https://github.com/xiplugin/FakePlayerPlus/issues/34)
+* replenish bone meal after fertilizing ([b4b0d67](https://github.com/xiplugin/FakePlayerPlus/commit/b4b0d672a63438136e9a23f595d6827f1ecba9c4))
+* teleport to last death location without entity dispatcher ([eee12ee](https://github.com/xiplugin/FakePlayerPlus/commit/eee12eee98a0e1661cc7ee5f59b28a6c6266499b))
+
 ## [1.7.1](https://github.com/xiplugin/FakePlayerPlus/compare/v1.7.0...v1.7.1) (2026-07-23)
 
 
