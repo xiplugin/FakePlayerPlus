@@ -122,12 +122,6 @@ class FakePlayerCommand {
         }
     }
 
-    @Command
-    @Permission(HELP, BASIC)
-    fun CommandSender.defaultHelp() {
-        showHelp(1)
-    }
-
     @Subcommand("help")
     @Permission(HELP, BASIC)
     fun CommandSender.help(@Default("1") @Named("page") page: Int) {
