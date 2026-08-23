@@ -5,6 +5,7 @@ import com.coderxi.plugin.fakeplayer.api.action.ActionMode
 import com.coderxi.plugin.fakeplayer.api.action.ActionType
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
 import com.coderxi.plugin.fakeplayer.api.manager.FakePlayerManager
+import com.coderxi.plugin.fakeplayer.command.annotaion.HelpLine
 import com.coderxi.plugin.fakeplayer.command.annotaion.Select
 import com.coderxi.plugin.fakeplayer.command.annotaion.SuggestCommands
 import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandException.*
@@ -14,19 +15,11 @@ import com.coderxi.plugin.fakeplayer.component.FakePlayerDialog
 import com.coderxi.plugin.fakeplayer.component.FakePlayerLimiter
 import com.coderxi.plugin.fakeplayer.component.FakePlayerSelector.selected
 import com.coderxi.plugin.fakeplayer.provider.invsee.InvseeProvider
-import com.coderxi.plugin.fakeplayer.utils.dispatcher
-import com.coderxi.plugin.fakeplayer.utils.SkinFetcher
-import com.coderxi.plugin.fakeplayer.utils.assertPermission
-import com.coderxi.plugin.fakeplayer.utils.hasPermission
-import com.coderxi.plugin.fakeplayer.utils.plugin
-import com.coderxi.plugin.fakeplayer.utils.teleportAsync
-import com.coderxi.plugin.fakeplayer.utils.tl
-import com.coderxi.plugin.fakeplayer.utils.tlp
-import com.coderxi.plugin.fakeplayer.utils.tls
-import com.coderxi.plugin.fakeplayer.utils.uniqueId
+import com.coderxi.plugin.fakeplayer.utils.*
 import kotlinx.coroutines.Dispatchers
-import com.coderxi.plugin.fakeplayer.utils.launch
 import kotlinx.coroutines.withContext
+import net.kyori.adventure.text.Component
+import net.kyori.adventure.text.JoinConfiguration
 import net.kyori.adventure.text.minimessage.MiniMessage
 import org.bukkit.Bukkit
 import org.bukkit.Location
@@ -34,6 +27,9 @@ import org.bukkit.Sound
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
 import revxrsal.commands.annotation.*
+import revxrsal.commands.bukkit.actor.BukkitCommandActor
+import revxrsal.commands.help.Help
+import revxrsal.commands.help.Help.RelatedCommands
 import java.io.File
 import java.util.concurrent.TimeUnit
 import kotlin.math.ceil
@@ -45,91 +41,38 @@ class FakePlayerCommand {
     @Dependency lateinit var fpm: FakePlayerManager
     @Dependency lateinit var fpl: FakePlayerLimiter
 
-    private data class HelpEntry(
-        val usage: String,
-        val descriptionKey: String,
-        val permission: com.coderxi.plugin.fakeplayer.command.permission.Permission = BASIC,
-        val playerOnly: Boolean = false
-    )
-
-    private val helpEntries = listOf(
-        HelpEntry("/fp help [page]", "fakeplayer.help.cmd.help", HELP),
-        HelpEntry("/fp spawn", "fakeplayer.help.cmd.spawn", SPAWN, playerOnly = true),
-        HelpEntry("/fp spawn <name>", "fakeplayer.help.cmd.spawn-name", SPAWN_WITH_NAME),
-        HelpEntry("/fp select <name>", "fakeplayer.help.cmd.select", SELECT),
-        HelpEntry("/fp remove [name] [--all]", "fakeplayer.help.cmd.remove", REMOVE),
-        HelpEntry("/fp kill [name] [--all]", "fakeplayer.help.cmd.kill", KILL),
-        HelpEntry("/fp invsee [name]", "fakeplayer.help.cmd.invsee", INVSEE, playerOnly = true),
-        HelpEntry("/fp enderchest [name]", "fakeplayer.help.cmd.enderchest", ENDER_CHEST, playerOnly = true),
-        HelpEntry("/fp tp [name]", "fakeplayer.help.cmd.tp", TP, playerOnly = true),
-        HelpEntry("/fp tphere [name]", "fakeplayer.help.cmd.tphere", TP, playerOnly = true),
-        HelpEntry("/fp tpswap [name]", "fakeplayer.help.cmd.tpswap", TP, playerOnly = true),
-        HelpEntry("/fp tppos <location> [name]", "fakeplayer.help.cmd.tppos", TP),
-        HelpEntry("/fp skin <name> [name]", "fakeplayer.help.cmd.skin", SKIN),
-        HelpEntry("/fp cmd <command> [name]", "fakeplayer.help.cmd.cmd", CMD),
-        HelpEntry("/fp chat <message> [name]", "fakeplayer.help.cmd.chat", CHAT),
-        HelpEntry("/fp settings [name]", "fakeplayer.help.cmd.settings", SETTINGS, playerOnly = true),
-        HelpEntry("/fp action [name]", "fakeplayer.help.cmd.action", ACTION, playerOnly = true),
-        HelpEntry("/fp action start <action> [name]", "fakeplayer.help.cmd.action-start", ACTION, playerOnly = true),
-        HelpEntry("/fp action execute <action> <mode> [name]", "fakeplayer.help.cmd.action-execute", ACTION),
-        HelpEntry("/fp action stop <action> [name]", "fakeplayer.help.cmd.action-stop", ACTION),
-        HelpEntry("/fp action stopall [name]", "fakeplayer.help.cmd.action-stopall", ACTION),
-        HelpEntry("/fp owner list [name]", "fakeplayer.help.cmd.owner-list", OWNER_LIST, playerOnly = true),
-        HelpEntry("/fp owner add <player> [name]", "fakeplayer.help.cmd.owner-add", OWNER_ADD, playerOnly = true),
-        HelpEntry("/fp owner remove <player> [name]", "fakeplayer.help.cmd.owner-remove", OWNER_REMOVE, playerOnly = true),
-        HelpEntry("/fp reload", "fakeplayer.help.cmd.reload", RELOAD),
-        HelpEntry("/fp import <database> <table>", "fakeplayer.help.cmd.import", ADMIN)
-    )
-
-    private fun CommandSender.showHelp(page: Int) {
-        val isPlayer = this is Player
-        val availableEntries = helpEntries.filter { entry ->
-            if (entry.playerOnly && !isPlayer) return@filter false
-            if (entry.permission == ADMIN) {
-                hasPermission(ADMIN)
-            } else if (entry.permission == SPAWN_WITH_NAME) {
-                hasPermission(SPAWN_WITH_NAME, ADMIN)
-            } else {
-                hasPermission(entry.permission, BASIC)
+    @Subcommand("help","?")
+    @Permission(HELP, BASIC)
+    @HelpLine("fakeplayer.help.cmd.help")
+    fun CommandSender.help(
+        @Range(min = 1.0) @Default("1") @Named("page") page: Int,
+        relatedCommands: RelatedCommands<BukkitCommandActor?>
+    ) {
+        val pageSize = 10
+        val commands =
+            if (this is Player) relatedCommands.paginate(page, pageSize)
+            else Help.paginate(relatedCommands.filter { !(it.annotations().get(HelpLine::class.java)?.playerOnly?:false) }, page, pageSize)
+        val pageTotal = (relatedCommands.count() + pageSize - 1) / pageSize
+        val lines = mutableListOf(
+            tl("fakeplayer.help.header", page, pageTotal),
+        )
+        for (command in commands) {
+            val anno = command.annotations().get(HelpLine::class.java) ?: continue
+            listOf(anno, *anno.children).forEach { anno ->
+                if (anno.descriptionKey.isEmpty()) return@forEach
+                val usage = "/" + (anno.usage.ifEmpty { command.usage() })
+                val desc = tls(anno.descriptionKey)
+                val line = MiniMessage.miniMessage().deserialize(tls("fakeplayer.help.line", usage, desc))
+                lines.add(line)
             }
         }
-
-        val pageSize = 7
-        val totalPages = (availableEntries.size + pageSize - 1) / pageSize
-        val targetPage = if (totalPages == 0) 1 else page.coerceIn(1, totalPages)
-
-        if (page < 1 || (totalPages > 0 && page > totalPages)) {
-            sendMessage(tlp("fakeplayer.help.page-invalid", totalPages))
-            return
-        }
-
-        sendMessage(tl("fakeplayer.help.header", targetPage, totalPages))
-        val startIndex = (targetPage - 1) * pageSize
-        val endIndex = (startIndex + pageSize).coerceAtMost(availableEntries.size)
-
-        for (i in startIndex until endIndex) {
-            val entry = availableEntries[i]
-            val desc = tls(entry.descriptionKey)
-            val hoverText = tls("fakeplayer.help.suggest-hover", entry.usage)
-            val line = MiniMessage.miniMessage().deserialize(
-                "<click:suggest_command:'${entry.usage}'><hover:show_text:'<gray>$hoverText</gray>'><gold>${entry.usage}</gold></hover></click> <dark_gray>-</dark_gray> <white>$desc</white>"
-            )
-            sendMessage(line)
-        }
-
-        if (targetPage < totalPages) {
-            sendMessage(tl("fakeplayer.help.footer", targetPage + 1))
-        }
-    }
-
-    @Subcommand("help")
-    @Permission(HELP, BASIC)
-    fun CommandSender.help(@Default("1") @Named("page") page: Int) {
-        showHelp(page)
+        lines.add(HelpLineUtil.paginationComponent(page,pageTotal))
+        sendMessage(Component.join(JoinConfiguration.newlines(),lines))
     }
 
     @Subcommand("reload")
     @Permission(RELOAD,ADMIN)
+    @HelpLine("fakeplayer.help.cmd.reload")
     fun CommandSender.reload() {
         plugin.onReload()
         sendMessage(tlp("fakeplayer.reload.success"))
@@ -137,6 +80,7 @@ class FakePlayerCommand {
 
     @Subcommand("spawn")
     @Permission(SPAWN, BASIC)
+    @HelpLine("fakeplayer.help.cmd.spawn", playerOnly = true)
     fun Player.spawn(context: CommandContext) {
         val player = this
         assertNoSpawnLimited()
@@ -146,9 +90,9 @@ class FakePlayerCommand {
         }
     }
 
-
     @Subcommand("spawn")
     @Permission(SPAWN_WITH_NAME, ADMIN)
+    @HelpLine("fakeplayer.help.cmd.spawn-name")
     fun CommandSender.spawn(@Named("name") name: String, context: CommandContext) {
         val player = this as? Player
         if (!plugin.config.name.pattern.matches(name)) throw SpawnNameInvalidException(name)
@@ -186,13 +130,17 @@ class FakePlayerCommand {
 
     @Subcommand("select")
     @Permission(SELECT,BASIC)
-    fun CommandSender.select(fakePlayer: FakePlayer) {
+    @HelpLine("fakeplayer.help.cmd.select")
+    fun CommandSender.select(@Named("name") fakePlayer: FakePlayer) {
         selected = fakePlayer
         sendMessage(tlp("fakeplayer.select.success", fakePlayer.name))
     }
 
     @Subcommand("remove")
     @Permission(REMOVE,BASIC)
+    @HelpLine("fakeplayer.help.cmd.remove", children = [
+        HelpLine("fakeplayer.help.cmd.remove-all","fp remove --all")
+    ])
     fun CommandSender.remove(@Select fakePlayer: FakePlayer) {
         fpm.get(fakePlayer.name)?.quit("Removed by $name")
         sendMessage(tlp("fakeplayer.remove.success", fakePlayer.name))
@@ -211,6 +159,9 @@ class FakePlayerCommand {
 
     @Subcommand("kill")
     @Permission(KILL,BASIC)
+    @HelpLine("fakeplayer.help.cmd.kill", children = [
+        HelpLine("fakeplayer.help.cmd.kill-all","fp kill --all")
+    ])
     fun CommandSender.kill(@Select fakePlayer: FakePlayer) {
         fakePlayer.player.health = 0.0
     }
@@ -223,12 +174,14 @@ class FakePlayerCommand {
 
     @Subcommand("invsee")
     @Permission(INVSEE,BASIC)
+    @HelpLine("fakeplayer.help.cmd.invsee", playerOnly = true)
     fun Player.invsee(@Select fakePlayer: FakePlayer) {
         InvseeProvider.current.openInventory(this,fakePlayer.player)
         playSound(location, Sound.BLOCK_CHEST_OPEN, 1f, 1f)
     }
 
     @Subcommand("enderchest")
+    @HelpLine("fakeplayer.help.cmd.enderchest", playerOnly = true)
     @Permission(ENDER_CHEST,BASIC)
     fun Player.enderchest(@Select fakePlayer: FakePlayer) {
         InvseeProvider.current.openEnderChest(this,fakePlayer.player)
@@ -237,18 +190,21 @@ class FakePlayerCommand {
 
     @Subcommand("tp")
     @Permission(TP,BASIC)
+    @HelpLine("fakeplayer.help.cmd.tp", playerOnly = true)
     fun Player.tp(@Select fakePlayer: FakePlayer) {
         teleportAsync(fakePlayer.player.location, Sound.ENTITY_ENDERMAN_TELEPORT)
     }
 
     @Subcommand("tphere")
     @Permission(TP,BASIC)
+    @HelpLine("fakeplayer.help.cmd.tphere", playerOnly = true)
     fun Player.tphere(@Select fakePlayer: FakePlayer) {
         fakePlayer.player.teleportAsync(location, Sound.ENTITY_ENDERMAN_TELEPORT)
     }
 
     @Subcommand("tpswap")
     @Permission(TP,BASIC)
+    @HelpLine("fakeplayer.help.cmd.tpswap", playerOnly = true)
     fun Player.tpswap(@Select fakePlayer: FakePlayer) {
         val that = fakePlayer.player
         val thatLocation = that.location
@@ -259,12 +215,14 @@ class FakePlayerCommand {
 
     @Subcommand("tppos")
     @Permission(TP,BASIC)
-    fun CommandSender.tppos(location: Location, @Select fakePlayer: FakePlayer) {
+    @HelpLine("fakeplayer.help.cmd.tppos")
+    fun CommandSender.tppos(@Named("location") location: Location, @Select fakePlayer: FakePlayer) {
         fakePlayer.player.teleportAsync(location, Sound.ENTITY_ENDERMAN_TELEPORT)
     }
 
     @Subcommand("expme")
     @Permission(EXPME,BASIC)
+    @HelpLine("fakeplayer.help.cmd.expme", playerOnly = true)
     fun Player.expme(@Select fakePlayer: FakePlayer) {
         val totalExp = fakePlayer.player.calculateTotalExperiencePoints()
         if (totalExp == 0) throw HasNoMoreExperience(fakePlayer.name)
@@ -277,6 +235,7 @@ class FakePlayerCommand {
     @Subcommand("skin")
     @Permission(SKIN,BASIC)
     @Cooldown(value = 1, unit = TimeUnit.MINUTES)
+    @HelpLine("fakeplayer.help.cmd.skin")
     fun CommandSender.skin(@Named("name") targetName: String, @Select fakePlayer: FakePlayer) {
         launch {
             val skin = SkinFetcher.getPlayerSkinInfoByName(targetName)
@@ -290,18 +249,21 @@ class FakePlayerCommand {
 
     @Subcommand("cmd")
     @Permission(CMD,BASIC)
+    @HelpLine("fakeplayer.help.cmd.cmd")
     fun CommandSender.cmd(@Named("command") @SuggestCommands @Single command: String, @Select fakePlayer: FakePlayer) {
         Bukkit.dispatchCommand(fakePlayer.player, command.removePrefix("/"))
     }
 
     @Subcommand("chat")
     @Permission(CHAT,BASIC)
+    @HelpLine("fakeplayer.help.cmd.chat")
     fun CommandSender.message(@Named("message") message: String, @Select fakePlayer: FakePlayer) {
         fakePlayer.nms.chat(message)
     }
 
     @Subcommand("settings")
     @Permission(SETTINGS,BASIC)
+    @HelpLine("fakeplayer.help.cmd.settings", playerOnly = true)
     fun Player.settings(@Select fakePlayer: FakePlayer) {
         showDialog(FakePlayerDialog.settingsDialog(fakePlayer) {
             sendMessage(tlp("fakeplayer.gui.settings.submit.success", fakePlayer.name))
@@ -311,8 +273,13 @@ class FakePlayerCommand {
         })
     }
 
-    @Subcommand("owner list")
+    @Subcommand("owner", "owner list")
     @Permission(OWNER_LIST,BASIC)
+    @HelpLine("", children = [
+        HelpLine("fakeplayer.help.cmd.owner-list", "fp owner list [name]", playerOnly = true),
+        HelpLine("fakeplayer.help.cmd.owner-add", "fp owner add [name]", playerOnly = true),
+        HelpLine("fakeplayer.help.cmd.owner-remove", "fp owner remove [name]", playerOnly = true)
+    ])
     fun Player.ownerList(@Select fakePlayer: FakePlayer) {
         if (fakePlayer.ownerUuids.size == 1 && fakePlayer.ownerUuids.contains(uniqueId)) {
             sendMessage(tlp("fakeplayer.owner.list",fakePlayer.name,name))
@@ -348,6 +315,7 @@ class FakePlayerCommand {
 
     @Subcommand("import")
     @Permission(ADMIN)
+    @HelpLine("fakeplayer.help.cmd.import")
     fun CommandSender.importFakePlayerData(@Named("database") databaseName: String, @Named("table") tableName: String, context: CommandContext) {
         val databaseFile = File(plugin.dataFolder, databaseName)
         if (!databaseFile.exists()) throw MissingDatabaseFileException(databaseName)
@@ -359,6 +327,12 @@ class FakePlayerCommand {
 
     @Subcommand("action")
     @Permission(ACTION, BASIC)
+    @HelpLine("fakeplayer.help.cmd.action", children = [
+        HelpLine("fakeplayer.help.cmd.action-start", "fp action start <action> [name]", playerOnly = true),
+        HelpLine("fakeplayer.help.cmd.action-execute", "fp action execute <action> [name]", playerOnly = true),
+        HelpLine("fakeplayer.help.cmd.action-stopall", "fp action stopall [name]", playerOnly = true),
+        HelpLine("fakeplayer.help.cmd.action-stop", "fp action stop <action> [name]", playerOnly = true),
+    ])
     fun Player.actionListUI(@Select fakePlayer: FakePlayer) {
         showDialog(FakePlayerDialog.actionListDialog(this,fakePlayer))
     }
