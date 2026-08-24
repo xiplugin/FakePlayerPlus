@@ -273,10 +273,11 @@ object FakePlayerDialog {
         }
 
         // 未在整地中的面板
-        inputs.add(boolInput("preserveOres", tl("fakeplayer.gui.flatten.preserve-ores")).initial(false).build())
-        inputs.add(boolInput("pickupItems", tl("fakeplayer.gui.flatten.pickup-items")).initial(true).build())
         val hasChests = selection != null && selection.chestBlocks.isNotEmpty()
-        inputs.add(boolInput("autoDeposit", tl("fakeplayer.gui.flatten.auto-deposit")).initial(hasChests).build())
+        val autoDepositInitial = if (selection != null) (selection.autoDeposit && hasChests) else false
+        inputs.add(boolInput("preserveOres", tl("fakeplayer.gui.flatten.preserve-ores")).initial(selection?.preserveOres ?: false).build())
+        inputs.add(boolInput("pickupItems", tl("fakeplayer.gui.flatten.pickup-items")).initial(selection?.pickupItems ?: true).build())
+        inputs.add(boolInput("autoDeposit", tl("fakeplayer.gui.flatten.auto-deposit")).initial(autoDepositInitial).build())
 
         actionButtons.add(ActionButton.create(
             tl("fakeplayer.gui.flatten.btn.select"), null, 100,
@@ -316,6 +317,14 @@ object FakePlayerDialog {
                 tl("fakeplayer.gui.flatten.btn.start"), null, 100,
                 DialogAction.customClick({ view, _ ->
                     val p1 = selection.pos1!!
+                    val preserveOres = view.getBoolean("preserveOres") ?: false
+                    val pickupItems = view.getBoolean("pickupItems") ?: true
+                    val autoDeposit = view.getBoolean("autoDeposit") ?: hasChests
+
+                    selection.preserveOres = preserveOres
+                    selection.pickupItems = pickupItems
+                    selection.autoDeposit = autoDeposit
+
                     val action = com.coderxi.plugin.fakeplayer.api.action.FlattenAction(ActionMode.Continuous).apply {
                         world = p1.world
                         minX = selection.minX
@@ -324,9 +333,9 @@ object FakePlayerDialog {
                         maxY = selection.maxY
                         minZ = selection.minZ
                         maxZ = selection.maxZ
-                        preserveOres = view.getBoolean("preserveOres") ?: false
-                        pickupItems = view.getBoolean("pickupItems") ?: true
-                        autoDeposit = view.getBoolean("autoDeposit") ?: hasChests
+                        this.preserveOres = preserveOres
+                        this.pickupItems = pickupItems
+                        this.autoDeposit = autoDeposit
                         selection.chestBlocks.forEach { cb ->
                             chestLocations.add(cb.location)
                         }

@@ -24,7 +24,10 @@ import kotlin.math.abs
 data class FlattenSelection(
     var pos1: Block? = null,
     var pos2: Block? = null,
-    val chestBlocks: MutableList<Block> = mutableListOf()
+    val chestBlocks: MutableList<Block> = mutableListOf(),
+    var preserveOres: Boolean = false,
+    var pickupItems: Boolean = true,
+    var autoDeposit: Boolean = true
 ) {
     val isComplete: Boolean get() = pos1 != null && pos2 != null && pos1?.world == pos2?.world
 
