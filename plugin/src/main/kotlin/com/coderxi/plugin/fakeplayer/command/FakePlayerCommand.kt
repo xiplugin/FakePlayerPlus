@@ -264,11 +264,22 @@ class FakePlayerCommand {
     @Subcommand("settings")
     @Permission(SETTINGS,BASIC)
     @HelpLine("fakeplayer.help.cmd.settings", playerOnly = true)
-    fun Player.settings(@Select fakePlayer: FakePlayer) {
-        showDialog(FakePlayerDialog.settingsDialog(fakePlayer) {
-            sendMessage(tlp("fakeplayer.gui.settings.submit.success", fakePlayer.name))
-            launch {
-                fpm.saveSettings(fakePlayer)
+    fun Player.settings(@Select fakePlayer: FakePlayer, context: CommandContext) {
+        val player = this
+        showDialog(FakePlayerDialog.settingsDialog(player, fakePlayer) { newName ->
+            if (newName != null && newName != fakePlayer.name) {
+                launch(context) {
+                    val renamed = fpm.rename(fakePlayer, newName, player)
+                    if (renamed != null) {
+                        player.selected = renamed
+                        sendMessage(tlp("fakeplayer.gui.settings.rename.success", renamed.name))
+                    }
+                }
+            } else {
+                sendMessage(tlp("fakeplayer.gui.settings.submit.success", fakePlayer.name))
+                launch {
+                    fpm.saveSettings(fakePlayer)
+                }
             }
         })
     }

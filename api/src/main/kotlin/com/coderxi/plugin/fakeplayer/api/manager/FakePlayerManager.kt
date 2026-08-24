@@ -41,6 +41,8 @@ interface FakePlayerManager {
 
     suspend fun spawn(name: String, spawner: CommandSender, location: Location? = null): FakePlayer?
 
+    suspend fun rename(fakePlayer: FakePlayer, newName: String, operator: CommandSender): FakePlayer?
+
     suspend fun sequenceName(spawner: Player, reservedSequenceLength: Int = 1): String
 
     // 持久化假人信息(数据库)

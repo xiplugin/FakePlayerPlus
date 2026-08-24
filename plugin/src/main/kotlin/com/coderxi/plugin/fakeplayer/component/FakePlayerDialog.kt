@@ -15,12 +15,16 @@ import io.papermc.paper.registry.data.dialog.action.DialogAction
 import io.papermc.paper.registry.data.dialog.body.DialogBody
 import io.papermc.paper.registry.data.dialog.input.DialogInput
 import io.papermc.paper.registry.data.dialog.input.DialogInput.numberRange
+import io.papermc.paper.registry.data.dialog.input.DialogInput.numberRange
 import io.papermc.paper.registry.data.dialog.input.DialogInput.bool as boolInput
+import io.papermc.paper.registry.data.dialog.input.DialogInput.text as textInput
 import io.papermc.paper.registry.data.dialog.type.DialogType
 import net.kyori.adventure.dialog.DialogLike
 import net.kyori.adventure.text.Component
 import com.coderxi.plugin.fakeplayer.command.permission.Permission.ACTION
+import com.coderxi.plugin.fakeplayer.command.permission.Permission.ADMIN
 import com.coderxi.plugin.fakeplayer.command.permission.Permission.BASIC
+import com.coderxi.plugin.fakeplayer.command.permission.Permission.SPAWN_WITH_NAME
 import com.coderxi.plugin.fakeplayer.utils.hasPermission
 
 import net.kyori.adventure.text.event.ClickCallback
@@ -34,15 +38,20 @@ object FakePlayerDialog {
     private val ACTION_OPTIONS by lazy { ClickCallback.Options.builder().uses(1).lifetime(Duration.ofMinutes(5)).build() }
     private val EMPTY_TEXT by lazy { DialogBody.plainMessage(Component.text(" ")) }
 
-    fun settingsDialog(fakePlayer: FakePlayer, onSubmit: () -> Unit = {}): DialogLike {
+    fun settingsDialog(viewer: CommandSender, fakePlayer: FakePlayer, onSubmit: (newName: String?) -> Unit = {}): DialogLike {
         val settings = fakePlayer.settings
-        val inputs = listOf(
+        val canRename = viewer.hasPermission(SPAWN_WITH_NAME, ADMIN)
+        val inputs = mutableListOf<DialogInput>()
+        if (canRename) {
+            inputs.add(textInput("name", tl("fakeplayer.gui.settings.name")).initial(fakePlayer.name).maxLength(16).build())
+        }
+        inputs.addAll(listOf(
             boolInput("collidable", tl("fakeplayer.gui.settings.collidable")).initial(settings.collidable).build(),
             boolInput("pickupItems", tl("fakeplayer.gui.settings.pickup-items")).initial(settings.pickupItems).build(),
             boolInput("invulnerable", tl("fakeplayer.gui.settings.invulnerable")).initial(settings.invulnerable).build(),
             boolInput("autoReplenish", tl("fakeplayer.gui.settings.auto-replenish")).initial(settings.autoReplenish).build(),
             boolInput("autoFish", tl("fakeplayer.gui.settings.auto-fish")).initial(settings.autoFish).build(),
-        )
+        ))
         val onSubmitClick = DialogAction.customClick(
             { view, _ ->
                 fakePlayer.settings = FakePlayerSettings(
@@ -52,7 +61,8 @@ object FakePlayerDialog {
                     view.getBoolean("autoReplenish") ?: settings.autoReplenish,
                     view.getBoolean("autoFish") ?: settings.autoFish,
                 )
-                onSubmit.invoke()
+                val newName = if (canRename) view.getText("name")?.trim() else null
+                onSubmit.invoke(newName)
             },
             ACTION_OPTIONS
         )

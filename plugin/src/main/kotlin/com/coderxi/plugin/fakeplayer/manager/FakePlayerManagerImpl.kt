@@ -7,9 +7,7 @@ import com.coderxi.plugin.fakeplayer.api.event.FakePlayerQuitedEvent
 import com.coderxi.plugin.fakeplayer.api.event.FakePlayerSpawnedEvent
 import com.coderxi.plugin.fakeplayer.api.manager.FakePlayerManager
 import com.coderxi.plugin.fakeplayer.api.nms.NMSServerPlayer
-import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandException.SpawnDuplicateSpawningException
-import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandException.SpawnDisallowedException
-import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandException.SpawnNoAvailableSequenceNameException
+import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandException.*
 import com.coderxi.plugin.fakeplayer.command.permission.Permission
 import com.coderxi.plugin.fakeplayer.config.PreventKickingType
 import com.coderxi.plugin.fakeplayer.entity.StandardFakePlayer
@@ -115,6 +113,72 @@ class FakePlayerManagerImpl : FakePlayerManager, Listener {
             }
         }
         return fakePlayer
+    }
+
+    override suspend fun rename(fakePlayer: FakePlayer, newName: String, operator: CommandSender): FakePlayer? {
+        val player = operator as? Player
+        if (!plugin.config.name.pattern.matches(newName)) throw SpawnNameInvalidException(newName)
+        if (get(newName) != null) throw SpawnAlreadyExistsException(newName)
+        if (player != null && isNameUsed(newName)) {
+            val fakePlayerInRepo = getFromRepository(newName)
+            if (fakePlayerInRepo != null && fakePlayerInRepo.ownerUuids.isNotEmpty() && !fakePlayerInRepo.ownerUuids.contains(player.uniqueId) && !player.hasPermission(Permission.ADMIN.value)) {
+                throw SpawnNameAlreadyUsedException(newName)
+            }
+        }
+
+        val oldUuid = fakePlayer.uuid
+        val newUuid = uuid(newName)
+        val location = fakePlayer.player.location.clone()
+        val skin = fakePlayer.skin
+        val settings = fakePlayer.settings.copy()
+        val creatorUuid = fakePlayer.creatorUuid
+        val ownerUuids = fakePlayer.ownerUuids.toMutableSet()
+
+        // 1. 退出舊假人
+        fakePlayer.quit("Renamed to $newName")
+
+        // 2. 遷移 SQLite 數據與 playerdata
+        val newFakePlayer = StandardFakePlayer(newName, newUuid, creatorUuid, ownerUuids, skin, settings)
+        withContext(Dispatchers.IO) {
+            repository.rename(oldUuid, newFakePlayer)
+
+            val worldContainer = Bukkit.getWorldContainer()
+            val worlds = Bukkit.getWorlds()
+            val targetFolders = mutableSetOf<File>()
+            worlds.forEach { targetFolders.add(it.worldFolder) }
+            targetFolders.add(File(worldContainer, "world"))
+
+            for (folder in targetFolders) {
+                val oldDat = File(folder, "playerdata/$oldUuid.dat")
+                if (oldDat.exists()) {
+                    val newDat = File(folder, "playerdata/$newUuid.dat")
+                    oldDat.copyTo(newDat, overwrite = true)
+                    oldDat.delete()
+                }
+                val oldDatOld = File(folder, "playerdata/$oldUuid.dat_old")
+                if (oldDatOld.exists()) {
+                    val newDatOld = File(folder, "playerdata/$newUuid.dat_old")
+                    oldDatOld.copyTo(newDatOld, overwrite = true)
+                    oldDatOld.delete()
+                }
+                val oldStats = File(folder, "stats/$oldUuid.json")
+                if (oldStats.exists()) {
+                    val newStats = File(folder, "stats/$newUuid.json")
+                    oldStats.copyTo(newStats, overwrite = true)
+                    oldStats.delete()
+                }
+                val oldAdv = File(folder, "advancements/$oldUuid.json")
+                if (oldAdv.exists()) {
+                    val newAdv = File(folder, "advancements/$newUuid.json")
+                    oldAdv.copyTo(newAdv, overwrite = true)
+                    oldAdv.delete()
+                }
+            }
+        }
+
+        // 3. 原地重新生成新假人
+        delay(200)
+        return spawn(newName, operator, location)
     }
 
     private suspend fun NMSServerPlayer.setupDefaultSkin(spawner: CommandSender) {
