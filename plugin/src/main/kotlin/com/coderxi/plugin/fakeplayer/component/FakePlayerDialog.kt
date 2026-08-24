@@ -238,13 +238,20 @@ object FakePlayerDialog {
                 }, ACTION_OPTIONS)
             ))
 
+            val cancelExitBtn = ActionButton.create(
+                tl("fakeplayer.gui.cancel"), null, 100,
+                DialogAction.customClick({ _, _ ->
+                    stopAutoRefresh(viewer)
+                }, ACTION_OPTIONS)
+            )
+
             return Dialog.create { builder -> builder.empty()
                 .base(DialogBase.builder(tl("fakeplayer.gui.flatten.title", fakePlayer.name))
                     .canCloseWithEscape(true)
                     .body(listOf(DialogBody.plainMessage(bodyMsg)))
                     .inputs(inputs)
                     .build())
-                .type(DialogType.multiAction(actionButtons).columns(2).exitAction(CANCEL_BTN).build())
+                .type(DialogType.multiAction(actionButtons).columns(2).exitAction(cancelExitBtn).build())
             }
         }
 
