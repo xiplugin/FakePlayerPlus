@@ -146,20 +146,36 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
         val yaw = Math.toDegrees(atan2(-dx, dz)).toFloat()
         player.setRotation(yaw, player.location.pitch)
 
-        val speed = 0.24 // 原版正常行走速度
+        val inWater = player.isInWater || pLoc.block.isLiquid
+        val speed = if (inWater) 0.16 else 0.24
         val vx = (dx / horizontalDist) * speed
         val vz = (dz / horizontalDist) * speed
 
-        val frontLoc = pLoc.clone().add((dx / horizontalDist) * 0.6, 0.0, (dz / horizontalDist) * 0.6)
-        val frontBlock = frontLoc.block
-        val frontAbove = frontLoc.clone().add(0.0, 1.0, 0.0).block
-        val needJump = (dy > 0.3 || (!frontBlock.type.isAir && frontBlock.type.isSolid && frontAbove.type.isAir)) && fakePlayer.nms.onGround
-
         var vy = player.velocity.y
-        if (needJump) {
-            fakePlayer.nms.jumpFromGround()
-            fakePlayer.nms.setJumping(true)
-            vy = 0.45 // 給予充足跳躍力爬出坑洞
+
+        if (inWater) {
+            fakePlayer.nms.setJumping(false)
+            // 在水中時以平滑游泳速度移動，不觸發地面跳躍
+            vy = if (dy > 0.3) {
+                0.08
+            } else if (dy < -0.3) {
+                -0.10
+            } else {
+                0.0
+            }
+        } else {
+            val frontLoc = pLoc.clone().add((dx / horizontalDist) * 0.6, 0.0, (dz / horizontalDist) * 0.6)
+            val frontBlock = frontLoc.block
+            val frontAbove = frontLoc.clone().add(0.0, 1.0, 0.0).block
+            val needJump = (dy > 0.3 || (!frontBlock.type.isAir && frontBlock.type.isSolid && frontAbove.type.isAir)) && fakePlayer.nms.onGround
+
+            if (needJump) {
+                fakePlayer.nms.jumpFromGround()
+                fakePlayer.nms.setJumping(true)
+                vy = 0.45 // 給予充足跳躍力爬出坑洞
+            } else {
+                fakePlayer.nms.setJumping(false)
+            }
         }
 
         val moveVec = Vector(vx, vy, vz)
@@ -251,6 +267,7 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
 
     override fun onStop(fakePlayer: FakePlayer, action: FlattenAction) {
         resetMining(fakePlayer, action)
+        fakePlayer.nms.setJumping(false)
         fakePlayer.player.getAttribute(Attribute.STEP_HEIGHT)?.let {
             it.baseValue = 0.6
         }
