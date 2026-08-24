@@ -61,7 +61,7 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
 
         // 尋找或驗證目標方塊
         var target = action.target
-        if (target == null || target.type.isAir || target.world != world) {
+        if (target == null || !isMinedBlock(target) || target.world != world) {
             target = findNextBlock(world, action, player.location)
             if (target == null) {
                 // 選區內方塊已全數清空，最後自動存放一次
@@ -158,7 +158,7 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
         if (action.progress >= 1.0f) {
             action.clearedBlocks++
             fakePlayer.nms.doBlockBreakAction(target, STOP)
-            if (!target.type.isAir) {
+            if (isMinedBlock(target)) {
                 player.breakBlock(target)
             }
             resetMining(fakePlayer, action)
@@ -404,6 +404,14 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
         return (inReach.minByOrNull { it.distanceSquared(pLoc) } ?: candidates.minByOrNull { it.distanceSquared(pLoc) }) ?: pLoc
     }
 
+    private fun isMinedBlock(block: Block): Boolean {
+        val type = block.type
+        if (type.isAir || block.isLiquid) return false
+        if (type == org.bukkit.Material.WATER || type == org.bukkit.Material.LAVA || type == org.bukkit.Material.BUBBLE_COLUMN) return false
+        if (type.hardness < 0f) return false
+        return true
+    }
+
     private fun findNextBlock(world: org.bukkit.World, action: FlattenAction, currentLoc: Location): Block? {
         for (y in action.maxY downTo action.minY) {
             var closestBlock: Block? = null
@@ -411,7 +419,7 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
             for (x in action.minX..action.maxX) {
                 for (z in action.minZ..action.maxZ) {
                     val block = world.getBlockAt(x, y, z)
-                    if (!block.type.isAir && block.type.hardness >= 0f) {
+                    if (isMinedBlock(block)) {
                         if (action.preserveOres && isOreBlock(block)) {
                             continue
                         }
@@ -441,7 +449,7 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
             for (x in action.minX..action.maxX) {
                 for (z in action.minZ..action.maxZ) {
                     val b = world.getBlockAt(x, y, z)
-                    if (!b.type.isAir && b.type.hardness >= 0f) {
+                    if (isMinedBlock(b)) {
                         if (!action.preserveOres || !isOreBlock(b)) {
                             count++
                         }
