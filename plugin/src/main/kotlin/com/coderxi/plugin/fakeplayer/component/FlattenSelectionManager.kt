@@ -378,26 +378,23 @@ object FlattenSelectionManager : Listener {
 
             val clicked = event.clickedBlock ?: return
             val selection = getOrCreateSelection(player)
-            when (event.action) {
-                Action.LEFT_CLICK_BLOCK -> {
-                    selection.pos1 = clicked
-                    repository.saveSelection(player.uniqueId, selection)
-                    event.isCancelled = true
-                    player.sendMessage(tlp("fakeplayer.flatten.pos1.set", clicked.x, clicked.y, clicked.z))
-                    if (selection.isComplete) {
-                        player.sendMessage(tlp("fakeplayer.flatten.area.ready", selection.blockCount))
-                    }
+            val action = event.action
+            if (action == Action.LEFT_CLICK_BLOCK) {
+                selection.pos1 = clicked
+                repository.saveSelection(player.uniqueId, selection)
+                event.isCancelled = true
+                player.sendMessage(tlp("fakeplayer.flatten.pos1.set", clicked.x, clicked.y, clicked.z))
+                if (selection.isComplete) {
+                    player.sendMessage(tlp("fakeplayer.flatten.area.ready", selection.blockCount))
                 }
-                Action.RIGHT_CLICK_BLOCK -> {
-                    selection.pos2 = clicked
-                    repository.saveSelection(player.uniqueId, selection)
-                    event.isCancelled = true
-                    player.sendMessage(tlp("fakeplayer.flatten.pos2.set", clicked.x, clicked.y, clicked.z))
-                    if (selection.isComplete) {
-                        player.sendMessage(tlp("fakeplayer.flatten.area.ready", selection.blockCount))
-                    }
+            } else if (action == Action.RIGHT_CLICK_BLOCK) {
+                selection.pos2 = clicked
+                repository.saveSelection(player.uniqueId, selection)
+                event.isCancelled = true
+                player.sendMessage(tlp("fakeplayer.flatten.pos2.set", clicked.x, clicked.y, clicked.z))
+                if (selection.isComplete) {
+                    player.sendMessage(tlp("fakeplayer.flatten.area.ready", selection.blockCount))
                 }
-                else -> {}
             }
         }
     }
