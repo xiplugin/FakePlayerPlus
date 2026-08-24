@@ -57,4 +57,9 @@ class FlattenAction private constructor(override val mode: ActionMode): Action.B
     var target: Block? = null
     var progress = 0f
     var freezeTick = 0
+    var preserveOres: Boolean = false
+    var pickupItems: Boolean = true
+    var tickDelay: Int = 2
+    var totalBlocks: Int = 0
+    var clearedBlocks: Int = 0
 }

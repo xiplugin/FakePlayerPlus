@@ -8,6 +8,7 @@ import com.coderxi.plugin.fakeplayer.api.nms.NMSServerPlayer.BlockBreakActionTyp
 import com.coderxi.plugin.fakeplayer.utils.tlp
 import org.bukkit.Location
 import org.bukkit.block.Block
+import org.bukkit.entity.Item
 import org.bukkit.entity.Player
 import org.bukkit.util.Vector
 import kotlin.math.atan2
@@ -21,6 +22,16 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
         if (action.freezeTick > 0) { action.freezeTick--; return }
         val player = fakePlayer.player
         val world = action.world ?: player.world
+
+        // 初始化總需挖掘方塊計數
+        if (action.totalBlocks == 0) {
+            action.totalBlocks = countSolidBlocks(world, action)
+        }
+
+        // 自動拾取周圍掉落物
+        if (action.pickupItems) {
+            pickupNearbyItems(player)
+        }
 
         // 尋找或驗證目標方塊
         var target = action.target
@@ -47,7 +58,6 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
         if (distToTarget > 3.5) {
             val standLoc = findStandLocation(player, target)
             walkTowards(fakePlayer, standLoc)
-            // 行走中若仍太遠則暫不挖掘
             if (player.location.distance(targetCenter) > 4.2) {
                 return
             }
@@ -75,12 +85,28 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
 
         if (action.progress >= 1.0f) {
             fakePlayer.nms.doBlockBreakAction(target, STOP)
-            // 使用 Paper API 確保方塊被破壞並觸發掉落
             if (!target.type.isAir) {
                 player.breakBlock(target)
+                action.clearedBlocks++
             }
             resetMining(fakePlayer, action)
-            action.freezeTick = 2
+            action.freezeTick = action.tickDelay
+            if (action.pickupItems) {
+                pickupNearbyItems(player)
+            }
+        }
+    }
+
+    private fun pickupNearbyItems(player: Player) {
+        val nearbyItems = player.getNearbyEntities(2.5, 2.5, 2.5).filterIsInstance<Item>()
+        for (itemEntity in nearbyItems) {
+            if (!itemEntity.isValid || itemEntity.isDead) continue
+            val remaining = player.inventory.addItem(itemEntity.itemStack)
+            if (remaining.isEmpty()) {
+                itemEntity.remove()
+            } else {
+                itemEntity.itemStack = remaining.values.first()
+            }
         }
     }
 
@@ -93,7 +119,6 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
 
         if (horizontalDist < 0.3) return
 
-        // 旋轉朝向移動方向
         val yaw = Math.toDegrees(atan2(-dx, dz)).toFloat()
         player.setRotation(yaw, player.location.pitch)
 
@@ -101,7 +126,6 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
         val vx = (dx / horizontalDist) * speed
         val vz = (dz / horizontalDist) * speed
 
-        // 檢測前方障礙跳躍
         val frontLoc = pLoc.clone().add((dx / horizontalDist) * 0.6, 0.0, (dz / horizontalDist) * 0.6)
         val frontBlock = frontLoc.block
         val frontAbove = frontLoc.clone().add(0.0, 1.0, 0.0).block
@@ -109,7 +133,7 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
 
         var vy = player.velocity.y
         if (needJump) {
-            vy = 0.42 // 原版跳躍速度
+            vy = 0.42
         }
 
         val moveVec = Vector(vx, vy, vz)
@@ -145,7 +169,6 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
     }
 
     private fun findNextBlock(world: org.bukkit.World, action: FlattenAction, currentLoc: Location): Block? {
-        // 由上往下（maxY -> minY）優先搜尋，同層內優先選擇距離假人最近的方塊
         for (y in action.maxY downTo action.minY) {
             var closestBlock: Block? = null
             var minDistanceSq = Double.MAX_VALUE
@@ -153,6 +176,9 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
                 for (z in action.minZ..action.maxZ) {
                     val block = world.getBlockAt(x, y, z)
                     if (!block.type.isAir && block.type.hardness >= 0f) {
+                        if (action.preserveOres && isOreBlock(block)) {
+                            continue
+                        }
                         val dSq = block.location.distanceSquared(currentLoc)
                         if (dSq < minDistanceSq) {
                             minDistanceSq = dSq
@@ -166,6 +192,28 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
             }
         }
         return null
+    }
+
+    private fun isOreBlock(block: Block): Boolean {
+        val name = block.type.name
+        return name.endsWith("_ORE") || name.contains("ORE") || name == "ANCIENT_DEBRIS"
+    }
+
+    private fun countSolidBlocks(world: org.bukkit.World, action: FlattenAction): Int {
+        var count = 0
+        for (y in action.minY..action.maxY) {
+            for (x in action.minX..action.maxX) {
+                for (z in action.minZ..action.maxZ) {
+                    val b = world.getBlockAt(x, y, z)
+                    if (!b.type.isAir && b.type.hardness >= 0f) {
+                        if (!action.preserveOres || !isOreBlock(b)) {
+                            count++
+                        }
+                    }
+                }
+            }
+        }
+        return count
     }
 
     private fun resetMining(fakePlayer: FakePlayer, action: FlattenAction) {
