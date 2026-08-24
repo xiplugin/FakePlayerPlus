@@ -291,14 +291,16 @@ class FakePlayerCommand {
     @HelpLine("fakeplayer.help.cmd.flatten", children = [
         HelpLine("fakeplayer.help.cmd.flatten-cancel", "fp flatten cancel", playerOnly = true)
     ], playerOnly = true)
-    fun Player.flatten(@Named("name") @revxrsal.commands.annotation.Default("") fakePlayerName: String) {
+    fun Player.flatten() {
         val fpm = com.coderxi.plugin.fakeplayer.utils.plugin.fakePlayerManager
-        val targetFp = if (fakePlayerName.isNotBlank()) {
-            fpm.get(fakePlayerName) ?: throw com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandException.NotExitsException(fakePlayerName)
-        } else {
-            this.selected ?: fpm.fakeplayersByOwnerUuid(uniqueId).firstOrNull() ?: fpm.fakeplayers().firstOrNull()
-        }
+        val targetFp = this.selected ?: fpm.fakeplayersByOwnerUuid(uniqueId).firstOrNull() ?: fpm.fakeplayers().firstOrNull()
         showDialog(FakePlayerDialog.flattenDialog(this, targetFp))
+    }
+
+    @Subcommand("flatten")
+    @Permission(FLATTEN, BASIC)
+    fun Player.flatten(@Named("name") fakePlayer: FakePlayer) {
+        showDialog(FakePlayerDialog.flattenDialog(this, fakePlayer))
     }
 
     @Subcommand("flatten cancel")
