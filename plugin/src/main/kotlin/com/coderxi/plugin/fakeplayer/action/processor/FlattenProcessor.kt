@@ -63,17 +63,20 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
         val eyeLoc = player.eyeLocation
         val distToTarget = player.location.distance(targetCenter)
 
-        // 若超出觸及距離，向目標方塊行走靠近
+        // 若超出觸及距離，向目標方塊周圍的地面站立點行走靠近
         if (distToTarget > 3.5) {
             val standLoc = findStandLocation(player, target)
             walkTowards(fakePlayer, standLoc)
 
-            // 卡住檢測與自動脫困
+            // 卡住檢測與地面自動脫困
             val lastLoc = action.lastLoc
             if (lastLoc != null && lastLoc.distanceSquared(player.location) < 0.04) {
                 action.stuckTick++
-                if (action.stuckTick >= 30) { // 在坑內或障礙卡住超過 1.5 秒
-                    player.teleport(standLoc)
+                if (action.stuckTick >= 40) { // 在坑內或障礙卡住超過 2 秒
+                    val groundBlock = standLoc.block.getRelative(0, -1, 0)
+                    if (standLoc != player.location && groundBlock.type.isSolid) {
+                        player.teleport(standLoc)
+                    }
                     action.stuckTick = 0
                 }
             } else {
@@ -147,40 +150,37 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
         player.setRotation(yaw, player.location.pitch)
 
         val inWater = player.isInWater || pLoc.block.isLiquid
-        val speed = if (inWater) 0.16 else 0.24
+        val speed = if (inWater) 0.16 else 0.22
         val vx = (dx / horizontalDist) * speed
         val vz = (dz / horizontalDist) * speed
 
-        var vy = player.velocity.y
-
         if (inWater) {
             fakePlayer.nms.setJumping(false)
-            // 在水中時以平滑游泳速度移動，不觸發地面跳躍
-            vy = if (dy > 0.3) {
-                0.08
-            } else if (dy < -0.3) {
-                -0.10
-            } else {
-                0.0
-            }
+            val vy = if (dy > 0.3) 0.08 else if (dy < -0.3) -0.10 else 0.0
+            val moveVec = Vector(vx, vy, vz)
+            fakePlayer.nms.setDeltaMovement(moveVec)
+            player.velocity = moveVec
         } else {
             val frontLoc = pLoc.clone().add((dx / horizontalDist) * 0.6, 0.0, (dz / horizontalDist) * 0.6)
             val frontBlock = frontLoc.block
             val frontAbove = frontLoc.clone().add(0.0, 1.0, 0.0).block
-            val needJump = (dy > 0.3 || (!frontBlock.type.isAir && frontBlock.type.isSolid && frontAbove.type.isAir)) && fakePlayer.nms.onGround
+            val obstacleInFront = !frontBlock.type.isAir && frontBlock.type.isSolid && frontAbove.type.isAir
 
-            if (needJump) {
+            if (obstacleInFront && fakePlayer.nms.onGround) {
                 fakePlayer.nms.jumpFromGround()
                 fakePlayer.nms.setJumping(true)
-                vy = 0.45 // 給予充足跳躍力爬出坑洞
+                val moveVec = Vector(vx, 0.42, vz)
+                fakePlayer.nms.setDeltaMovement(moveVec)
+                player.velocity = moveVec
             } else {
                 fakePlayer.nms.setJumping(false)
+                // 陸地行走保持正常重力與水平速度，不強行施加持續向上動量
+                val currentVy = minOf(player.velocity.y, 0.1)
+                val moveVec = Vector(vx, currentVy, vz)
+                fakePlayer.nms.setDeltaMovement(moveVec)
+                player.velocity = moveVec
             }
         }
-
-        val moveVec = Vector(vx, vy, vz)
-        fakePlayer.nms.setDeltaMovement(moveVec)
-        player.velocity = moveVec
     }
 
     private fun findStandLocation(player: Player, target: Block): Location {
@@ -188,6 +188,7 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
         val pLoc = player.location
         val candidates = mutableListOf<Location>()
         val offsets = arrayOf(
+            intArrayOf(0, 0),
             intArrayOf(1, 0), intArrayOf(-1, 0), intArrayOf(0, 1), intArrayOf(0, -1),
             intArrayOf(1, 1), intArrayOf(-1, -1), intArrayOf(1, -1), intArrayOf(-1, 1),
             intArrayOf(2, 0), intArrayOf(-2, 0), intArrayOf(0, 2), intArrayOf(0, -2)
@@ -195,19 +196,20 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
         for (offset in offsets) {
             val sx = target.x + offset[0]
             val sz = target.z + offset[1]
-            val sy = target.y
-            for (dy in 1 downTo -2) {
-                val ground = world.getBlockAt(sx, sy + dy, sz)
-                val feet = world.getBlockAt(sx, sy + dy + 1, sz)
-                val head = world.getBlockAt(sx, sy + dy + 2, sz)
-                if (!ground.type.isAir && feet.type.isAir && head.type.isAir) {
-                    candidates.add(Location(world, sx + 0.5, (sy + dy + 1).toDouble(), sz + 0.5))
+            val startY = minOf(target.y + 1, world.maxHeight - 2)
+            val minY = maxOf(target.y - 12, world.minHeight)
+            for (sy in startY downTo minY) {
+                val ground = world.getBlockAt(sx, sy, sz)
+                val feet = world.getBlockAt(sx, sy + 1, sz)
+                val head = world.getBlockAt(sx, sy + 2, sz)
+                if (!ground.type.isAir && ground.type.isSolid && feet.type.isAir && head.type.isAir) {
+                    candidates.add(Location(world, sx + 0.5, (sy + 1).toDouble(), sz + 0.5))
                     break
                 }
             }
         }
-        return candidates.minByOrNull { it.distanceSquared(pLoc) }
-            ?: Location(world, target.x + 0.5, (target.y + 1).toDouble(), target.z + 0.5)
+        // 嚴格確保只回傳地面有效站立點，若周圍無地面則保持當前玩家位置，絕不回傳半空中
+        return candidates.minByOrNull { it.distanceSquared(pLoc) } ?: pLoc
     }
 
     private fun findNextBlock(world: org.bukkit.World, action: FlattenAction, currentLoc: Location): Block? {
