@@ -6,7 +6,10 @@ import com.coderxi.plugin.fakeplayer.utils.tlp
 import org.bukkit.Bukkit
 import org.bukkit.Particle
 import org.bukkit.block.Block
+import org.bukkit.block.BlockFace
+import org.bukkit.block.Chest
 import org.bukkit.block.Container
+import org.bukkit.block.DoubleChest
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
@@ -44,11 +47,34 @@ data class FlattenSelection(
     val sizeY: Int get() = abs(maxY - minY) + 1
     val sizeZ: Int get() = abs(maxZ - minZ) + 1
 
-    fun addChestBlock(block: Block): Boolean {
-        if (chestBlocks.any { it.world == block.world && it.x == block.x && it.y == block.y && it.z == block.z }) {
-            return false
+    companion object {
+        fun getAssociatedBlocks(block: Block): List<Block> {
+            val state = block.state
+            if (state is Chest) {
+                val holder = state.inventory.holder
+                if (holder is DoubleChest) {
+                    val left = (holder.leftSide as? Chest)?.block
+                    val right = (holder.rightSide as? Chest)?.block
+                    if (left != null && right != null) {
+                        return listOf(left, right)
+                    }
+                }
+            }
+            return listOf(block)
         }
-        chestBlocks.add(block)
+    }
+
+    fun addChestBlock(block: Block): Boolean {
+        val associated = getAssociatedBlocks(block)
+        for (existing in chestBlocks) {
+            val existingAssociated = getAssociatedBlocks(existing)
+            for (assoc in associated) {
+                if (existingAssociated.any { it.world == assoc.world && it.x == assoc.x && it.y == assoc.y && it.z == assoc.z }) {
+                    return false
+                }
+            }
+        }
+        chestBlocks.add(associated.first())
         return true
     }
 
@@ -103,11 +129,26 @@ object FlattenSelectionManager : Listener {
                     if (cb.world != player.world) continue
                     if (cb.location.distanceSquared(player.location) > 48 * 48) continue
 
-                    val center = cb.location.clone().add(0.5, 0.6, 0.5)
-                    // 箱子方塊周圍持續產生閃爍光芒與粒子效果
-                    player.spawnParticle(Particle.HAPPY_VILLAGER, center.clone().add(0.0, 0.2, 0.0), 3, 0.25, 0.15, 0.25, 0.0)
-                    player.spawnParticle(Particle.WAX_ON, center, 4, 0.25, 0.25, 0.25, 0.0)
-                    player.spawnParticle(Particle.END_ROD, center.clone().add(0.0, 0.45, 0.0), 1, 0.05, 0.05, 0.05, 0.01)
+                    // 支援大箱子（雙格箱）與堆疊箱子
+                    val blocks = FlattenSelection.getAssociatedBlocks(cb)
+                    for (b in blocks) {
+                        val cx = b.x + 0.5
+                        val cy = b.y + 0.5
+                        val cz = b.z + 0.5
+                        val hasBlockAbove = !b.getRelative(BlockFace.UP).type.isAir
+
+                        // 在箱子四周與正面產生柔和的金色與綠色閃爍粒子
+                        player.spawnParticle(Particle.HAPPY_VILLAGER, cx, cy, cz, 3, 0.35, 0.20, 0.35, 0.0)
+                        player.spawnParticle(Particle.WAX_ON, cx, cy, cz, 4, 0.35, 0.20, 0.35, 0.0)
+
+                        if (!hasBlockAbove) {
+                            // 上方無遮擋時，箱頂產生微光
+                            player.spawnParticle(Particle.END_ROD, cx, cy + 0.35, cz, 1, 0.1, 0.05, 0.1, 0.01)
+                        } else {
+                            // 上方有箱子堆疊時，將粒子散佈至側面與前方
+                            player.spawnParticle(Particle.END_ROD, cx, cy, cz, 1, 0.4, 0.1, 0.4, 0.01)
+                        }
+                    }
                 }
             }
         }
@@ -175,7 +216,7 @@ object FlattenSelectionManager : Listener {
         val player = event.player
         if (event.hand != EquipmentSlot.HAND) return
 
-        // 綁定箱子模式 (支援多箱子依序綁定，Shift+點擊退出)
+        // 綁定箱子模式 (支援多箱子、大箱子依序綁定，Shift+點擊退出)
         if (isSelectingChest(player)) {
             if (player.isSneaking) {
                 stopChestSelection(player)

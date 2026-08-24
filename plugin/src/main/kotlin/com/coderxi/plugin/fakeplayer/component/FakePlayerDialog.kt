@@ -409,8 +409,11 @@ object FakePlayerDialog {
         ))
 
         chestBlocks.forEachIndexed { index, cb ->
+            val state = cb.state
+            val isDouble = state is org.bukkit.block.Chest && state.inventory.holder is org.bukkit.block.DoubleChest
+            val typeName = if (isDouble) "DOUBLE_CHEST" else cb.type.name
             actionButtons.add(ActionButton.create(
-                tl("fakeplayer.gui.flatten.chest.btn.remove", index + 1, cb.type.name, "${cb.x}, ${cb.y}, ${cb.z}"), null, 100,
+                tl("fakeplayer.gui.flatten.chest.btn.remove", index + 1, typeName, "${cb.x}, ${cb.y}, ${cb.z}"), null, 100,
                 DialogAction.customClick({ _, _ ->
                     FlattenSelectionManager.removeChestBlock(viewer, index)
                     runOnPlayerThread(viewer) {
@@ -445,7 +448,10 @@ object FakePlayerDialog {
             tl("fakeplayer.gui.flatten.chest.list.empty")
         } else {
             val listStr = chestBlocks.mapIndexed { i, cb ->
-                "<gray> • <gold>#${i + 1}</gold> <white>${cb.type.name}</white> <aqua>(${cb.x}, ${cb.y}, ${cb.z})</aqua></gray>"
+                val state = cb.state
+                val isDouble = state is org.bukkit.block.Chest && state.inventory.holder is org.bukkit.block.DoubleChest
+                val typeName = if (isDouble) "DOUBLE_CHEST" else cb.type.name
+                "<gray> • <gold>#${i + 1}</gold> <white>$typeName</white> <aqua>(${cb.x}, ${cb.y}, ${cb.z})</aqua></gray>"
             }.joinToString("\n")
             val effectStatus = if (isHighlighting) tls("fakeplayer.gui.flatten.particle.on") else tls("fakeplayer.gui.flatten.particle.off")
             tl("fakeplayer.gui.flatten.chest.list.header", chestBlocks.size, listStr, effectStatus)
