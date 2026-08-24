@@ -154,6 +154,12 @@ class FakePlayerRepository {
                     }
                     batchQuery.executeBatch()
                 }
+
+                conn.createQuery("UPDATE fakeplayer_flatten_task SET fakeplayer_uuid = :newUuid WHERE fakeplayer_uuid = :oldUuid")
+                    .addParameter("oldUuid", oldUuid.toString())
+                    .addParameter("newUuid", newFakePlayer.uuid.toString())
+                    .executeUpdate()
+
                 conn.commit()
             } catch (e: Exception) {
                 conn.rollback()

@@ -133,13 +133,28 @@ class FakePlayerManagerImpl : FakePlayerManager, Listener {
         val settings = fakePlayer.settings.copy()
         val creatorUuid = fakePlayer.creatorUuid
         val ownerUuids = fakePlayer.ownerUuids.toMutableSet()
+        val oldPlayer = fakePlayer.player
 
-        // 1. 退出舊假人
+        // 完整拷貝舊假人的所有背包物品、裝備、副手、終界箱、血量、飢餓度、經驗與藥水效果
+        val invContents = oldPlayer.inventory.contents.map { it?.clone() }.toTypedArray()
+        val armorContents = oldPlayer.inventory.armorContents.map { it?.clone() }.toTypedArray()
+        val extraContents = oldPlayer.inventory.extraContents.map { it?.clone() }.toTypedArray()
+        val enderChestContents = oldPlayer.enderChest.contents.map { it?.clone() }.toTypedArray()
+        val health = oldPlayer.health
+        val foodLevel = oldPlayer.foodLevel
+        val exp = oldPlayer.exp
+        val level = oldPlayer.level
+        val totalExperience = oldPlayer.totalExperience
+        val gameMode = oldPlayer.gameMode
+        val potionEffects = oldPlayer.activePotionEffects.toList()
+
+        // 1. 強制保存舊假人資料至磁碟並退出
         withContext(fakePlayer.dispatcher) {
+            oldPlayer.saveData()
             fakePlayer.quit("Renamed to $newName")
         }
 
-        // 2. 遷移 SQLite 數據與 playerdata
+        // 2. 遷移 SQLite 數據與磁碟上的 playerdata / stats / advancements
         val newFakePlayer = StandardFakePlayer(newName, newUuid, creatorUuid, ownerUuids, skin, settings)
         withContext(Dispatchers.IO) {
             repository.rename(oldUuid, newFakePlayer)
@@ -178,9 +193,33 @@ class FakePlayerManagerImpl : FakePlayerManager, Listener {
             }
         }
 
-        // 3. 原地重新生成新假人
+        // 3. 原地生成新假人
         delay(200)
-        return spawn(newName, operator, location)
+        val spawnedFakePlayer = spawn(newName, operator, location)
+
+        // 4. 將舊假人的背包物資與設定完整注入新假人
+        withContext(spawnedFakePlayer.dispatcher) {
+            spawnedFakePlayer.settings = settings.copy()
+            val newPlayer = spawnedFakePlayer.player
+            newPlayer.inventory.contents = invContents
+            newPlayer.inventory.armorContents = armorContents
+            newPlayer.inventory.extraContents = extraContents
+            newPlayer.enderChest.contents = enderChestContents
+            newPlayer.health = health.coerceAtMost(newPlayer.maxHealth)
+            newPlayer.foodLevel = foodLevel
+            newPlayer.exp = exp
+            newPlayer.level = level
+            newPlayer.totalExperience = totalExperience
+            newPlayer.gameMode = gameMode
+            potionEffects.forEach { newPlayer.addPotionEffect(it) }
+            newPlayer.saveData()
+        }
+
+        withContext(Dispatchers.IO) {
+            repository.saveSettings(spawnedFakePlayer)
+        }
+
+        return spawnedFakePlayer
     }
 
     private suspend fun NMSServerPlayer.setupDefaultSkin(spawner: CommandSender) {
