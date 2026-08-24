@@ -95,6 +95,9 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
             action.progress = 0f
             com.coderxi.plugin.fakeplayer.component.FlattenTargetRegistry.reserve(world, target.x, target.y, target.z, fakePlayer.uuid)
             if (isMinedBlock(target)) {
+                if (hasChests && !com.coderxi.plugin.fakeplayer.utils.ToolHelper.hasToolForBlock(player, target)) {
+                    restockToolsFromBoundChests(fakePlayer, action, com.coderxi.plugin.fakeplayer.utils.ToolHelper.getNeededToolSuffix(target))
+                }
                 com.coderxi.plugin.fakeplayer.utils.ToolHelper.equipBestTool(player, target)
             }
         }
@@ -316,6 +319,16 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
                 }
             }
 
+            // 存完物品後，若身上缺少核心工具，自動從箱子補給工具
+            if (!com.coderxi.plugin.fakeplayer.utils.ToolHelper.hasAllEssentialTools(player)) {
+                val restocked = com.coderxi.plugin.fakeplayer.utils.ToolHelper.restockToolsFromChest(player, targetInv)
+                if (restocked) {
+                    fakePlayer.owners.forEach {
+                        it.sendMessage(tlp("fakeplayer.flatten.chest.restocked", fakePlayer.name))
+                    }
+                }
+            }
+
             // 若身上物資已全數存入，跳出箱子循環
             if (!hasItemsToDeposit(player)) {
                 break
@@ -333,6 +346,64 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
         }
 
         return true
+    }
+
+    private fun restockToolsFromBoundChests(fakePlayer: FakePlayer, action: FlattenAction, neededSuffix: String? = null): Boolean {
+        val player = fakePlayer.player
+        val chestList = mutableListOf<Location>()
+        if (action.chestLocations.isNotEmpty()) {
+            chestList.addAll(action.chestLocations)
+        } else if (action.chestX != null && action.chestY != null && action.chestZ != null) {
+            val w = action.chestWorld ?: player.world
+            chestList.add(Location(w, action.chestX!!.toDouble(), action.chestY!!.toDouble(), action.chestZ!!.toDouble()))
+        }
+
+        if (chestList.isEmpty()) return false
+
+        for (loc in chestList) {
+            val world = loc.world ?: action.world ?: player.world
+            val chestBlock = world.getBlockAt(loc)
+            val blockState = chestBlock.getState(false)
+            if (blockState !is Container) continue
+
+            val targetInv = if (blockState is Chest) {
+                val holder = blockState.inventory.holder
+                if (holder is DoubleChest) holder.inventory else blockState.inventory
+            } else {
+                blockState.inventory
+            }
+
+            val chestCenter = chestBlock.location.clone().add(0.5, 0.5, 0.5)
+            val dist = player.location.distance(chestCenter)
+
+            if (dist > 3.5) {
+                val standLoc = findStandLocation(player, chestBlock)
+                val canWalk = walkTowards(fakePlayer, standLoc)
+                if (!canWalk || dist > 6.0 || player.location.distance(chestCenter) > 4.2) {
+                    player.teleport(standLoc)
+                }
+            }
+
+            // 朝向箱子並揮手打開
+            val eyeLoc = player.eyeLocation
+            val dir = chestCenter.toVector().subtract(eyeLoc.toVector())
+            if (dir.lengthSquared() > 0.0001) {
+                val yaw = Math.toDegrees(atan2(-dir.x, dir.z)).toFloat()
+                val pitch = Math.toDegrees(atan2(-dir.y, sqrt(dir.x * dir.x + dir.z * dir.z))).toFloat()
+                player.setRotation(yaw, pitch)
+            }
+            player.swingMainHand()
+            world.playSound(chestBlock.location, org.bukkit.Sound.BLOCK_CHEST_OPEN, 0.5f, 1.0f)
+
+            val restocked = com.coderxi.plugin.fakeplayer.utils.ToolHelper.restockToolsFromChest(player, targetInv, neededSuffix)
+            if (restocked) {
+                fakePlayer.owners.forEach {
+                    it.sendMessage(tlp("fakeplayer.flatten.chest.restocked", fakePlayer.name))
+                }
+                return true
+            }
+        }
+        return false
     }
 
     private fun pickupNearbyItems(player: Player) {

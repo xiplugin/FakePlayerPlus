@@ -96,4 +96,81 @@ object ToolHelper {
             inv.heldItemSlot = bestHotbarSlot
         }
     }
+
+    fun isTool(item: ItemStack?): Boolean {
+        if (item == null || item.type.isAir) return false
+        val name = item.type.name
+        return name.endsWith("_PICKAXE") || name.endsWith("_SHOVEL") || name.endsWith("_AXE") ||
+                name.endsWith("_HOE") || name.endsWith("_SWORD") || name == "SHEARS" ||
+                name.endsWith("_HELMET") || name.endsWith("_CHESTPLATE") || name.endsWith("_LEGGINGS") || name.endsWith("_BOOTS")
+    }
+
+    fun getNeededToolSuffix(target: Block): String? {
+        val blockType = target.type
+        if (blockType.isAir) return null
+        return when {
+            Tag.MINEABLE_PICKAXE.isTagged(blockType) -> "_PICKAXE"
+            Tag.MINEABLE_SHOVEL.isTagged(blockType) -> "_SHOVEL"
+            Tag.MINEABLE_AXE.isTagged(blockType) -> "_AXE"
+            Tag.MINEABLE_HOE.isTagged(blockType) -> "_HOE"
+            blockType.name.contains("LEAVES") || blockType.name == "COBWEB" || blockType.name.contains("WOOL") -> "SHEARS"
+            else -> null
+        }
+    }
+
+    fun hasToolForBlock(player: Player, target: Block): Boolean {
+        val suffix = getNeededToolSuffix(target) ?: return true
+        val inv = player.inventory
+        for (slot in 0..35) {
+            val item = inv.getItem(slot) ?: continue
+            val name = item.type.name
+            if (suffix == "SHEARS") {
+                if (name == "SHEARS" || name.endsWith("_SWORD") || name.endsWith("_HOE")) return true
+            } else if (name.endsWith(suffix)) {
+                return true
+            }
+        }
+        return false
+    }
+
+    fun hasAllEssentialTools(player: Player): Boolean {
+        val inv = player.inventory
+        val hasPick = (0..35).any { inv.getItem(it)?.type?.name?.endsWith("_PICKAXE") == true }
+        val hasShovel = (0..35).any { inv.getItem(it)?.type?.name?.endsWith("_SHOVEL") == true }
+        val hasAxe = (0..35).any { inv.getItem(it)?.type?.name?.endsWith("_AXE") == true }
+        return hasPick && hasShovel && hasAxe
+    }
+
+    fun restockToolsFromChest(player: Player, chestInv: org.bukkit.inventory.Inventory, neededSuffix: String? = null): Boolean {
+        val suffixesToFetch = if (neededSuffix != null) listOf(neededSuffix) else listOf("_PICKAXE", "_SHOVEL", "_AXE")
+        var restockedAny = false
+
+        for (suffix in suffixesToFetch) {
+            val hasInPlayer = (0..35).any { slot ->
+                val item = player.inventory.getItem(slot)
+                if (item == null || item.type.isAir) return@any false
+                if (suffix == "SHEARS") item.type.name == "SHEARS" else item.type.name.endsWith(suffix)
+            }
+            if (!hasInPlayer) {
+                for (slot in 0 until chestInv.size) {
+                    val chestItem = chestInv.getItem(slot) ?: continue
+                    if (chestItem.type.isAir) continue
+                    val name = chestItem.type.name
+                    val matches = if (suffix == "SHEARS") name == "SHEARS" else name.endsWith(suffix)
+                    if (matches) {
+                        val toAdd = chestItem.clone()
+                        chestInv.setItem(slot, null)
+                        val remaining = player.inventory.addItem(toAdd)
+                        if (remaining.isNotEmpty()) {
+                            chestInv.setItem(slot, remaining.values.first())
+                        } else {
+                            restockedAny = true
+                            break
+                        }
+                    }
+                }
+            }
+        }
+        return restockedAny
+    }
 }
