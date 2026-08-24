@@ -152,14 +152,16 @@ object FakePlayerDialog {
             val total = currentAction.totalBlocks
             val cleared = currentAction.clearedBlocks
             val percent = if (total > 0) (cleared * 100 / total) else 0
-            val targetName = currentAction.target?.type?.name ?: "-"
+            val targetName = currentAction.target?.type?.name ?: currentAction.lastTargetName
 
             val bodyMsg = tl("fakeplayer.gui.flatten.status.running", percent, cleared, total, targetName)
 
             actionButtons.add(ActionButton.create(
                 tl("fakeplayer.gui.flatten.btn.refresh"), null, 100,
                 DialogAction.customClick({ _, _ ->
-                    viewer.showDialog(FakePlayerDialog.flattenDialog(viewer, fakePlayer))
+                    com.coderxi.plugin.fakeplayer.utils.plugin.server.scheduler.runTask(com.coderxi.plugin.fakeplayer.utils.plugin, Runnable {
+                        viewer.showDialog(FakePlayerDialog.flattenDialog(viewer, fakePlayer))
+                    })
                 }, ACTION_OPTIONS)
             ))
 
@@ -167,7 +169,9 @@ object FakePlayerDialog {
                 tl("fakeplayer.gui.action.stop"), null, 100,
                 DialogAction.customClick({ _, _ ->
                     fakePlayer.actions.stop(ActionType.FLATTEN.track)
-                    viewer.showDialog(FakePlayerDialog.flattenDialog(viewer, fakePlayer))
+                    com.coderxi.plugin.fakeplayer.utils.plugin.server.scheduler.runTask(com.coderxi.plugin.fakeplayer.utils.plugin, Runnable {
+                        viewer.showDialog(FakePlayerDialog.flattenDialog(viewer, fakePlayer))
+                    })
                 }, ACTION_OPTIONS)
             ))
 

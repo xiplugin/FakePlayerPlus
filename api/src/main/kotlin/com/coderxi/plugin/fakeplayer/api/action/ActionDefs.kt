@@ -55,6 +55,7 @@ class FlattenAction private constructor(override val mode: ActionMode): Action.B
     var maxY: Int = 0
     var maxZ: Int = 0
     var target: Block? = null
+    var lastTargetName: String = "-"
     var progress = 0f
     var freezeTick = 0
     var preserveOres: Boolean = false

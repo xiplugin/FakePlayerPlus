@@ -39,6 +39,7 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
             target = findNextBlock(world, action, player.location)
             if (target == null) {
                 // 選區內方塊已全數清空
+                action.clearedBlocks = action.totalBlocks
                 resetMining(fakePlayer, action)
                 fakePlayer.owners.forEach {
                     it.sendMessage(tlp("fakeplayer.flatten.complete", fakePlayer.name))
@@ -47,6 +48,7 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
                 return
             }
             action.target = target
+            action.lastTargetName = target.type.name
             action.progress = 0f
         }
 
@@ -84,10 +86,10 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
         action.progress += step
 
         if (action.progress >= 1.0f) {
+            action.clearedBlocks++
             fakePlayer.nms.doBlockBreakAction(target, STOP)
             if (!target.type.isAir) {
                 player.breakBlock(target)
-                action.clearedBlocks++
             }
             resetMining(fakePlayer, action)
             action.freezeTick = action.tickDelay
