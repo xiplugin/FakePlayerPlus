@@ -9,6 +9,7 @@ import com.coderxi.plugin.fakeplayer.utils.tlp
 import org.bukkit.Location
 import org.bukkit.block.Block
 import org.bukkit.entity.Player
+import org.bukkit.util.Vector
 import kotlin.math.atan2
 import kotlin.math.sqrt
 
@@ -36,14 +37,20 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
             }
             action.target = target
             action.progress = 0f
-            ensureReach(player, target)
         }
 
-        // 確保假人在挖掘距離內
         val targetCenter = target.location.add(0.5, 0.5, 0.5)
         val eyeLoc = player.eyeLocation
-        if (player.location.distance(targetCenter) > 3.8) {
-            ensureReach(player, target)
+        val distToTarget = player.location.distance(targetCenter)
+
+        // 若超出觸及距離，向目標方塊行走靠近
+        if (distToTarget > 3.5) {
+            val standLoc = findStandLocation(player, target)
+            walkTowards(fakePlayer, standLoc)
+            // 行走中若仍太遠則暫不挖掘
+            if (player.location.distance(targetCenter) > 4.2) {
+                return
+            }
         }
 
         // 調整假人視角朝向目標方塊
@@ -77,15 +84,46 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
         }
     }
 
-    private fun ensureReach(player: Player, target: Block) {
-        val targetLoc = target.location.add(0.5, 0.0, 0.5)
+    private fun walkTowards(fakePlayer: FakePlayer, targetLoc: Location) {
+        val player = fakePlayer.player
         val pLoc = player.location
-        if (pLoc.distance(targetLoc) <= 3.8) return
+        val dx = targetLoc.x - pLoc.x
+        val dz = targetLoc.z - pLoc.z
+        val horizontalDist = sqrt(dx * dx + dz * dz)
 
+        if (horizontalDist < 0.3) return
+
+        // 旋轉朝向移動方向
+        val yaw = Math.toDegrees(atan2(-dx, dz)).toFloat()
+        player.setRotation(yaw, player.location.pitch)
+
+        val speed = 0.22 // 原版正常行走速度
+        val vx = (dx / horizontalDist) * speed
+        val vz = (dz / horizontalDist) * speed
+
+        // 檢測前方障礙跳躍
+        val frontLoc = pLoc.clone().add((dx / horizontalDist) * 0.6, 0.0, (dz / horizontalDist) * 0.6)
+        val frontBlock = frontLoc.block
+        val frontAbove = frontLoc.clone().add(0.0, 1.0, 0.0).block
+        val needJump = (!frontBlock.type.isAir && frontBlock.type.isSolid && frontAbove.type.isAir && fakePlayer.nms.onGround)
+
+        var vy = player.velocity.y
+        if (needJump) {
+            vy = 0.42 // 原版跳躍速度
+        }
+
+        val moveVec = Vector(vx, vy, vz)
+        fakePlayer.nms.setDeltaMovement(moveVec)
+        player.velocity = moveVec
+    }
+
+    private fun findStandLocation(player: Player, target: Block): Location {
         val world = target.world
+        val pLoc = player.location
         val candidates = mutableListOf<Location>()
         val offsets = arrayOf(
             intArrayOf(1, 0), intArrayOf(-1, 0), intArrayOf(0, 1), intArrayOf(0, -1),
+            intArrayOf(1, 1), intArrayOf(-1, -1), intArrayOf(1, -1), intArrayOf(-1, 1),
             intArrayOf(2, 0), intArrayOf(-2, 0), intArrayOf(0, 2), intArrayOf(0, -2)
         )
         for (offset in offsets) {
@@ -102,9 +140,8 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
                 }
             }
         }
-        val best = candidates.minByOrNull { it.distanceSquared(pLoc) }
+        return candidates.minByOrNull { it.distanceSquared(pLoc) }
             ?: Location(world, target.x + 0.5, (target.y + 1).toDouble(), target.z + 0.5)
-        player.teleport(best)
     }
 
     private fun findNextBlock(world: org.bukkit.World, action: FlattenAction, currentLoc: Location): Block? {

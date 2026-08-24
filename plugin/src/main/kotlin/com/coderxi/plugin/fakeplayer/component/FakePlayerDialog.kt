@@ -140,19 +140,73 @@ object FakePlayerDialog {
         }
     }
 
+    fun flattenDialog(viewer: org.bukkit.entity.Player, fakePlayer: FakePlayer): DialogLike {
+        val selection = FlattenSelectionManager.getSelection(viewer)
+        val isComplete = selection != null && selection.isComplete
+        val actionButtons = mutableListOf<ActionButton>()
+
+        actionButtons.add(ActionButton.create(
+            tl("fakeplayer.gui.flatten.btn.select"), null, 100,
+            DialogAction.customClick({ _, _ ->
+                FlattenSelectionManager.startSelection(viewer)
+                viewer.sendMessage(com.coderxi.plugin.fakeplayer.utils.tlp("fakeplayer.flatten.select.mode"))
+            }, ACTION_OPTIONS)
+        ))
+
+        if (isComplete && selection != null) {
+            actionButtons.add(ActionButton.create(
+                tl("fakeplayer.gui.flatten.btn.start"), null, 100,
+                DialogAction.customClick({ _, _ ->
+                    val p1 = selection.pos1!!
+                    val action = com.coderxi.plugin.fakeplayer.api.action.FlattenAction(ActionMode.Continuous).apply {
+                        world = p1.world
+                        minX = selection.minX
+                        maxX = selection.maxX
+                        minY = selection.minY
+                        maxY = selection.maxY
+                        minZ = selection.minZ
+                        maxZ = selection.maxZ
+                    }
+                    fakePlayer.actions.dispatch(action)
+                    FlattenSelectionManager.stopSelectingMode(viewer)
+                    viewer.sendMessage(com.coderxi.plugin.fakeplayer.utils.tlp("fakeplayer.flatten.start", fakePlayer.name, selection.blockCount))
+                }, ACTION_OPTIONS)
+            ))
+        }
+
+        actionButtons.add(ActionButton.create(
+            tl("fakeplayer.gui.action.stop"), null, 100,
+            DialogAction.customClick({ _, _ ->
+                fakePlayer.actions.stop(ActionType.FLATTEN.track)
+            }, ACTION_OPTIONS)
+        ))
+
+        val bodyMsg = if (isComplete && selection != null) {
+            tl("fakeplayer.gui.flatten.status.ready",
+                "${selection.pos1!!.x}, ${selection.pos1!!.y}, ${selection.pos1!!.z}",
+                "${selection.pos2!!.x}, ${selection.pos2!!.y}, ${selection.pos2!!.z}",
+                selection.blockCount
+            )
+        } else {
+            tl("fakeplayer.gui.flatten.status.not-selected")
+        }
+
+        return Dialog.create { builder -> builder.empty()
+            .base(DialogBase.builder(tl("fakeplayer.gui.flatten.title", fakePlayer.name))
+                .canCloseWithEscape(true)
+                .body(listOf(DialogBody.plainMessage(bodyMsg)))
+                .build())
+            .type(DialogType.multiAction(actionButtons).columns(1).exitAction(CANCEL_BTN).build())
+        }
+    }
+
     fun actionListDialog(viewer: CommandSender, fakePlayer: FakePlayer): DialogLike {
         val actionTypes = if (viewer.hasPermission(BASIC)) ActionType.entries else ActionType.entries.filter { viewer.hasPermission("${ACTION.value}.${it.name.lowercase()}") }
         val textAndAction = actionTypes
             .associateTo((mutableMapOf())) { type ->
                 tl("fakeplayer.action.${type.name.lowercase().replace("_","-")}") to {
                     if (type == ActionType.FLATTEN && viewer is org.bukkit.entity.Player) {
-                        val selection = FlattenSelectionManager.getSelection(viewer)
-                        if (selection == null || !selection.isComplete) {
-                            FlattenSelectionManager.startSelection(viewer)
-                            viewer.sendMessage(com.coderxi.plugin.fakeplayer.utils.tlp("fakeplayer.flatten.select.mode"))
-                        } else {
-                            viewer.showDialog(FakePlayerDialog.actionExecuteDialog(viewer, fakePlayer, type))
-                        }
+                        viewer.showDialog(FakePlayerDialog.flattenDialog(viewer, fakePlayer))
                     } else {
                         viewer.showDialog(FakePlayerDialog.actionExecuteDialog(viewer, fakePlayer, type))
                     }
