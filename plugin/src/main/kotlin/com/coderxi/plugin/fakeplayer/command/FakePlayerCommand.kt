@@ -292,30 +292,7 @@ class FakePlayerCommand {
         HelpLine("fakeplayer.help.cmd.flatten-cancel", "fp flatten cancel", playerOnly = true)
     ], playerOnly = true)
     fun Player.flatten(@Select fakePlayer: FakePlayer) {
-        val selection = FlattenSelectionManager.getSelection(this)
-        if (selection == null || !selection.isComplete) {
-            FlattenSelectionManager.startSelection(this)
-            sendMessage(tlp("fakeplayer.flatten.select.mode"))
-            return
-        }
-        val p1 = selection.pos1!!
-        val p2 = selection.pos2!!
-        if (p1.world != fakePlayer.player.world) {
-            sendMessage(tlp("fakeplayer.flatten.world.mismatch"))
-            return
-        }
-        val action = FlattenAction(ActionMode.Continuous).apply {
-            world = p1.world
-            minX = selection.minX
-            maxX = selection.maxX
-            minY = selection.minY
-            maxY = selection.maxY
-            minZ = selection.minZ
-            maxZ = selection.maxZ
-        }
-        fakePlayer.actions.dispatch(action)
-        FlattenSelectionManager.stopSelectingMode(this)
-        sendMessage(tlp("fakeplayer.flatten.start", fakePlayer.name, selection.blockCount))
+        showDialog(FakePlayerDialog.flattenDialog(this, fakePlayer))
     }
 
     @Subcommand("flatten cancel")

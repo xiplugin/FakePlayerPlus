@@ -28,7 +28,14 @@ class FakePlayerParameterType(private val fpm : FakePlayerManager) : ParameterTy
         }
         if (sender is Player) {
             if (name.isEmpty()) {
-                return sender.selected ?: throw NoSelectedException()
+                val current = sender.selected
+                if (current != null) return current
+                val myPlayers = fpm.fakeplayersByOwnerUuid(sender.uniqueId)
+                if (myPlayers.size == 1) {
+                    sender.selected = myPlayers.first()
+                    return myPlayers.first()
+                }
+                throw NoSelectedException()
             }
             val selected = fpm.get(name) ?: throw NotExitsException(name)
             if (!selected.ownerUuids.contains(sender.uniqueId) && !sender.hasPermission(ADMIN)) {

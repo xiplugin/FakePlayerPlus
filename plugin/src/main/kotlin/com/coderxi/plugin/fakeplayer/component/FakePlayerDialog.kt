@@ -28,6 +28,7 @@ import com.coderxi.plugin.fakeplayer.command.permission.Permission.BASIC
 import com.coderxi.plugin.fakeplayer.command.permission.Permission.SPAWN_WITH_NAME
 import com.coderxi.plugin.fakeplayer.utils.hasPermission
 
+import com.coderxi.plugin.fakeplayer.component.FakePlayerSelector.selected
 import net.kyori.adventure.text.event.ClickCallback
 import org.bukkit.command.CommandSender
 import java.time.Duration
@@ -199,6 +200,7 @@ object FakePlayerDialog {
     }
 
     fun flattenDialog(viewer: org.bukkit.entity.Player, fakePlayer: FakePlayer, isAutoLoop: Boolean = false): DialogLike {
+        viewer.selected = fakePlayer
         val currentAction = fakePlayer.actions.getActiveActions()[ActionType.FLATTEN.track] as? com.coderxi.plugin.fakeplayer.api.action.FlattenAction
         val isRunning = currentAction != null
         val selection = FlattenSelectionManager.getSelection(viewer)
@@ -380,6 +382,7 @@ object FakePlayerDialog {
     }
 
     fun chestListDialog(viewer: org.bukkit.entity.Player, fakePlayer: FakePlayer): DialogLike {
+        viewer.selected = fakePlayer
         val selection = FlattenSelectionManager.getSelection(viewer)
         val chestBlocks = selection?.chestBlocks ?: emptyList()
         val actionButtons = mutableListOf<ActionButton>()
