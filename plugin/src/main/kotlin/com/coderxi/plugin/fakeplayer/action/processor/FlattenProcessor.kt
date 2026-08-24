@@ -466,15 +466,14 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
         val frontLoc = pLoc.clone().add(stepDirX * 0.7, 0.0, stepDirZ * 0.7)
         val frontBlock = frontLoc.block
         val frontAbove = frontLoc.clone().add(0.0, 1.0, 0.0).block
-        val currentFeet = pLoc.block
 
-        // 1. 懸空峽谷/深坑自動搭橋鋪路 (Auto-Bridging across gaps & ravines)
-        val drop1 = frontLoc.clone().add(0.0, -1.0, 0.0).block
-        val drop2 = frontLoc.clone().add(0.0, -2.0, 0.0).block
-        val isDeepDrop = (drop1.type.isAir || drop1.isLiquid) && (drop2.type.isAir || drop2.isLiquid)
+        // 1. 懸空峽谷/深坑自動水平搭橋鋪路 (Auto-Bridging across horizontal gaps at current walking level)
+        val dropUnderFront = frontLoc.clone().add(0.0, -1.0, 0.0).block
+        val isGapAhead = (dropUnderFront.type.isAir || dropUnderFront.isLiquid)
 
-        if (isDeepDrop && horizontalDist > 0.4) {
-            val bridgeBlock = if (dy >= -1.0) drop1 else drop2
+        if (isGapAhead && horizontalDist > 0.4) {
+            // 僅在與玩家當前落腳水平相同 (y - 1) 的位置鋪設單層水平橋面，絕不向上墊高或向下無限堆高塔
+            val bridgeBlock = pLoc.world.getBlockAt(frontLoc.blockX, pLoc.blockY - 1, frontLoc.blockZ)
             if (bridgeBlock.type.isAir || bridgeBlock.isLiquid) {
                 val placed = placeScaffoldBlock(fakePlayer, bridgeBlock)
                 if (placed) {
@@ -490,23 +489,7 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
             }
         }
 
-        // 2. 攀爬高台/高於1格的斷崖自動墊腳搭路 (Pillaring / Scaffolding up cliffs)
-        val isHighWall = (!frontBlock.type.isAir && frontBlock.type.isSolid && !frontAbove.type.isAir)
-        val targetMuchHigher = dy > 1.2 && horizontalDist < 2.0
-
-        if ((isHighWall || targetMuchHigher) && fakePlayer.nms.onGround) {
-            val placed = placeScaffoldBlock(fakePlayer, currentFeet)
-            if (placed) {
-                fakePlayer.nms.jumpFromGround()
-                fakePlayer.nms.setJumping(true)
-                val moveVec = Vector(vx * 0.5, 0.52, vz * 0.5)
-                fakePlayer.nms.setDeltaMovement(moveVec)
-                player.velocity = moveVec
-                return true
-            }
-        }
-
-        // 3. 正常1格高障礙跳躍與行走
+        // 2. 正常1格高障礙跳躍與行走
         val obstacleInFront = !frontBlock.type.isAir && frontBlock.type.isSolid && frontAbove.type.isAir
 
         if (obstacleInFront && fakePlayer.nms.onGround) {
