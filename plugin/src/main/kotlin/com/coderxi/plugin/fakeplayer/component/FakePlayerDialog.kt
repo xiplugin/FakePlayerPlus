@@ -209,8 +209,8 @@ object FakePlayerDialog {
         viewer.selected = fakePlayer
         val currentAction = fakePlayer.actions.getActiveActions()[ActionType.FLATTEN.track] as? com.coderxi.plugin.fakeplayer.api.action.FlattenAction
         val isRunning = currentAction != null
-        val selection = FlattenSelectionManager.getSelection(viewer)
-        val isComplete = selection != null && selection.isComplete
+        val selection = FlattenSelectionManager.getOrCreateSelection(viewer)
+        val isComplete = selection.isComplete
         val actionButtons = mutableListOf<ActionButton>()
         val inputs = mutableListOf<DialogInput>()
 
@@ -273,15 +273,17 @@ object FakePlayerDialog {
         }
 
         // 未在整地中的面板
-        val hasChests = selection != null && selection.chestBlocks.isNotEmpty()
-        val autoDepositInitial = if (selection != null) (selection.autoDeposit && hasChests) else false
-        inputs.add(boolInput("preserveOres", tl("fakeplayer.gui.flatten.preserve-ores")).initial(selection?.preserveOres ?: false).build())
-        inputs.add(boolInput("pickupItems", tl("fakeplayer.gui.flatten.pickup-items")).initial(selection?.pickupItems ?: true).build())
-        inputs.add(boolInput("autoDeposit", tl("fakeplayer.gui.flatten.auto-deposit")).initial(autoDepositInitial).build())
+        val hasChests = selection.chestBlocks.isNotEmpty()
+        inputs.add(boolInput("preserveOres", tl("fakeplayer.gui.flatten.preserve-ores")).initial(selection.preserveOres).build())
+        inputs.add(boolInput("pickupItems", tl("fakeplayer.gui.flatten.pickup-items")).initial(selection.pickupItems).build())
+        inputs.add(boolInput("autoDeposit", tl("fakeplayer.gui.flatten.auto-deposit")).initial(selection.autoDeposit).build())
 
         actionButtons.add(ActionButton.create(
             tl("fakeplayer.gui.flatten.btn.select"), null, 100,
-            DialogAction.customClick({ _, _ ->
+            DialogAction.customClick({ view, _ ->
+                view.getBoolean("preserveOres")?.let { selection.preserveOres = it }
+                view.getBoolean("pickupItems")?.let { selection.pickupItems = it }
+                view.getBoolean("autoDeposit")?.let { selection.autoDeposit = it }
                 FlattenSelectionManager.startSelection(viewer)
                 viewer.sendMessage(com.coderxi.plugin.fakeplayer.utils.tlp("fakeplayer.flatten.select.mode"))
             }, ACTION_OPTIONS)
@@ -295,17 +297,23 @@ object FakePlayerDialog {
 
         actionButtons.add(ActionButton.create(
             manageChestsLabel, null, 100,
-            DialogAction.customClick({ _, _ ->
+            DialogAction.customClick({ view, _ ->
+                view.getBoolean("preserveOres")?.let { selection.preserveOres = it }
+                view.getBoolean("pickupItems")?.let { selection.pickupItems = it }
+                view.getBoolean("autoDeposit")?.let { selection.autoDeposit = it }
                 runOnPlayerThread(viewer) {
                     viewer.showDialog(FakePlayerDialog.chestListDialog(viewer, fakePlayer))
                 }
             }, ACTION_OPTIONS)
         ))
 
-        if (isComplete && selection != null) {
+        if (isComplete) {
             actionButtons.add(ActionButton.create(
                 tl("fakeplayer.gui.flatten.btn.clear"), null, 100,
-                DialogAction.customClick({ _, _ ->
+                DialogAction.customClick({ view, _ ->
+                    view.getBoolean("preserveOres")?.let { selection.preserveOres = it }
+                    view.getBoolean("pickupItems")?.let { selection.pickupItems = it }
+                    view.getBoolean("autoDeposit")?.let { selection.autoDeposit = it }
                     FlattenSelectionManager.clearSelection(viewer)
                     runOnPlayerThread(viewer) {
                         viewer.showDialog(FakePlayerDialog.flattenDialog(viewer, fakePlayer))
@@ -316,14 +324,10 @@ object FakePlayerDialog {
             actionButtons.add(ActionButton.create(
                 tl("fakeplayer.gui.flatten.btn.start"), null, 100,
                 DialogAction.customClick({ view, _ ->
+                    view.getBoolean("preserveOres")?.let { selection.preserveOres = it }
+                    view.getBoolean("pickupItems")?.let { selection.pickupItems = it }
+                    view.getBoolean("autoDeposit")?.let { selection.autoDeposit = it }
                     val p1 = selection.pos1!!
-                    val preserveOres = view.getBoolean("preserveOres") ?: false
-                    val pickupItems = view.getBoolean("pickupItems") ?: true
-                    val autoDeposit = view.getBoolean("autoDeposit") ?: hasChests
-
-                    selection.preserveOres = preserveOres
-                    selection.pickupItems = pickupItems
-                    selection.autoDeposit = autoDeposit
 
                     val action = com.coderxi.plugin.fakeplayer.api.action.FlattenAction(ActionMode.Continuous).apply {
                         world = p1.world
@@ -333,9 +337,9 @@ object FakePlayerDialog {
                         maxY = selection.maxY
                         minZ = selection.minZ
                         maxZ = selection.maxZ
-                        this.preserveOres = preserveOres
-                        this.pickupItems = pickupItems
-                        this.autoDeposit = autoDeposit
+                        this.preserveOres = selection.preserveOres
+                        this.pickupItems = selection.pickupItems
+                        this.autoDeposit = selection.autoDeposit
                         selection.chestBlocks.forEach { cb ->
                             chestLocations.add(cb.location)
                         }
@@ -357,7 +361,7 @@ object FakePlayerDialog {
         val isHighlighting = FlattenSelectionManager.isHighlightingChests(viewer)
         val particleInfo = if (isHighlighting) tls("fakeplayer.gui.flatten.particle.on") else tls("fakeplayer.gui.flatten.particle.off")
 
-        val chestInfo = if (selection != null && selection.chestBlocks.isNotEmpty()) {
+        val chestInfo = if (selection.chestBlocks.isNotEmpty()) {
             if (selection.chestBlocks.size == 1) {
                 val cb = selection.chestBlocks.first()
                 "<aqua>${cb.x}, ${cb.y}, ${cb.z}</aqua> <dark_gray>(${cb.type.name})</dark_gray>"
@@ -368,7 +372,7 @@ object FakePlayerDialog {
             tls("fakeplayer.gui.flatten.chest.none")
         }
 
-        val bodyMsg = if (isComplete && selection != null) {
+        val bodyMsg = if (isComplete) {
             tl("fakeplayer.gui.flatten.status.ready",
                 "${selection.pos1!!.x}, ${selection.pos1!!.y}, ${selection.pos1!!.z}",
                 "${selection.pos2!!.x}, ${selection.pos2!!.y}, ${selection.pos2!!.z}",
@@ -383,13 +387,22 @@ object FakePlayerDialog {
 
         val cols = if (actionButtons.size >= 2) 2 else 1
 
+        val exitBtn = ActionButton.create(
+            tl("fakeplayer.gui.cancel"), null, 100,
+            DialogAction.customClick({ view, _ ->
+                view.getBoolean("preserveOres")?.let { selection.preserveOres = it }
+                view.getBoolean("pickupItems")?.let { selection.pickupItems = it }
+                view.getBoolean("autoDeposit")?.let { selection.autoDeposit = it }
+            }, ACTION_OPTIONS)
+        )
+
         return Dialog.create { builder -> builder.empty()
             .base(DialogBase.builder(tl("fakeplayer.gui.flatten.title", fakePlayer.name))
                 .canCloseWithEscape(true)
                 .body(listOf(DialogBody.plainMessage(bodyMsg)))
                 .inputs(inputs)
                 .build())
-            .type(DialogType.multiAction(actionButtons).columns(cols).exitAction(CANCEL_BTN).build())
+            .type(DialogType.multiAction(actionButtons).columns(cols).exitAction(exitBtn).build())
         }
     }
 

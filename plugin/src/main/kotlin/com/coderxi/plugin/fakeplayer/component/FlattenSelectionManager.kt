@@ -187,7 +187,11 @@ object FlattenSelectionManager : Listener {
     }
 
     fun clearSelection(player: Player) {
-        selections.remove(player.uniqueId)
+        val sel = selections[player.uniqueId]
+        if (sel != null) {
+            sel.pos1 = null
+            sel.pos2 = null
+        }
     }
 
     fun clearChestBlocks(player: Player) {
@@ -213,6 +217,9 @@ object FlattenSelectionManager : Listener {
     }
 
     fun getSelection(player: Player): FlattenSelection? = selections[player.uniqueId]
+
+    fun getOrCreateSelection(player: Player): FlattenSelection =
+        selections.computeIfAbsent(player.uniqueId) { FlattenSelection() }
 
     @EventHandler(priority = EventPriority.LOW)
     fun onPlayerInteract(event: PlayerInteractEvent) {
