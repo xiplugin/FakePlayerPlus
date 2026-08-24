@@ -66,19 +66,19 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
         // 若超出觸及距離，向目標方塊周圍的地面站立點行走靠近
         if (distToTarget > 3.5) {
             val standLoc = findStandLocation(player, target)
-            walkTowards(fakePlayer, standLoc)
+            val canWalk = walkTowards(fakePlayer, standLoc)
 
             val heightDiff = standLoc.y - player.location.y
             val isHighObstacle = heightDiff > 1.4 // 目標位於正常跳躍無法爬上的高台或懸崖
 
-            // 卡住或無法爬上時的自動 TP 脫困機制
+            // 卡住、前方為深坑懸崖、或無法爬上時的自動 TP 脫困機制
             val lastLoc = action.lastLoc
             val isStagnant = lastLoc != null && lastLoc.distanceSquared(player.location) < 0.04
 
-            if (isStagnant || isHighObstacle) {
+            if (isStagnant || isHighObstacle || !canWalk) {
                 action.stuckTick++
-                // 若遇高台 20 ticks (1秒) 或卡在原地 30 ticks (1.5秒) 無法上去，直接改用 TP 瞬移上去
-                val threshold = if (isHighObstacle) 20 else 30
+                // 若遇深坑懸崖煞車或高台 10~20 ticks (0.5~1秒)，直接安全 TP 瞬移至對面目標站立點
+                val threshold = if (!canWalk) 10 else if (isHighObstacle) 20 else 30
                 if (action.stuckTick >= threshold) {
                     val groundBlock = standLoc.block.getRelative(0, -1, 0)
                     if (standLoc != player.location && groundBlock.type.isSolid) {
@@ -143,7 +143,7 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
         }
     }
 
-    private fun walkTowards(fakePlayer: FakePlayer, targetLoc: Location) {
+    private fun walkTowards(fakePlayer: FakePlayer, targetLoc: Location): Boolean {
         val player = fakePlayer.player
         val pLoc = player.location
         val dx = targetLoc.x - pLoc.x
@@ -151,7 +151,7 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
         val dz = targetLoc.z - pLoc.z
         val horizontalDist = sqrt(dx * dx + dz * dz)
 
-        if (horizontalDist < 0.25) return
+        if (horizontalDist < 0.25) return true
 
         val yaw = Math.toDegrees(atan2(-dx, dz)).toFloat()
         player.setRotation(yaw, player.location.pitch)
@@ -167,27 +167,47 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
             val moveVec = Vector(vx, vy, vz)
             fakePlayer.nms.setDeltaMovement(moveVec)
             player.velocity = moveVec
-        } else {
-            val frontLoc = pLoc.clone().add((dx / horizontalDist) * 0.6, 0.0, (dz / horizontalDist) * 0.6)
-            val frontBlock = frontLoc.block
-            val frontAbove = frontLoc.clone().add(0.0, 1.0, 0.0).block
-            val obstacleInFront = !frontBlock.type.isAir && frontBlock.type.isSolid && frontAbove.type.isAir
-
-            if (obstacleInFront && fakePlayer.nms.onGround) {
-                fakePlayer.nms.jumpFromGround()
-                fakePlayer.nms.setJumping(true)
-                val moveVec = Vector(vx, 0.42, vz)
-                fakePlayer.nms.setDeltaMovement(moveVec)
-                player.velocity = moveVec
-            } else {
-                fakePlayer.nms.setJumping(false)
-                // 陸地行走保持正常重力與水平速度，不強行施加持續向上動量
-                val currentVy = minOf(player.velocity.y, 0.1)
-                val moveVec = Vector(vx, currentVy, vz)
-                fakePlayer.nms.setDeltaMovement(moveVec)
-                player.velocity = moveVec
-            }
+            return true
         }
+
+        val frontLoc = pLoc.clone().add((dx / horizontalDist) * 0.6, 0.0, (dz / horizontalDist) * 0.6)
+        val frontBlock = frontLoc.block
+        val frontAbove = frontLoc.clone().add(0.0, 1.0, 0.0).block
+
+        // 懸崖深坑與岩漿邊緣探測防掉落
+        val drop1 = frontLoc.clone().add(0.0, -1.0, 0.0).block
+        val drop2 = frontLoc.clone().add(0.0, -2.0, 0.0).block
+        val drop3 = frontLoc.clone().add(0.0, -3.0, 0.0).block
+
+        val isLavaHazard = drop1.type == org.bukkit.Material.LAVA || drop2.type == org.bukkit.Material.LAVA
+        val isDeepDrop = drop1.type.isAir && drop2.type.isAir && drop3.type.isAir
+        val isCliffHazard = (isDeepDrop || isLavaHazard) && (targetLoc.y >= pLoc.y - 1.0)
+
+        if (isCliffHazard && fakePlayer.nms.onGround) {
+            // 前方為深坑/懸崖/岩漿，立即停步煞車防掉落
+            val stopVec = Vector(0.0, player.velocity.y, 0.0)
+            fakePlayer.nms.setDeltaMovement(stopVec)
+            player.velocity = stopVec
+            return false
+        }
+
+        val obstacleInFront = !frontBlock.type.isAir && frontBlock.type.isSolid && frontAbove.type.isAir
+
+        if (obstacleInFront && fakePlayer.nms.onGround) {
+            fakePlayer.nms.jumpFromGround()
+            fakePlayer.nms.setJumping(true)
+            val moveVec = Vector(vx, 0.42, vz)
+            fakePlayer.nms.setDeltaMovement(moveVec)
+            player.velocity = moveVec
+        } else {
+            fakePlayer.nms.setJumping(false)
+            // 陸地行走保持正常重力與水平速度，不強行施加持續向上動量
+            val currentVy = minOf(player.velocity.y, 0.1)
+            val moveVec = Vector(vx, currentVy, vz)
+            fakePlayer.nms.setDeltaMovement(moveVec)
+            player.velocity = moveVec
+        }
+        return true
     }
 
     private fun findStandLocation(player: Player, target: Block): Location {
