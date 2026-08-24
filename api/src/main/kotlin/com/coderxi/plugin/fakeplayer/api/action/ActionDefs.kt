@@ -65,4 +65,10 @@ class FlattenAction private constructor(override val mode: ActionMode): Action.B
     var clearedBlocks: Int = 0
     var stuckTick: Int = 0
     var lastLoc: org.bukkit.Location? = null
+    var chestWorld: org.bukkit.World? = null
+    var chestX: Int? = null
+    var chestY: Int? = null
+    var chestZ: Int? = null
+    var autoDeposit: Boolean = true
+    var isDepositing: Boolean = false
 }

@@ -9,6 +9,7 @@ import com.coderxi.plugin.fakeplayer.utils.tlp
 import org.bukkit.Location
 import org.bukkit.attribute.Attribute
 import org.bukkit.block.Block
+import org.bukkit.block.Container
 import org.bukkit.entity.Item
 import org.bukkit.entity.Player
 import org.bukkit.util.Vector
@@ -39,12 +40,31 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
             pickupNearbyItems(player)
         }
 
+        // 背包滿載自動前往箱子存放物品
+        if (action.autoDeposit && action.chestX != null) {
+            if (action.isDepositing) {
+                val done = depositItemsToChest(fakePlayer, action)
+                if (done) {
+                    action.isDepositing = false
+                }
+                return
+            } else if (isInventoryFull(player)) {
+                action.isDepositing = true
+                resetMining(fakePlayer, action)
+                depositItemsToChest(fakePlayer, action)
+                return
+            }
+        }
+
         // 尋找或驗證目標方塊
         var target = action.target
         if (target == null || target.type.isAir || target.world != world) {
             target = findNextBlock(world, action, player.location)
             if (target == null) {
-                // 選區內方塊已全數清空
+                // 選區內方塊已全數清空，最後自動存放一次
+                if (action.autoDeposit && action.chestX != null) {
+                    depositItemsToChest(fakePlayer, action)
+                }
                 action.clearedBlocks = action.totalBlocks
                 resetMining(fakePlayer, action)
                 fakePlayer.owners.forEach {
@@ -128,6 +148,96 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
                 pickupNearbyItems(player)
             }
         }
+    }
+
+    private fun isInventoryFull(player: Player): Boolean {
+        val inv = player.inventory
+        var emptySlots = 0
+        for (slot in 0..35) {
+            val item = inv.getItem(slot)
+            if (item == null || item.type.isAir) {
+                emptySlots++
+            }
+        }
+        return emptySlots <= 1
+    }
+
+    private fun depositItemsToChest(fakePlayer: FakePlayer, action: FlattenAction): Boolean {
+        val world = action.chestWorld ?: return true
+        val cx = action.chestX ?: return true
+        val cy = action.chestY ?: return true
+        val cz = action.chestZ ?: return true
+        val chestBlock = world.getBlockAt(cx, cy, cz)
+        val state = chestBlock.state
+        if (state !is Container) {
+            return true
+        }
+
+        val chestCenter = chestBlock.location.clone().add(0.5, 0.5, 0.5)
+        val player = fakePlayer.player
+        val dist = player.location.distance(chestCenter)
+
+        if (dist > 3.5) {
+            val standLoc = findStandLocation(player, chestBlock)
+            val canWalk = walkTowards(fakePlayer, standLoc)
+            if (!canWalk || dist > 6.0 || player.location.distance(chestCenter) > 4.2) {
+                player.teleport(standLoc)
+            }
+            if (player.location.distance(chestCenter) > 4.2) {
+                return false
+            }
+        }
+
+        // 朝向箱子並揮手打開存放
+        val eyeLoc = player.eyeLocation
+        val dir = chestCenter.toVector().subtract(eyeLoc.toVector())
+        if (dir.lengthSquared() > 0.0001) {
+            val yaw = Math.toDegrees(atan2(-dir.x, dir.z)).toFloat()
+            val pitch = Math.toDegrees(atan2(-dir.y, sqrt(dir.x * dir.x + dir.z * dir.z))).toFloat()
+            player.setRotation(yaw, pitch)
+        }
+        player.swingMainHand()
+
+        val chestInv = state.inventory
+        val playerInv = player.inventory
+        var depositedAny = false
+        var isChestFull = false
+
+        for (slot in 0..35) {
+            val item = playerInv.getItem(slot) ?: continue
+            if (item.type.isAir) continue
+            val name = item.type.name
+
+            val isTool = name.endsWith("_PICKAXE") || name.endsWith("_SHOVEL") || name.endsWith("_AXE") ||
+                    name.endsWith("_HOE") || name.endsWith("_SWORD") || name == "SHEARS" ||
+                    name.endsWith("_HELMET") || name.endsWith("_CHESTPLATE") || name.endsWith("_LEGGINGS") || name.endsWith("_BOOTS")
+
+            if (!isTool) {
+                val remaining = chestInv.addItem(item)
+                if (remaining.isEmpty()) {
+                    playerInv.setItem(slot, null)
+                    depositedAny = true
+                } else {
+                    playerInv.setItem(slot, remaining.values.first())
+                    isChestFull = true
+                    break
+                }
+            }
+        }
+
+        state.update()
+
+        if (isChestFull) {
+            fakePlayer.owners.forEach {
+                it.sendMessage(tlp("fakeplayer.flatten.chest.full", fakePlayer.name))
+            }
+        } else if (depositedAny) {
+            fakePlayer.owners.forEach {
+                it.sendMessage(tlp("fakeplayer.flatten.chest.deposited", fakePlayer.name))
+            }
+        }
+
+        return true
     }
 
     private fun pickupNearbyItems(player: Player) {
