@@ -52,16 +52,36 @@ data class FlattenSelection(
 
     companion object {
         fun getAssociatedBlocks(block: Block): List<Block> {
-            val state = block.state
-            if (state is Chest) {
-                val holder = state.inventory.holder
-                if (holder is DoubleChest) {
-                    val left = (holder.leftSide as? Chest)?.block
-                    val right = (holder.rightSide as? Chest)?.block
-                    if (left != null && right != null) {
-                        return listOf(left, right)
+            try {
+                val blockData = block.blockData
+                if (blockData is org.bukkit.block.data.type.Chest) {
+                    val type = blockData.type
+                    if (type != org.bukkit.block.data.type.Chest.Type.SINGLE) {
+                        val facing = blockData.facing
+                        val otherFace = if (type == org.bukkit.block.data.type.Chest.Type.LEFT) {
+                            when (facing) {
+                                BlockFace.NORTH -> BlockFace.EAST
+                                BlockFace.SOUTH -> BlockFace.WEST
+                                BlockFace.WEST -> BlockFace.NORTH
+                                BlockFace.EAST -> BlockFace.SOUTH
+                                else -> null
+                            }
+                        } else {
+                            when (facing) {
+                                BlockFace.NORTH -> BlockFace.WEST
+                                BlockFace.SOUTH -> BlockFace.EAST
+                                BlockFace.WEST -> BlockFace.SOUTH
+                                BlockFace.EAST -> BlockFace.NORTH
+                                else -> null
+                            }
+                        }
+                        if (otherFace != null) {
+                            val otherBlock = block.getRelative(otherFace)
+                            return listOf(block, otherBlock)
+                        }
                     }
                 }
+            } catch (_: Exception) {
             }
             return listOf(block)
         }
@@ -70,9 +90,8 @@ data class FlattenSelection(
     fun addChestBlock(block: Block): Boolean {
         val associated = getAssociatedBlocks(block)
         for (existing in chestBlocks) {
-            val existingAssociated = getAssociatedBlocks(existing)
             for (assoc in associated) {
-                if (existingAssociated.any { it.world == assoc.world && it.x == assoc.x && it.y == assoc.y && it.z == assoc.z }) {
+                if (existing.world == assoc.world && existing.x == assoc.x && existing.y == assoc.y && existing.z == assoc.z) {
                     return false
                 }
             }
@@ -117,39 +136,23 @@ object FlattenSelectionManager : Listener {
         if (isParticleTaskStarted) return
         isParticleTaskStarted = true
 
-        val runnable = Runnable {
-            if (chestHighlightPlayers.isEmpty()) return@Runnable
-            for (uuid in chestHighlightPlayers) {
-                val player = Bukkit.getPlayer(uuid)
-                if (player == null || !player.isOnline) {
-                    chestHighlightPlayers.remove(uuid)
-                    continue
-                }
-                val selection = selections[uuid] ?: continue
-                if (selection.chestBlocks.isEmpty()) continue
-
-                for (cb in selection.chestBlocks) {
-                    if (cb.world != player.world) continue
-                    if (cb.location.distanceSquared(player.location) > 48 * 48) continue
-
-                    // 支援大箱子（雙格箱）與堆疊箱子
-                    val blocks = FlattenSelection.getAssociatedBlocks(cb)
-                    for (b in blocks) {
-                        val cx = b.x + 0.5
-                        val cy = b.y + 0.5
-                        val cz = b.z + 0.5
-                        val hasBlockAbove = !b.getRelative(BlockFace.UP).type.isAir
-
-                        // 在箱子四周與正面產生柔和的金色與綠色閃爍粒子
-                        player.spawnParticle(Particle.HAPPY_VILLAGER, cx, cy, cz, 3, 0.35, 0.20, 0.35, 0.0)
-                        player.spawnParticle(Particle.WAX_ON, cx, cy, cz, 4, 0.35, 0.20, 0.35, 0.0)
-
-                        if (!hasBlockAbove) {
-                            // 上方無遮擋時，箱頂產生微光
-                            player.spawnParticle(Particle.END_ROD, cx, cy + 0.35, cz, 1, 0.1, 0.05, 0.1, 0.01)
-                        } else {
-                            // 上方有箱子堆疊時，將粒子散佈至側面與前方
-                            player.spawnParticle(Particle.END_ROD, cx, cy, cz, 1, 0.4, 0.1, 0.4, 0.01)
+        val renderParticlesForPlayer = { player: Player ->
+            if (player.isOnline && isHighlightingChests(player)) {
+                val selection = selections[player.uniqueId]
+                if (selection != null && selection.chestBlocks.isNotEmpty()) {
+                    for (cb in selection.chestBlocks) {
+                        if (cb.world != player.world) continue
+                        val loc = cb.location
+                        if (loc.distanceSquared(player.location) <= 48 * 48) {
+                            val blocks = FlattenSelection.getAssociatedBlocks(cb)
+                            for (b in blocks) {
+                                val cx = b.x + 0.5
+                                val cy = b.y + 0.5
+                                val cz = b.z + 0.5
+                                player.spawnParticle(Particle.HAPPY_VILLAGER, cx, cy, cz, 3, 0.35, 0.20, 0.35, 0.0)
+                                player.spawnParticle(Particle.WAX_ON, cx, cy, cz, 4, 0.35, 0.20, 0.35, 0.0)
+                                player.spawnParticle(Particle.END_ROD, cx, cy + 0.35, cz, 1, 0.1, 0.05, 0.1, 0.01)
+                            }
                         }
                     }
                 }
@@ -157,9 +160,31 @@ object FlattenSelectionManager : Listener {
         }
 
         if (isFolia) {
-            Bukkit.getGlobalRegionScheduler().runAtFixedRate(plugin, { _ -> runnable.run() }, 10L, 10L)
+            Bukkit.getAsyncScheduler().runAtFixedRate(plugin, { _ ->
+                if (chestHighlightPlayers.isEmpty()) return@runAtFixedRate
+                for (uuid in chestHighlightPlayers) {
+                    val player = Bukkit.getPlayer(uuid) ?: continue
+                    if (!player.isOnline) {
+                        chestHighlightPlayers.remove(uuid)
+                        continue
+                    }
+                    player.scheduler.run(plugin, { _ ->
+                        renderParticlesForPlayer(player)
+                    }, null)
+                }
+            }, 500L, 500L, java.util.concurrent.TimeUnit.MILLISECONDS)
         } else {
-            Bukkit.getScheduler().runTaskTimer(plugin, runnable, 10L, 10L)
+            Bukkit.getScheduler().runTaskTimer(plugin, Runnable {
+                if (chestHighlightPlayers.isEmpty()) return@Runnable
+                for (uuid in chestHighlightPlayers) {
+                    val player = Bukkit.getPlayer(uuid) ?: continue
+                    if (!player.isOnline) {
+                        chestHighlightPlayers.remove(uuid)
+                        continue
+                    }
+                    renderParticlesForPlayer(player)
+                }
+            }, 10L, 10L)
         }
     }
 
