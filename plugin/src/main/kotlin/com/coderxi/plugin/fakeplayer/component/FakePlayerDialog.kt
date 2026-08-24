@@ -310,7 +310,6 @@ object FakePlayerDialog {
                 "${selection.pos1!!.x}, ${selection.pos1!!.y}, ${selection.pos1!!.z}",
                 "${selection.pos2!!.x}, ${selection.pos2!!.y}, ${selection.pos2!!.z}",
                 "${selection.sizeX}x${selection.sizeY}x${selection.sizeZ}",
-                selection.countSolidBlocks(),
                 selection.blockCount
             )
         } else {
