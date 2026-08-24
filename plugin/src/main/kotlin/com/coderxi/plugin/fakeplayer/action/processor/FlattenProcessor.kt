@@ -52,7 +52,7 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
         }
 
         // 背包滿載自動前往箱子清單依序存放物品
-        val hasChests = action.chestLocations.isNotEmpty() || action.chestX != null
+        val hasChests = action.outputChestLocations.isNotEmpty() || action.chestLocations.isNotEmpty() || action.chestX != null
         if (action.autoDeposit && hasChests) {
             if (action.isDepositing) {
                 val done = depositItemsToChest(fakePlayer, action)
@@ -63,7 +63,14 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
             } else if (isInventoryFull(player)) {
                 action.isDepositing = true
                 resetMining(fakePlayer, action)
-                depositItemsToChest(fakePlayer, action)
+                val done = depositItemsToChest(fakePlayer, action)
+                if (done) {
+                    action.isDepositing = false
+                    // 若存完物品後身上依然滿載（所有箱子皆已全滿），暫停 60 ticks (3 秒) 再重試，避免每 tick 陷入死循環
+                    if (isInventoryFull(player)) {
+                        action.freezeTick = 60
+                    }
+                }
                 return
             }
         }
@@ -105,36 +112,28 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
         val distToTarget = player.location.distance(targetCenter)
 
         // 若超出觸及距離，向目標方塊周圍的地面站立點行走靠近
-        if (distToTarget > 3.5) {
+        if (distToTarget > 3.8) {
             val standLoc = findStandLocation(player, target)
             val canWalk = walkTowards(fakePlayer, standLoc)
-            val lastLoc = action.lastLoc
-            val isStagnant = lastLoc != null && lastLoc.distanceSquared(player.location) < 0.02
+            action.stuckTick++
 
-            if (isStagnant || !canWalk) {
-                action.stuckTick++
-                // 給予充分時間進行搭橋與墊腳（60 ticks = 3 秒），絕不輕易瞬移
-                val threshold = if (!canWalk) 40 else 60
-                if (action.stuckTick >= threshold) {
-                    val groundBlock = standLoc.block.getRelative(0, -1, 0)
-                    if (standLoc != player.location && (groundBlock.type.isSolid || groundBlock.isLiquid)) {
-                        // 僅在極端卡死且完全無法搭路時作為最後一道防護傳送
-                        player.teleport(standLoc)
-                        val zeroVec = Vector(0.0, 0.0, 0.0)
-                        fakePlayer.nms.setDeltaMovement(zeroVec)
-                        player.velocity = zeroVec
-                    }
-                    action.stuckTick = 0
+            // 當 40 ticks (2 秒) 內無法走近目標時，防護瞬移至有效落腳點
+            if (action.stuckTick >= 40) {
+                val groundBlock = standLoc.block.getRelative(0, -1, 0)
+                if (standLoc != player.location && (groundBlock.type.isSolid || groundBlock.isLiquid)) {
+                    player.teleport(standLoc)
+                    val zeroVec = Vector(0.0, 0.0, 0.0)
+                    fakePlayer.nms.setDeltaMovement(zeroVec)
+                    player.velocity = zeroVec
                 }
-            } else {
-                action.lastLoc = player.location.clone()
                 action.stuckTick = 0
             }
 
-            if (player.location.distance(targetCenter) > 4.2) {
+            if (player.location.distance(targetCenter) > 4.5) {
                 return
             }
         } else {
+            action.stuckTick = 0
             // 已在挖掘/填埋範圍內，立即煞車停止水平移動，保留自然垂直重力
             val currentVy = fakePlayer.nms.getDeltaMovement().y
             val stopVec = Vector(0.0, currentVy, 0.0)
@@ -540,11 +539,12 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
             }
         }
         val targetCenter = target.location.clone().add(0.5, 0.5, 0.5)
-        val inReach = candidates.filter { it.distanceSquared(targetCenter) <= 12.25 }
+        val inReach = candidates.filter { it.distanceSquared(targetCenter) <= 14.0 }
         if (inReach.isNotEmpty()) {
-            val topLevel = inReach.filter { it.y >= target.y }
-            if (topLevel.isNotEmpty()) {
-                return topLevel.minByOrNull { it.distanceSquared(pLoc) }!!
+            // 優先選擇與玩家當前落腳高度相同 (落差 <= 1.5) 的位置，防止玩家在牆前原地卡死或繞路
+            val sameElevation = inReach.filter { kotlin.math.abs(it.y - pLoc.y) <= 1.5 }
+            if (sameElevation.isNotEmpty()) {
+                return sameElevation.minByOrNull { it.distanceSquared(pLoc) }!!
             }
             return inReach.minByOrNull { it.distanceSquared(pLoc) }!!
         }
