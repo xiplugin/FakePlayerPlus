@@ -89,34 +89,50 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
         // 若超出觸及距離，向目標方塊周圍的地面站立點行走靠近
         if (distToTarget > 3.5) {
             val standLoc = findStandLocation(player, target)
-            val canWalk = walkTowards(fakePlayer, standLoc)
-
             val heightDiff = standLoc.y - player.location.y
-            val isHighObstacle = heightDiff > 1.4 // 目標位於正常跳躍無法爬上的高台或懸崖
+            val isHighObstacle = heightDiff > 1.2 // 目標位於正常跳躍無法爬上的高台或懸崖
 
-            // 卡住、前方為深坑懸崖、或無法爬上時的自動 TP 脫困機制
-            val lastLoc = action.lastLoc
-            val isStagnant = lastLoc != null && lastLoc.distanceSquared(player.location) < 0.04
-
-            if (isStagnant || isHighObstacle || !canWalk) {
-                action.stuckTick++
-                // 若遇深坑懸崖煞車或高台 10~20 ticks (0.5~1秒)，直接安全 TP 瞬移至對面目標站立點
-                val threshold = if (!canWalk) 10 else if (isHighObstacle) 20 else 30
-                if (action.stuckTick >= threshold) {
-                    val groundBlock = standLoc.block.getRelative(0, -1, 0)
-                    if (standLoc != player.location && groundBlock.type.isSolid) {
-                        player.teleport(standLoc)
-                    }
-                    action.stuckTick = 0
+            if (isHighObstacle) {
+                // 目標在無法爬上的高處懸崖/山頂，直接安全傳送至目標站立點
+                val groundBlock = standLoc.block.getRelative(0, -1, 0)
+                if (groundBlock.type.isSolid) {
+                    player.teleport(standLoc)
+                    val zeroVec = Vector(0.0, 0.0, 0.0)
+                    fakePlayer.nms.setDeltaMovement(zeroVec)
+                    player.velocity = zeroVec
                 }
             } else {
-                action.lastLoc = player.location.clone()
-                action.stuckTick = 0
+                val canWalk = walkTowards(fakePlayer, standLoc)
+                val lastLoc = action.lastLoc
+                val isStagnant = lastLoc != null && lastLoc.distanceSquared(player.location) < 0.04
+
+                if (isStagnant || !canWalk) {
+                    action.stuckTick++
+                    val threshold = if (!canWalk) 10 else 20
+                    if (action.stuckTick >= threshold) {
+                        val groundBlock = standLoc.block.getRelative(0, -1, 0)
+                        if (standLoc != player.location && groundBlock.type.isSolid) {
+                            player.teleport(standLoc)
+                            val zeroVec = Vector(0.0, 0.0, 0.0)
+                            fakePlayer.nms.setDeltaMovement(zeroVec)
+                            player.velocity = zeroVec
+                        }
+                        action.stuckTick = 0
+                    }
+                } else {
+                    action.lastLoc = player.location.clone()
+                    action.stuckTick = 0
+                }
             }
 
             if (player.location.distance(targetCenter) > 4.2) {
                 return
             }
+        } else {
+            // 已在挖掘範圍內，立即煞車停止移動，防止滑落懸崖
+            val stopVec = Vector(0.0, minOf(player.velocity.y, 0.0), 0.0)
+            fakePlayer.nms.setDeltaMovement(stopVec)
+            player.velocity = stopVec
         }
 
         // 調整假人視角朝向目標方塊
