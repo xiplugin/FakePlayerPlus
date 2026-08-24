@@ -74,13 +74,14 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
         var target = action.target
         val isTargetValid = target != null && target.world == world && (isMinedBlock(target) || (canFillLiquid && isLiquidBlock(target)))
         if (!isTargetValid) {
-            target = findNextBlock(world, action, player.location, canFillLiquid)
+            target = findNextBlock(world, action, player.location, canFillLiquid, fakePlayer.uuid)
             if (target == null) {
                 // 選區內方塊已全數清空，最後自動存放一次
                 if (action.autoDeposit && hasChests) {
                     depositItemsToChest(fakePlayer, action)
                 }
                 action.clearedBlocks = action.totalBlocks
+                com.coderxi.plugin.fakeplayer.component.FlattenTargetRegistry.release(fakePlayer.uuid)
                 com.coderxi.plugin.fakeplayer.repository.FlattenRepository().deleteTask(fakePlayer.uuid)
                 resetMining(fakePlayer, action)
                 fakePlayer.owners.forEach {
@@ -92,6 +93,7 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
             action.target = target
             action.lastTargetName = target.type.name
             action.progress = 0f
+            com.coderxi.plugin.fakeplayer.component.FlattenTargetRegistry.reserve(world, target.x, target.y, target.z, fakePlayer.uuid)
             if (isMinedBlock(target)) {
                 com.coderxi.plugin.fakeplayer.utils.ToolHelper.equipBestTool(player, target)
             }
@@ -494,7 +496,7 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
         return true
     }
 
-    private fun findNextBlock(world: org.bukkit.World, action: FlattenAction, currentLoc: Location, canFillLiquid: Boolean = false): Block? {
+    private fun findNextBlock(world: org.bukkit.World, action: FlattenAction, currentLoc: Location, canFillLiquid: Boolean = false, fakePlayerUuid: java.util.UUID? = null): Block? {
         val playerBlockX = currentLoc.blockX
         val playerBlockZ = currentLoc.blockZ
         val playerBlockY = currentLoc.blockY
@@ -504,6 +506,9 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
             var minScore = Double.MAX_VALUE
             for (x in action.minX..action.maxX) {
                 for (z in action.minZ..action.maxZ) {
+                    if (fakePlayerUuid != null && com.coderxi.plugin.fakeplayer.component.FlattenTargetRegistry.isReservedByOther(world, x, y, z, fakePlayerUuid)) {
+                        continue
+                    }
                     val block = world.getBlockAt(x, y, z)
                     val isMinable = isMinedBlock(block) && (!action.preserveOres || !isOreBlock(block))
                     val isLiquid = canFillLiquid && isLiquidBlock(block)
@@ -550,6 +555,7 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
     }
 
     private fun resetMining(fakePlayer: FakePlayer, action: FlattenAction) {
+        com.coderxi.plugin.fakeplayer.component.FlattenTargetRegistry.release(fakePlayer.uuid)
         val target = action.target ?: return
         fakePlayer.nms.doBlockBreakAction(target, ABORT)
         action.target = null
@@ -557,6 +563,7 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
     }
 
     override fun onStop(fakePlayer: FakePlayer, action: FlattenAction) {
+        com.coderxi.plugin.fakeplayer.component.FlattenTargetRegistry.release(fakePlayer.uuid)
         resetMining(fakePlayer, action)
         fakePlayer.nms.setJumping(false)
         fakePlayer.player.getAttribute(Attribute.STEP_HEIGHT)?.let {

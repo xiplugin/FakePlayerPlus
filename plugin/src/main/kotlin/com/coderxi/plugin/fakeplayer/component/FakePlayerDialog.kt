@@ -279,6 +279,13 @@ object FakePlayerDialog {
         inputs.add(boolInput("pickupItems", tl("fakeplayer.gui.flatten.pickup-items")).initial(selection.pickupItems).build())
         inputs.add(boolInput("autoDeposit", tl("fakeplayer.gui.flatten.auto-deposit")).initial(selection.autoDeposit).build())
 
+        val activeWorkers = selectedWorkersMap.computeIfAbsent(viewer.uniqueId) { mutableSetOf(fakePlayer.uuid) }
+        if (!activeWorkers.contains(fakePlayer.uuid)) {
+            activeWorkers.add(fakePlayer.uuid)
+        }
+        val availableWorkers = getAvailableWorkers(viewer)
+        val validWorkerCount = activeWorkers.count { wUuid -> availableWorkers.any { it.uuid == wUuid } }
+
         actionButtons.add(ActionButton.create(
             tl("fakeplayer.gui.flatten.btn.select"), null, 100,
             DialogAction.customClick({ view, _ ->
@@ -310,6 +317,20 @@ object FakePlayerDialog {
             }, ACTION_OPTIONS)
         ))
 
+        val workersLabel = tl("fakeplayer.gui.flatten.btn.workers", validWorkerCount)
+        actionButtons.add(ActionButton.create(
+            workersLabel, null, 100,
+            DialogAction.customClick({ view, _ ->
+                view.getBoolean("preserveOres")?.let { selection.preserveOres = it }
+                view.getBoolean("pickupItems")?.let { selection.pickupItems = it }
+                view.getBoolean("autoDeposit")?.let { selection.autoDeposit = it }
+                FlattenSelectionManager.saveSelection(viewer)
+                runOnPlayerThread(viewer) {
+                    viewer.showDialog(FakePlayerDialog.collaborativeWorkersDialog(viewer, fakePlayer))
+                }
+            }, ACTION_OPTIONS)
+        ))
+
         if (isComplete) {
             actionButtons.add(ActionButton.create(
                 tl("fakeplayer.gui.flatten.btn.clear"), null, 100,
@@ -333,32 +354,43 @@ object FakePlayerDialog {
                     FlattenSelectionManager.saveSelection(viewer)
                     val p1 = selection.pos1!!
 
-                    val action = com.coderxi.plugin.fakeplayer.api.action.FlattenAction(ActionMode.Continuous).apply {
-                        world = p1.world
-                        minX = selection.minX
-                        maxX = selection.maxX
-                        minY = selection.minY
-                        maxY = selection.maxY
-                        minZ = selection.minZ
-                        maxZ = selection.maxZ
-                        this.preserveOres = selection.preserveOres
-                        this.pickupItems = selection.pickupItems
-                        this.autoDeposit = selection.autoDeposit
-                        selection.chestBlocks.forEach { cb ->
-                            chestLocations.add(cb.location)
+                    val fpm = com.coderxi.plugin.fakeplayer.utils.plugin.fakePlayerManager
+                    val targetWorkers = activeWorkers.mapNotNull { fpm.get(it) }.filter { it.player.isOnline }
+                    val workersToDispatch = if (targetWorkers.isNotEmpty()) targetWorkers else listOf(fakePlayer)
+
+                    for (worker in workersToDispatch) {
+                        val action = com.coderxi.plugin.fakeplayer.api.action.FlattenAction(ActionMode.Continuous).apply {
+                            world = p1.world
+                            minX = selection.minX
+                            maxX = selection.maxX
+                            minY = selection.minY
+                            maxY = selection.maxY
+                            minZ = selection.minZ
+                            maxZ = selection.maxZ
+                            this.preserveOres = selection.preserveOres
+                            this.pickupItems = selection.pickupItems
+                            this.autoDeposit = selection.autoDeposit
+                            selection.chestBlocks.forEach { cb ->
+                                chestLocations.add(cb.location)
+                            }
+                            if (selection.chestBlocks.isNotEmpty()) {
+                                val first = selection.chestBlocks.first()
+                                chestWorld = first.world
+                                chestX = first.x
+                                chestY = first.y
+                                chestZ = first.z
+                            }
                         }
-                        if (selection.chestBlocks.isNotEmpty()) {
-                            val first = selection.chestBlocks.first()
-                            chestWorld = first.world
-                            chestX = first.x
-                            chestY = first.y
-                            chestZ = first.z
-                        }
+                        worker.actions.dispatch(action)
+                        com.coderxi.plugin.fakeplayer.repository.FlattenRepository().saveTask(worker.uuid, action)
                     }
-                    fakePlayer.actions.dispatch(action)
-                    com.coderxi.plugin.fakeplayer.repository.FlattenRepository().saveTask(fakePlayer.uuid, action)
+
                     FlattenSelectionManager.stopSelectingMode(viewer)
-                    viewer.sendMessage(com.coderxi.plugin.fakeplayer.utils.tlp("fakeplayer.flatten.start", fakePlayer.name, selection.blockCount))
+                    if (workersToDispatch.size > 1) {
+                        viewer.sendMessage(com.coderxi.plugin.fakeplayer.utils.tlp("fakeplayer.flatten.start.multi", workersToDispatch.size, selection.blockCount))
+                    } else {
+                        viewer.sendMessage(com.coderxi.plugin.fakeplayer.utils.tlp("fakeplayer.flatten.start", fakePlayer.name, selection.blockCount))
+                    }
                 }, ACTION_OPTIONS)
             ))
         }
@@ -517,6 +549,103 @@ object FakePlayerDialog {
         return Dialog.create { builder ->  builder.empty()
            .base(DialogBase.builder(tl("fakeplayer.gui.action.title", fakePlayer.name)).canCloseWithEscape(true).build())
            .type(DialogType.multiAction(actionButtons).columns(1).exitAction(CANCEL_BTN).build())
+        }
+    }
+
+    private val selectedWorkersMap = java.util.concurrent.ConcurrentHashMap<java.util.UUID, MutableSet<java.util.UUID>>()
+
+    private fun getAvailableWorkers(viewer: org.bukkit.entity.Player): List<FakePlayer> {
+        val fpm = com.coderxi.plugin.fakeplayer.utils.plugin.fakePlayerManager
+        val all = fpm.fakeplayers()
+        return if (viewer.isOp) {
+            all
+        } else {
+            all.filter { it.ownerUuids.contains(viewer.uniqueId) || it.creatorUuid == viewer.uniqueId }
+        }
+    }
+
+    fun collaborativeWorkersDialog(viewer: org.bukkit.entity.Player, fakePlayer: FakePlayer): DialogLike {
+        val availableWorkers = getAvailableWorkers(viewer)
+        val activeWorkers = selectedWorkersMap.computeIfAbsent(viewer.uniqueId) { mutableSetOf(fakePlayer.uuid) }
+        val inputs = mutableListOf<DialogInput>()
+
+        for (worker in availableWorkers) {
+            val isChecked = activeWorkers.contains(worker.uuid)
+            inputs.add(boolInput("worker_${worker.uuid}", Component.text(worker.name)).initial(isChecked).build())
+        }
+
+        val actionButtons = mutableListOf<ActionButton>()
+
+        // 全選按鈕
+        actionButtons.add(ActionButton.create(
+            tl("fakeplayer.gui.flatten.workers.select-all"), null, 100,
+            DialogAction.customClick({ _, _ ->
+                activeWorkers.clear()
+                activeWorkers.addAll(availableWorkers.map { it.uuid })
+                runOnPlayerThread(viewer) {
+                    viewer.showDialog(FakePlayerDialog.collaborativeWorkersDialog(viewer, fakePlayer))
+                }
+            }, ACTION_OPTIONS)
+        ))
+
+        // 僅當前假人按鈕
+        actionButtons.add(ActionButton.create(
+            tl("fakeplayer.gui.flatten.workers.select-current-only"), null, 100,
+            DialogAction.customClick({ _, _ ->
+                activeWorkers.clear()
+                activeWorkers.add(fakePlayer.uuid)
+                runOnPlayerThread(viewer) {
+                    viewer.showDialog(FakePlayerDialog.collaborativeWorkersDialog(viewer, fakePlayer))
+                }
+            }, ACTION_OPTIONS)
+        ))
+
+        // 儲存並返回按鈕
+        actionButtons.add(ActionButton.create(
+            tl("fakeplayer.gui.submit"), null, 100,
+            DialogAction.customClick({ view, _ ->
+                activeWorkers.clear()
+                for (worker in availableWorkers) {
+                    if (view.getBoolean("worker_${worker.uuid}") == true) {
+                        activeWorkers.add(worker.uuid)
+                    }
+                }
+                if (activeWorkers.isEmpty()) {
+                    activeWorkers.add(fakePlayer.uuid)
+                }
+                runOnPlayerThread(viewer) {
+                    viewer.showDialog(FakePlayerDialog.flattenDialog(viewer, fakePlayer))
+                }
+            }, ACTION_OPTIONS)
+        ))
+
+        val cancelBtn = ActionButton.create(
+            tl("fakeplayer.gui.back-to-flatten"), null, 100,
+            DialogAction.customClick({ view, _ ->
+                activeWorkers.clear()
+                for (worker in availableWorkers) {
+                    if (view.getBoolean("worker_${worker.uuid}") == true) {
+                        activeWorkers.add(worker.uuid)
+                    }
+                }
+                if (activeWorkers.isEmpty()) {
+                    activeWorkers.add(fakePlayer.uuid)
+                }
+                runOnPlayerThread(viewer) {
+                    viewer.showDialog(FakePlayerDialog.flattenDialog(viewer, fakePlayer))
+                }
+            }, ACTION_OPTIONS)
+        )
+
+        val headerMsg = tl("fakeplayer.gui.flatten.workers.header", availableWorkers.size, activeWorkers.size)
+
+        return Dialog.create { builder -> builder.empty()
+            .base(DialogBase.builder(tl("fakeplayer.gui.flatten.workers.title"))
+                .canCloseWithEscape(true)
+                .body(listOf(DialogBody.plainMessage(headerMsg)))
+                .inputs(inputs)
+                .build())
+            .type(DialogType.multiAction(actionButtons).columns(3).exitAction(cancelBtn).build())
         }
     }
 
