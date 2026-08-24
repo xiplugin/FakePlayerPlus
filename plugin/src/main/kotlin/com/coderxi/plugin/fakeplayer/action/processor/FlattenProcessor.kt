@@ -467,19 +467,13 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
         val frontBlock = frontLoc.block
         val frontAbove = frontLoc.clone().add(0.0, 1.0, 0.0).block
         val currentFeet = pLoc.block
-        val groundUnderFeet = pLoc.clone().add(0.0, -1.0, 0.0).block
 
-        // 1. 懸空腳下自動鋪墊防浮空 (Ensure solid footing under feet if airborne)
-        if (!fakePlayer.nms.onGround && groundUnderFeet.type.isAir && !inWater) {
-            placeScaffoldBlock(fakePlayer, groundUnderFeet)
-        }
-
-        // 2. 懸空峽谷/深坑自動搭橋鋪路 (Auto-Bridging across gaps & ravines)
+        // 1. 懸空峽谷/深坑自動搭橋鋪路 (Auto-Bridging across gaps & ravines)
         val drop1 = frontLoc.clone().add(0.0, -1.0, 0.0).block
         val drop2 = frontLoc.clone().add(0.0, -2.0, 0.0).block
         val isDeepDrop = (drop1.type.isAir || drop1.isLiquid) && (drop2.type.isAir || drop2.isLiquid)
 
-        if (isDeepDrop) {
+        if (isDeepDrop && horizontalDist > 0.4) {
             val bridgeBlock = if (dy >= -1.0) drop1 else drop2
             if (bridgeBlock.type.isAir || bridgeBlock.isLiquid) {
                 val placed = placeScaffoldBlock(fakePlayer, bridgeBlock)
@@ -496,9 +490,9 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
             }
         }
 
-        // 3. 攀爬高台/高於1格的斷崖自動墊腳搭路 (Pillaring / Scaffolding up cliffs)
+        // 2. 攀爬高台/高於1格的斷崖自動墊腳搭路 (Pillaring / Scaffolding up cliffs)
         val isHighWall = (!frontBlock.type.isAir && frontBlock.type.isSolid && !frontAbove.type.isAir)
-        val targetMuchHigher = dy > 1.0 && horizontalDist < 2.5
+        val targetMuchHigher = dy > 1.2 && horizontalDist < 2.0
 
         if ((isHighWall || targetMuchHigher) && fakePlayer.nms.onGround) {
             val placed = placeScaffoldBlock(fakePlayer, currentFeet)
@@ -512,7 +506,7 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
             }
         }
 
-        // 4. 正常1格高障礙跳躍與行走
+        // 3. 正常1格高障礙跳躍與行走
         val obstacleInFront = !frontBlock.type.isAir && frontBlock.type.isSolid && frontAbove.type.isAir
 
         if (obstacleInFront && fakePlayer.nms.onGround) {
@@ -642,13 +636,13 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
                         if (x == playerBlockX && z == playerBlockZ && y <= playerBlockY) {
                             score += 100.0
                         }
-                        // 避免挖掘任意在線協同假人正站立的腳下方塊或身軀方塊（防止自挖落腳點導致懸空浮空）
+                        // 若為在線協同假人正站立的腳下方塊或身軀方塊，給予優先級懲罰，優先挖掘周圍其他方塊
                         val isUnderWorker = onlineWorkers.any { w ->
                             val wLoc = w.player.location
                             x == wLoc.blockX && z == wLoc.blockZ && (y == wLoc.blockY - 1 || y == wLoc.blockY)
                         }
                         if (isUnderWorker) {
-                            continue
+                            score += 300.0
                         }
 
                         // 水源/岩漿源優先於流動水
