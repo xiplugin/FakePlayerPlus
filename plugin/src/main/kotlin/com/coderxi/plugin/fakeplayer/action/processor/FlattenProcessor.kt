@@ -68,63 +68,13 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
             }
         }
 
-        // 優先處理選區內的水源與液體（若背包內有方塊，自動填埋覆蓋水方塊）
+        // 尋找或驗證目標方塊（實體方塊或需填埋的液體方塊）
         val fillSlot = findFillBlockSlot(player)
-        if (fillSlot != null) {
-            val liquidBlock = findNearestLiquidBlock(world, action, player.location)
-            if (liquidBlock != null) {
-                val liquidCenter = liquidBlock.location.clone().add(0.5, 0.5, 0.5)
-                val distToLiquid = player.location.distance(liquidCenter)
-
-                if (distToLiquid > 3.5) {
-                    val standLoc = findStandLocation(player, liquidBlock)
-                    val heightDiff = standLoc.y - player.location.y
-                    if (heightDiff > 1.2) {
-                        val groundBlock = standLoc.block.getRelative(0, -1, 0)
-                        if (groundBlock.type.isSolid) {
-                            player.teleport(standLoc)
-                            val zeroVec = Vector(0.0, 0.0, 0.0)
-                            fakePlayer.nms.setDeltaMovement(zeroVec)
-                            player.velocity = zeroVec
-                        }
-                    } else {
-                        walkTowards(fakePlayer, standLoc)
-                    }
-                    if (player.location.distance(liquidCenter) > 4.2) {
-                        return
-                    }
-                }
-
-                // 轉向液體方塊並放置填埋
-                val eyeLoc = player.eyeLocation
-                val dir = liquidCenter.toVector().subtract(eyeLoc.toVector())
-                if (dir.lengthSquared() > 0.0001) {
-                    val yaw = Math.toDegrees(atan2(-dir.x, dir.z)).toFloat()
-                    val pitch = Math.toDegrees(atan2(-dir.y, sqrt(dir.x * dir.x + dir.z * dir.z))).toFloat()
-                    player.setRotation(yaw, pitch)
-                }
-
-                val fillItem = player.inventory.getItem(fillSlot)
-                if (fillItem != null && fillItem.type.isBlock && fillItem.type.isSolid) {
-                    val blockType = fillItem.type
-                    if (fillItem.amount > 1) {
-                        fillItem.amount--
-                    } else {
-                        player.inventory.setItem(fillSlot, null)
-                    }
-                    player.swingMainHand()
-                    liquidBlock.type = blockType
-                    world.playSound(liquidBlock.location, org.bukkit.Sound.BLOCK_STONE_PLACE, 0.8f, 1.0f)
-                    action.freezeTick = 4
-                    return
-                }
-            }
-        }
-
-        // 尋找或驗證目標方塊
+        val canFillLiquid = fillSlot != null
         var target = action.target
-        if (target == null || !isMinedBlock(target) || target.world != world) {
-            target = findNextBlock(world, action, player.location)
+        val isTargetValid = target != null && target.world == world && (isMinedBlock(target) || (canFillLiquid && isLiquidBlock(target)))
+        if (!isTargetValid) {
+            target = findNextBlock(world, action, player.location, canFillLiquid)
             if (target == null) {
                 // 選區內方塊已全數清空，最後自動存放一次
                 if (action.autoDeposit && hasChests) {
@@ -141,7 +91,9 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
             action.target = target
             action.lastTargetName = target.type.name
             action.progress = 0f
-            com.coderxi.plugin.fakeplayer.utils.ToolHelper.equipBestTool(player, target)
+            if (isMinedBlock(target)) {
+                com.coderxi.plugin.fakeplayer.utils.ToolHelper.equipBestTool(player, target)
+            }
         }
 
         val targetCenter = target.location.add(0.5, 0.5, 0.5)
@@ -157,7 +109,7 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
             if (isHighObstacle) {
                 // 目標在無法爬上的高處懸崖/山頂，直接安全傳送至目標站立點
                 val groundBlock = standLoc.block.getRelative(0, -1, 0)
-                if (groundBlock.type.isSolid) {
+                if (groundBlock.type.isSolid || groundBlock.isLiquid) {
                     player.teleport(standLoc)
                     val zeroVec = Vector(0.0, 0.0, 0.0)
                     fakePlayer.nms.setDeltaMovement(zeroVec)
@@ -173,7 +125,7 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
                     val threshold = if (!canWalk) 10 else 20
                     if (action.stuckTick >= threshold) {
                         val groundBlock = standLoc.block.getRelative(0, -1, 0)
-                        if (standLoc != player.location && groundBlock.type.isSolid) {
+                        if (standLoc != player.location && (groundBlock.type.isSolid || groundBlock.isLiquid)) {
                             player.teleport(standLoc)
                             val zeroVec = Vector(0.0, 0.0, 0.0)
                             fakePlayer.nms.setDeltaMovement(zeroVec)
@@ -191,7 +143,7 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
                 return
             }
         } else {
-            // 已在挖掘範圍內，立即煞車停止移動，防止滑落懸崖
+            // 已在挖掘/填埋範圍內，立即煞車停止移動
             val stopVec = Vector(0.0, minOf(player.velocity.y, 0.0), 0.0)
             fakePlayer.nms.setDeltaMovement(stopVec)
             player.velocity = stopVec
@@ -203,6 +155,28 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
             val yaw = Math.toDegrees(atan2(-dir.x, dir.z)).toFloat()
             val pitch = Math.toDegrees(atan2(-dir.y, sqrt(dir.x * dir.x + dir.z * dir.z))).toFloat()
             player.setRotation(yaw, pitch)
+        }
+
+        // 若目標為液體方塊，執行填埋覆蓋
+        if (isLiquidBlock(target)) {
+            val currentFillSlot = findFillBlockSlot(player)
+            if (currentFillSlot != null) {
+                val fillItem = player.inventory.getItem(currentFillSlot)
+                if (fillItem != null && fillItem.type.isBlock && fillItem.type.isSolid) {
+                    val blockType = fillItem.type
+                    if (fillItem.amount > 1) {
+                        fillItem.amount--
+                    } else {
+                        player.inventory.setItem(currentFillSlot, null)
+                    }
+                    player.swingMainHand()
+                    target.type = blockType
+                    world.playSound(target.location, org.bukkit.Sound.BLOCK_STONE_PLACE, 0.8f, 1.0f)
+                    action.target = null
+                    action.freezeTick = 3
+                    return
+                }
+            }
         }
 
         player.swingMainHand()
@@ -489,29 +463,9 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
                 name.contains("SPAWNER") || name.contains("BEACON") || name.contains("ENCHANTING")
     }
 
-    private fun findNearestLiquidBlock(world: org.bukkit.World, action: FlattenAction, currentLoc: Location): Block? {
-        for (y in action.maxY downTo action.minY) {
-            var closestBlock: Block? = null
-            var minDistanceSq = Double.MAX_VALUE
-            for (x in action.minX..action.maxX) {
-                for (z in action.minZ..action.maxZ) {
-                    val block = world.getBlockAt(x, y, z)
-                    val type = block.type
-                    val isLiquidBlock = block.isLiquid || type == org.bukkit.Material.WATER || type == org.bukkit.Material.LAVA || type == org.bukkit.Material.BUBBLE_COLUMN
-                    if (isLiquidBlock) {
-                        val dSq = block.location.distanceSquared(currentLoc)
-                        if (dSq < minDistanceSq) {
-                            minDistanceSq = dSq
-                            closestBlock = block
-                        }
-                    }
-                }
-            }
-            if (closestBlock != null) {
-                return closestBlock
-            }
-        }
-        return null
+    private fun isLiquidBlock(block: Block): Boolean {
+        val type = block.type
+        return block.isLiquid || type == org.bukkit.Material.WATER || type == org.bukkit.Material.LAVA || type == org.bukkit.Material.BUBBLE_COLUMN
     }
 
     private fun isMinedBlock(block: Block): Boolean {
@@ -522,24 +476,23 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
             type == org.bukkit.Material.LILY_PAD) {
             return true
         }
-        if (block.isLiquid || type == org.bukkit.Material.WATER || type == org.bukkit.Material.LAVA || type == org.bukkit.Material.BUBBLE_COLUMN) {
+        if (isLiquidBlock(block)) {
             return false
         }
         if (type.hardness < 0f) return false
         return true
     }
 
-    private fun findNextBlock(world: org.bukkit.World, action: FlattenAction, currentLoc: Location): Block? {
+    private fun findNextBlock(world: org.bukkit.World, action: FlattenAction, currentLoc: Location, canFillLiquid: Boolean = false): Block? {
         for (y in action.maxY downTo action.minY) {
             var closestBlock: Block? = null
             var minDistanceSq = Double.MAX_VALUE
             for (x in action.minX..action.maxX) {
                 for (z in action.minZ..action.maxZ) {
                     val block = world.getBlockAt(x, y, z)
-                    if (isMinedBlock(block)) {
-                        if (action.preserveOres && isOreBlock(block)) {
-                            continue
-                        }
+                    val isMinable = isMinedBlock(block) && (!action.preserveOres || !isOreBlock(block))
+                    val isLiquid = canFillLiquid && isLiquidBlock(block)
+                    if (isMinable || isLiquid) {
                         val dSq = block.location.distanceSquared(currentLoc)
                         if (dSq < minDistanceSq) {
                             minDistanceSq = dSq
