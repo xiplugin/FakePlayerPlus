@@ -243,7 +243,9 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
     private fun depositItemsToChest(fakePlayer: FakePlayer, action: FlattenAction): Boolean {
         val player = fakePlayer.player
         val chestList = mutableListOf<Location>()
-        if (action.chestLocations.isNotEmpty()) {
+        if (action.outputChestLocations.isNotEmpty()) {
+            chestList.addAll(action.outputChestLocations)
+        } else if (action.chestLocations.isNotEmpty()) {
             chestList.addAll(action.chestLocations)
         } else if (action.chestX != null && action.chestY != null && action.chestZ != null) {
             val w = action.chestWorld ?: player.world
@@ -319,8 +321,8 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
                 }
             }
 
-            // 存完物品後，若身上缺少核心工具，自動從箱子補給工具
-            if (!com.coderxi.plugin.fakeplayer.utils.ToolHelper.hasAllEssentialTools(player)) {
+            // 存完物品後，若未單獨設定工具補給箱，且身上缺少核心工具，自動從此處補給工具
+            if (action.toolChestLocations.isEmpty() && !com.coderxi.plugin.fakeplayer.utils.ToolHelper.hasAllEssentialTools(player)) {
                 val restocked = com.coderxi.plugin.fakeplayer.utils.ToolHelper.restockToolsFromChest(player, targetInv)
                 if (restocked) {
                     fakePlayer.owners.forEach {
@@ -351,8 +353,12 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
     private fun restockToolsFromBoundChests(fakePlayer: FakePlayer, action: FlattenAction, neededSuffix: String? = null): Boolean {
         val player = fakePlayer.player
         val chestList = mutableListOf<Location>()
-        if (action.chestLocations.isNotEmpty()) {
+        if (action.toolChestLocations.isNotEmpty()) {
+            chestList.addAll(action.toolChestLocations)
+        } else if (action.chestLocations.isNotEmpty()) {
             chestList.addAll(action.chestLocations)
+        } else if (action.outputChestLocations.isNotEmpty()) {
+            chestList.addAll(action.outputChestLocations)
         } else if (action.chestX != null && action.chestY != null && action.chestZ != null) {
             val w = action.chestWorld ?: player.world
             chestList.add(Location(w, action.chestX!!.toDouble(), action.chestY!!.toDouble(), action.chestZ!!.toDouble()))

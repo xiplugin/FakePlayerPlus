@@ -21,17 +21,24 @@ import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.abs
 
+enum class ChestRole {
+    OUTPUT, // 產物存放箱
+    TOOL    // 工具補給箱
+}
+
 data class FlattenSelection(
     var pos1: Block? = null,
     var pos2: Block? = null,
-    val chestBlocks: MutableList<Block> = mutableListOf(),
+    val outputChests: MutableList<Block> = mutableListOf(),
+    val toolChests: MutableList<Block> = mutableListOf(),
     var preserveOres: Boolean = false,
     var pickupItems: Boolean = true,
     var autoDeposit: Boolean = true
 ) {
     val isComplete: Boolean get() = pos1 != null && pos2 != null && pos1?.world == pos2?.world
 
-    val chestBlock: Block? get() = chestBlocks.firstOrNull()
+    val chestBlocks: List<Block> get() = outputChests + toolChests
+    val chestBlock: Block? get() = outputChests.firstOrNull() ?: toolChests.firstOrNull()
 
     val blockCount: Int get() {
         val p1 = pos1 ?: return 0
@@ -87,21 +94,51 @@ data class FlattenSelection(
         }
     }
 
-    fun addChestBlock(block: Block): Boolean {
+    fun addChestBlock(block: Block, role: ChestRole = ChestRole.OUTPUT): Boolean {
+        val targetList = if (role == ChestRole.TOOL) toolChests else outputChests
+        val otherList = if (role == ChestRole.TOOL) outputChests else toolChests
         val associated = getAssociatedBlocks(block)
-        for (existing in chestBlocks) {
+
+        // 若已在另一種類別清單中，先將其移出
+        for (assoc in associated) {
+            otherList.removeIf { it.world == assoc.world && it.x == assoc.x && it.y == assoc.y && it.z == assoc.z }
+        }
+
+        // 檢查是否已在目標清單中
+        for (existing in targetList) {
             for (assoc in associated) {
                 if (existing.world == assoc.world && existing.x == assoc.x && existing.y == assoc.y && existing.z == assoc.z) {
                     return false
                 }
             }
         }
-        chestBlocks.add(associated.first())
+        targetList.add(associated.first())
         return true
     }
 
-    fun clearChestBlocks() {
-        chestBlocks.clear()
+    fun removeChestBlock(index: Int, role: ChestRole): Boolean {
+        val targetList = if (role == ChestRole.TOOL) toolChests else outputChests
+        if (index in targetList.indices) {
+            targetList.removeAt(index)
+            return true
+        }
+        return false
+    }
+
+    fun switchChestRole(index: Int, currentRole: ChestRole): Boolean {
+        val srcList = if (currentRole == ChestRole.TOOL) toolChests else outputChests
+        val dstList = if (currentRole == ChestRole.TOOL) outputChests else toolChests
+        if (index in srcList.indices) {
+            val b = srcList.removeAt(index)
+            dstList.add(b)
+            return true
+        }
+        return false
+    }
+
+    fun clearChestBlocks(role: ChestRole? = null) {
+        if (role == null || role == ChestRole.OUTPUT) outputChests.clear()
+        if (role == null || role == ChestRole.TOOL) toolChests.clear()
     }
 }
 
@@ -109,14 +146,15 @@ object FlattenSelectionManager : Listener {
 
     private val selections = ConcurrentHashMap<UUID, FlattenSelection>()
     private val selectingPlayers = ConcurrentHashMap.newKeySet<UUID>()
-    private val selectingChestPlayers = ConcurrentHashMap.newKeySet<UUID>()
+    private val selectingChestPlayers = ConcurrentHashMap<UUID, ChestRole>()
     private val chestHighlightPlayers = ConcurrentHashMap.newKeySet<UUID>()
     private var isParticleTaskStarted = false
 
     private val repository = com.coderxi.plugin.fakeplayer.repository.FlattenRepository()
 
     fun isSelecting(player: Player): Boolean = selectingPlayers.contains(player.uniqueId)
-    fun isSelectingChest(player: Player): Boolean = selectingChestPlayers.contains(player.uniqueId)
+    fun isSelectingChest(player: Player): Boolean = selectingChestPlayers.containsKey(player.uniqueId)
+    fun getSelectingChestRole(player: Player): ChestRole? = selectingChestPlayers[player.uniqueId]
     fun isHighlightingChests(player: Player): Boolean = chestHighlightPlayers.contains(player.uniqueId)
 
     fun setHighlightingChests(player: Player, enable: Boolean) {
@@ -141,8 +179,9 @@ object FlattenSelectionManager : Listener {
         val renderParticlesForPlayer = { player: Player ->
             if (player.isOnline && isHighlightingChests(player)) {
                 val selection = getSelection(player)
-                if (selection != null && selection.chestBlocks.isNotEmpty()) {
-                    for (cb in selection.chestBlocks) {
+                if (selection != null) {
+                    // 渲染產物存放箱 (金色/火焰光環)
+                    for (cb in selection.outputChests) {
                         if (cb.world != player.world) continue
                         val loc = cb.location
                         if (loc.distanceSquared(player.location) <= 48 * 48) {
@@ -151,9 +190,24 @@ object FlattenSelectionManager : Listener {
                                 val cx = b.x + 0.5
                                 val cy = b.y + 0.5
                                 val cz = b.z + 0.5
-                                player.spawnParticle(Particle.HAPPY_VILLAGER, cx, cy, cz, 3, 0.35, 0.20, 0.35, 0.0)
                                 player.spawnParticle(Particle.WAX_ON, cx, cy, cz, 4, 0.35, 0.20, 0.35, 0.0)
-                                player.spawnParticle(Particle.END_ROD, cx, cy + 0.35, cz, 1, 0.1, 0.05, 0.1, 0.01)
+                                player.spawnParticle(Particle.FLAME, cx, cy + 0.35, cz, 1, 0.05, 0.05, 0.05, 0.01)
+                            }
+                        }
+                    }
+
+                    // 渲染工具補給箱 (綠色/綠寶石光環)
+                    for (cb in selection.toolChests) {
+                        if (cb.world != player.world) continue
+                        val loc = cb.location
+                        if (loc.distanceSquared(player.location) <= 48 * 48) {
+                            val blocks = FlattenSelection.getAssociatedBlocks(cb)
+                            for (b in blocks) {
+                                val cx = b.x + 0.5
+                                val cy = b.y + 0.5
+                                val cz = b.z + 0.5
+                                player.spawnParticle(Particle.HAPPY_VILLAGER, cx, cy, cz, 4, 0.35, 0.20, 0.35, 0.0)
+                                player.spawnParticle(Particle.END_ROD, cx, cy + 0.35, cz, 1, 0.05, 0.05, 0.05, 0.01)
                             }
                         }
                     }
@@ -196,10 +250,10 @@ object FlattenSelectionManager : Listener {
         getOrCreateSelection(player)
     }
 
-    fun startChestSelection(player: Player) {
-        selectingChestPlayers.add(player.uniqueId)
+    fun startChestSelection(player: Player, role: ChestRole = ChestRole.OUTPUT) {
+        selectingChestPlayers[player.uniqueId] = role
         selectingPlayers.remove(player.uniqueId)
-        setHighlightingChests(player, true) // 進入綁定模式時預設開啟粒子特效，方便玩家查看
+        setHighlightingChests(player, true)
         getOrCreateSelection(player)
     }
 
@@ -219,22 +273,30 @@ object FlattenSelectionManager : Listener {
         }
     }
 
-    fun clearChestBlocks(player: Player) {
+    fun clearChestBlocks(player: Player, role: ChestRole? = null) {
         val sel = selections[player.uniqueId]
         if (sel != null) {
-            sel.clearChestBlocks()
+            sel.clearChestBlocks(role)
             repository.saveSelection(player.uniqueId, sel)
         }
     }
 
-    fun removeChestBlock(player: Player, index: Int): Boolean {
+    fun removeChestBlock(player: Player, index: Int, role: ChestRole): Boolean {
         val selection = selections[player.uniqueId] ?: return false
-        if (index in selection.chestBlocks.indices) {
-            selection.chestBlocks.removeAt(index)
+        val removed = selection.removeChestBlock(index, role)
+        if (removed) {
             repository.saveSelection(player.uniqueId, selection)
-            return true
         }
-        return false
+        return removed
+    }
+
+    fun switchChestRole(player: Player, index: Int, currentRole: ChestRole): Boolean {
+        val selection = selections[player.uniqueId] ?: return false
+        val switched = selection.switchChestRole(index, currentRole)
+        if (switched) {
+            repository.saveSelection(player.uniqueId, selection)
+        }
+        return switched
     }
 
     fun stopChestSelection(player: Player) {
@@ -272,7 +334,7 @@ object FlattenSelectionManager : Listener {
         val player = event.player
         if (event.hand != EquipmentSlot.HAND) return
 
-        // 綁定箱子模式 (支援多箱子、大箱子依序綁定，Shift+點擊退出)
+        // 綁定箱子模式 (支援產物箱/工具箱多箱綁定，Shift+點擊退出)
         if (isSelectingChest(player)) {
             if (player.isSneaking) {
                 stopChestSelection(player)
@@ -286,12 +348,16 @@ object FlattenSelectionManager : Listener {
                 event.isCancelled = true
                 if (clicked.state is Container) {
                     val selection = getOrCreateSelection(player)
-                    val added = selection.addChestBlock(clicked)
+                    val role = getSelectingChestRole(player) ?: ChestRole.OUTPUT
+                    val added = selection.addChestBlock(clicked, role)
                     if (added) {
                         repository.saveSelection(player.uniqueId, selection)
-                        player.sendMessage(tlp("fakeplayer.flatten.chest.added", clicked.x, clicked.y, clicked.z, selection.chestBlocks.size))
+                        val total = if (role == ChestRole.TOOL) selection.toolChests.size else selection.outputChests.size
+                        val roleMsgKey = if (role == ChestRole.TOOL) "fakeplayer.flatten.chest.tool.added" else "fakeplayer.flatten.chest.output.added"
+                        player.sendMessage(tlp(roleMsgKey, clicked.x, clicked.y, clicked.z, total))
                     } else {
-                        player.sendMessage(tlp("fakeplayer.flatten.chest.already-bound", selection.chestBlocks.size))
+                        val total = if (role == ChestRole.TOOL) selection.toolChests.size else selection.outputChests.size
+                        player.sendMessage(tlp("fakeplayer.flatten.chest.already-bound", total))
                     }
                 } else {
                     player.sendMessage(tlp("fakeplayer.flatten.chest.invalid"))

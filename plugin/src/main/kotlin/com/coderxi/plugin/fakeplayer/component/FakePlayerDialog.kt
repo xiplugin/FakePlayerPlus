@@ -298,21 +298,30 @@ object FakePlayerDialog {
             }, ACTION_OPTIONS)
         ))
 
-        val manageChestsLabel = if (hasChests) {
-            tl("fakeplayer.gui.flatten.btn.manage-chests-count", selection.chestBlocks.size)
-        } else {
-            tl("fakeplayer.gui.flatten.btn.manage-chests")
-        }
-
+        val outputChestsLabel = tl("fakeplayer.gui.flatten.btn.output-chests", selection.outputChests.size)
         actionButtons.add(ActionButton.create(
-            manageChestsLabel, null, 100,
+            outputChestsLabel, null, 100,
             DialogAction.customClick({ view, _ ->
                 view.getBoolean("preserveOres")?.let { selection.preserveOres = it }
                 view.getBoolean("pickupItems")?.let { selection.pickupItems = it }
                 view.getBoolean("autoDeposit")?.let { selection.autoDeposit = it }
                 FlattenSelectionManager.saveSelection(viewer)
                 runOnPlayerThread(viewer) {
-                    viewer.showDialog(FakePlayerDialog.chestListDialog(viewer, fakePlayer))
+                    viewer.showDialog(FakePlayerDialog.chestListDialog(viewer, fakePlayer, ChestRole.OUTPUT))
+                }
+            }, ACTION_OPTIONS)
+        ))
+
+        val toolChestsLabel = tl("fakeplayer.gui.flatten.btn.tool-chests", selection.toolChests.size)
+        actionButtons.add(ActionButton.create(
+            toolChestsLabel, null, 100,
+            DialogAction.customClick({ view, _ ->
+                view.getBoolean("preserveOres")?.let { selection.preserveOres = it }
+                view.getBoolean("pickupItems")?.let { selection.pickupItems = it }
+                view.getBoolean("autoDeposit")?.let { selection.autoDeposit = it }
+                FlattenSelectionManager.saveSelection(viewer)
+                runOnPlayerThread(viewer) {
+                    viewer.showDialog(FakePlayerDialog.chestListDialog(viewer, fakePlayer, ChestRole.TOOL))
                 }
             }, ACTION_OPTIONS)
         ))
@@ -370,7 +379,12 @@ object FakePlayerDialog {
                             this.preserveOres = selection.preserveOres
                             this.pickupItems = selection.pickupItems
                             this.autoDeposit = selection.autoDeposit
-                            selection.chestBlocks.forEach { cb ->
+                            selection.outputChests.forEach { cb ->
+                                outputChestLocations.add(cb.location)
+                                chestLocations.add(cb.location)
+                            }
+                            selection.toolChests.forEach { cb ->
+                                toolChestLocations.add(cb.location)
                                 chestLocations.add(cb.location)
                             }
                             if (selection.chestBlocks.isNotEmpty()) {
@@ -398,16 +412,7 @@ object FakePlayerDialog {
         val isHighlighting = FlattenSelectionManager.isHighlightingChests(viewer)
         val particleInfo = if (isHighlighting) tls("fakeplayer.gui.flatten.particle.on") else tls("fakeplayer.gui.flatten.particle.off")
 
-        val chestInfo = if (selection.chestBlocks.isNotEmpty()) {
-            if (selection.chestBlocks.size == 1) {
-                val cb = selection.chestBlocks.first()
-                "<aqua>${cb.x}, ${cb.y}, ${cb.z}</aqua> <dark_gray>(${cb.type.name})</dark_gray>"
-            } else {
-                tls("fakeplayer.gui.flatten.chest.multi", selection.chestBlocks.size)
-            }
-        } else {
-            tls("fakeplayer.gui.flatten.chest.none")
-        }
+        val chestInfo = "<gold>${selection.outputChests.size}</gold> 產物箱 / <green>${selection.toolChests.size}</green> 工具箱"
 
         val bodyMsg = if (isComplete) {
             tl("fakeplayer.gui.flatten.status.ready",
@@ -443,17 +448,19 @@ object FakePlayerDialog {
         }
     }
 
-    fun chestListDialog(viewer: org.bukkit.entity.Player, fakePlayer: FakePlayer): DialogLike {
+    fun chestListDialog(viewer: org.bukkit.entity.Player, fakePlayer: FakePlayer, role: ChestRole = ChestRole.OUTPUT): DialogLike {
         viewer.selected = fakePlayer
         val selection = FlattenSelectionManager.getSelection(viewer)
-        val chestBlocks = selection?.chestBlocks ?: emptyList()
+        val targetChests = if (role == ChestRole.TOOL) selection?.toolChests ?: emptyList() else selection?.outputChests ?: emptyList()
         val actionButtons = mutableListOf<ActionButton>()
 
+        val addBtnLabel = if (role == ChestRole.TOOL) tl("fakeplayer.gui.flatten.chest.tool.btn.add") else tl("fakeplayer.gui.flatten.chest.output.btn.add")
         actionButtons.add(ActionButton.create(
-            tl("fakeplayer.gui.flatten.chest.btn.add"), null, 100,
+            addBtnLabel, null, 100,
             DialogAction.customClick({ _, _ ->
-                FlattenSelectionManager.startChestSelection(viewer)
-                viewer.sendMessage(com.coderxi.plugin.fakeplayer.utils.tlp("fakeplayer.flatten.chest.mode"))
+                FlattenSelectionManager.startChestSelection(viewer, role)
+                val modeMsg = if (role == ChestRole.TOOL) "fakeplayer.flatten.chest.tool.mode" else "fakeplayer.flatten.chest.output.mode"
+                viewer.sendMessage(com.coderxi.plugin.fakeplayer.utils.tlp(modeMsg))
             }, ACTION_OPTIONS)
         ))
 
@@ -468,30 +475,46 @@ object FakePlayerDialog {
             DialogAction.customClick({ _, _ ->
                 FlattenSelectionManager.toggleHighlightingChests(viewer)
                 runOnPlayerThread(viewer) {
-                    viewer.showDialog(FakePlayerDialog.chestListDialog(viewer, fakePlayer))
+                    viewer.showDialog(FakePlayerDialog.chestListDialog(viewer, fakePlayer, role))
                 }
             }, ACTION_OPTIONS)
         ))
 
-        chestBlocks.forEachIndexed { index, cb ->
+        targetChests.forEachIndexed { index, cb ->
             actionButtons.add(ActionButton.create(
-                tl("fakeplayer.gui.flatten.chest.btn.remove", index + 1), null, 100,
+                tl("fakeplayer.gui.flatten.btn.remove", index + 1), null, 100,
                 DialogAction.customClick({ _, _ ->
-                    FlattenSelectionManager.removeChestBlock(viewer, index)
+                    FlattenSelectionManager.removeChestBlock(viewer, index, role)
                     runOnPlayerThread(viewer) {
-                        viewer.showDialog(FakePlayerDialog.chestListDialog(viewer, fakePlayer))
+                        viewer.showDialog(FakePlayerDialog.chestListDialog(viewer, fakePlayer, role))
+                    }
+                }, ACTION_OPTIONS)
+            ))
+
+            val switchLabel = if (role == ChestRole.TOOL) {
+                tl("fakeplayer.gui.flatten.chest.btn.switch-to-output", index + 1)
+            } else {
+                tl("fakeplayer.gui.flatten.chest.btn.switch-to-tool", index + 1)
+            }
+            actionButtons.add(ActionButton.create(
+                switchLabel, null, 100,
+                DialogAction.customClick({ _, _ ->
+                    FlattenSelectionManager.switchChestRole(viewer, index, role)
+                    runOnPlayerThread(viewer) {
+                        viewer.showDialog(FakePlayerDialog.chestListDialog(viewer, fakePlayer, role))
                     }
                 }, ACTION_OPTIONS)
             ))
         }
 
-        if (chestBlocks.isNotEmpty()) {
+        if (targetChests.isNotEmpty()) {
+            val clearLabel = if (role == ChestRole.TOOL) tl("fakeplayer.gui.flatten.chest.tool.btn.clear-all") else tl("fakeplayer.gui.flatten.chest.output.btn.clear-all")
             actionButtons.add(ActionButton.create(
-                tl("fakeplayer.gui.flatten.chest.btn.clear-all"), null, 100,
+                clearLabel, null, 100,
                 DialogAction.customClick({ _, _ ->
-                    FlattenSelectionManager.clearChestBlocks(viewer)
+                    FlattenSelectionManager.clearChestBlocks(viewer, role)
                     runOnPlayerThread(viewer) {
-                        viewer.showDialog(FakePlayerDialog.chestListDialog(viewer, fakePlayer))
+                        viewer.showDialog(FakePlayerDialog.chestListDialog(viewer, fakePlayer, role))
                     }
                 }, ACTION_OPTIONS)
             ))
@@ -506,23 +529,33 @@ object FakePlayerDialog {
             }, ACTION_OPTIONS)
         )
 
-        val bodyMsg = if (chestBlocks.isEmpty()) {
-            tl("fakeplayer.gui.flatten.chest.list.empty")
+        val dialogTitle = if (role == ChestRole.TOOL) {
+            tl("fakeplayer.gui.flatten.chest.tool.title", fakePlayer.name)
         } else {
-            val listStr = chestBlocks.mapIndexed { i, cb ->
+            tl("fakeplayer.gui.flatten.chest.output.title", fakePlayer.name)
+        }
+
+        val bodyMsg = if (targetChests.isEmpty()) {
+            if (role == ChestRole.TOOL) tl("fakeplayer.gui.flatten.chest.tool.empty") else tl("fakeplayer.gui.flatten.chest.output.empty")
+        } else {
+            val listStr = targetChests.mapIndexed { i, cb ->
                 val state = cb.state
                 val isDouble = state is org.bukkit.block.Chest && state.inventory.holder is org.bukkit.block.DoubleChest
                 val typeName = if (isDouble) "DOUBLE_CHEST" else cb.type.name
                 "<gray> • <gold>#${i + 1}</gold> <white>$typeName</white> <aqua>(${cb.x}, ${cb.y}, ${cb.z})</aqua></gray>"
             }.joinToString("\n")
             val effectStatus = if (isHighlighting) tls("fakeplayer.gui.flatten.particle.on") else tls("fakeplayer.gui.flatten.particle.off")
-            tl("fakeplayer.gui.flatten.chest.list.header", chestBlocks.size, listStr, effectStatus)
+            if (role == ChestRole.TOOL) {
+                tl("fakeplayer.gui.flatten.chest.tool.header", targetChests.size, listStr, effectStatus)
+            } else {
+                tl("fakeplayer.gui.flatten.chest.output.header", targetChests.size, listStr, effectStatus)
+            }
         }
 
         val cols = if (actionButtons.size >= 4) 2 else 1
 
         return Dialog.create { builder -> builder.empty()
-            .base(DialogBase.builder(tl("fakeplayer.gui.flatten.chest.title", fakePlayer.name))
+            .base(DialogBase.builder(dialogTitle)
                 .canCloseWithEscape(true)
                 .body(listOf(DialogBody.plainMessage(bodyMsg)))
                 .build())

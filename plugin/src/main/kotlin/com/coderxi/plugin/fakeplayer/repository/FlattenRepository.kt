@@ -12,7 +12,7 @@ import org.bukkit.block.Block
 import org.sql2o.Connection
 import java.util.UUID
 
-data class BlockLocDTO(val world: String, val x: Int, val y: Int, val z: Int)
+data class BlockLocDTO(val world: String, val x: Int, val y: Int, val z: Int, val role: String = "OUTPUT")
 
 class FlattenRepository {
 
@@ -43,12 +43,18 @@ class FlattenRepository {
             } else null
 
             val chestBlocksJson = row.getString("chest_blocks")
-            val chestBlocks = mutableListOf<Block>()
+            val outputChests = mutableListOf<Block>()
+            val toolChests = mutableListOf<Block>()
             if (!chestBlocksJson.isNullOrBlank()) {
                 val dtos = runCatching { gson.fromJson<List<BlockLocDTO>>(chestBlocksJson, blockLocListType) }.getOrNull() ?: emptyList()
                 for (dto in dtos) {
                     val w = Bukkit.getWorld(dto.world) ?: continue
-                    chestBlocks.add(w.getBlockAt(dto.x, dto.y, dto.z))
+                    val block = w.getBlockAt(dto.x, dto.y, dto.z)
+                    if (dto.role.equals("TOOL", ignoreCase = true)) {
+                        toolChests.add(block)
+                    } else {
+                        outputChests.add(block)
+                    }
                 }
             }
 
@@ -59,7 +65,8 @@ class FlattenRepository {
             FlattenSelection(
                 pos1 = pos1,
                 pos2 = pos2,
-                chestBlocks = chestBlocks,
+                outputChests = outputChests,
+                toolChests = toolChests,
                 preserveOres = preserveOres,
                 pickupItems = pickupItems,
                 autoDeposit = autoDeposit
@@ -86,7 +93,9 @@ class FlattenRepository {
 
         val p1 = selection.pos1
         val p2 = selection.pos2
-        val chestDtos = selection.chestBlocks.map { BlockLocDTO(it.world.name, it.x, it.y, it.z) }
+        val chestDtos = mutableListOf<BlockLocDTO>()
+        selection.outputChests.forEach { chestDtos.add(BlockLocDTO(it.world.name, it.x, it.y, it.z, "OUTPUT")) }
+        selection.toolChests.forEach { chestDtos.add(BlockLocDTO(it.world.name, it.x, it.y, it.z, "TOOL")) }
         val chestJson = gson.toJson(chestDtos)
 
         open().use { conn ->
@@ -134,7 +143,12 @@ class FlattenRepository {
         """.trimIndent()
 
         val worldName = action.world?.name ?: action.chestWorld?.name ?: return
-        val chestDtos = action.chestLocations.map { BlockLocDTO(it.world.name, it.blockX, it.blockY, it.blockZ) }
+        val chestDtos = mutableListOf<BlockLocDTO>()
+        action.outputChestLocations.forEach { chestDtos.add(BlockLocDTO(it.world.name, it.blockX, it.blockY, it.blockZ, "OUTPUT")) }
+        action.toolChestLocations.forEach { chestDtos.add(BlockLocDTO(it.world.name, it.blockX, it.blockY, it.blockZ, "TOOL")) }
+        if (chestDtos.isEmpty()) {
+            action.chestLocations.forEach { chestDtos.add(BlockLocDTO(it.world.name, it.blockX, it.blockY, it.blockZ, "OUTPUT")) }
+        }
         val chestJson = gson.toJson(chestDtos)
 
         open().use { conn ->
@@ -207,7 +221,13 @@ class FlattenRepository {
                     val dtos = runCatching { gson.fromJson<List<BlockLocDTO>>(chestJson, blockLocListType) }.getOrNull() ?: emptyList()
                     for (dto in dtos) {
                         val cw = Bukkit.getWorld(dto.world) ?: continue
-                        this.chestLocations.add(Location(cw, dto.x.toDouble(), dto.y.toDouble(), dto.z.toDouble()))
+                        val loc = Location(cw, dto.x.toDouble(), dto.y.toDouble(), dto.z.toDouble())
+                        this.chestLocations.add(loc)
+                        if (dto.role.equals("TOOL", ignoreCase = true)) {
+                            this.toolChestLocations.add(loc)
+                        } else {
+                            this.outputChestLocations.add(loc)
+                        }
                     }
                     if (this.chestLocations.isNotEmpty()) {
                         val first = this.chestLocations.first()
@@ -252,7 +272,13 @@ class FlattenRepository {
                         val dtos = runCatching { gson.fromJson<List<BlockLocDTO>>(chestJson, blockLocListType) }.getOrNull() ?: emptyList()
                         for (dto in dtos) {
                             val cw = Bukkit.getWorld(dto.world) ?: continue
-                            this.chestLocations.add(Location(cw, dto.x.toDouble(), dto.y.toDouble(), dto.z.toDouble()))
+                            val loc = Location(cw, dto.x.toDouble(), dto.y.toDouble(), dto.z.toDouble())
+                            this.chestLocations.add(loc)
+                            if (dto.role.equals("TOOL", ignoreCase = true)) {
+                                this.toolChestLocations.add(loc)
+                            } else {
+                                this.outputChestLocations.add(loc)
+                            }
                         }
                         if (this.chestLocations.isNotEmpty()) {
                             val first = this.chestLocations.first()
