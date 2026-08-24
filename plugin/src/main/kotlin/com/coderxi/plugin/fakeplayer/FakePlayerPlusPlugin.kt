@@ -132,7 +132,7 @@ class FakePlayerPlusPlugin: FakePlayerPlusPluginApi, JavaPlugin() {
     }
 
     override fun onDisable() {
-        globalCoroutineScope.cancel()
+        runCatching { globalCoroutineScope.cancel() }
         HandlerList.unregisterAll(this)
         executeDisable()
     }
