@@ -409,11 +409,8 @@ object FakePlayerDialog {
         ))
 
         chestBlocks.forEachIndexed { index, cb ->
-            val state = cb.state
-            val isDouble = state is org.bukkit.block.Chest && state.inventory.holder is org.bukkit.block.DoubleChest
-            val typeName = if (isDouble) "DOUBLE_CHEST" else cb.type.name
             actionButtons.add(ActionButton.create(
-                tl("fakeplayer.gui.flatten.chest.btn.remove", index + 1, typeName, "${cb.x}, ${cb.y}, ${cb.z}"), null, 100,
+                tl("fakeplayer.gui.flatten.chest.btn.remove", index + 1), null, 100,
                 DialogAction.customClick({ _, _ ->
                     FlattenSelectionManager.removeChestBlock(viewer, index)
                     runOnPlayerThread(viewer) {
@@ -457,12 +454,14 @@ object FakePlayerDialog {
             tl("fakeplayer.gui.flatten.chest.list.header", chestBlocks.size, listStr, effectStatus)
         }
 
+        val cols = if (actionButtons.size >= 4) 2 else 1
+
         return Dialog.create { builder -> builder.empty()
             .base(DialogBase.builder(tl("fakeplayer.gui.flatten.chest.title", fakePlayer.name))
                 .canCloseWithEscape(true)
                 .body(listOf(DialogBody.plainMessage(bodyMsg)))
                 .build())
-            .type(DialogType.multiAction(actionButtons).columns(1).exitAction(backBtn).build())
+            .type(DialogType.multiAction(actionButtons).columns(cols).exitAction(backBtn).build())
         }
     }
 
