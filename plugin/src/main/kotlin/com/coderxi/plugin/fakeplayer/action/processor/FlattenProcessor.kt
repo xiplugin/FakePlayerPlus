@@ -135,8 +135,9 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
                 return
             }
         } else {
-            // 已在挖掘/填埋範圍內，立即煞車停止移動
-            val stopVec = Vector(0.0, minOf(player.velocity.y, 0.0), 0.0)
+            // 已在挖掘/填埋範圍內，立即煞車停止水平移動，保留自然垂直重力
+            val currentVy = fakePlayer.nms.getDeltaMovement().y
+            val stopVec = Vector(0.0, currentVy, 0.0)
             fakePlayer.nms.setDeltaMovement(stopVec)
             player.velocity = stopVec
         }
@@ -466,8 +467,14 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
         val frontBlock = frontLoc.block
         val frontAbove = frontLoc.clone().add(0.0, 1.0, 0.0).block
         val currentFeet = pLoc.block
+        val groundUnderFeet = pLoc.clone().add(0.0, -1.0, 0.0).block
 
-        // 1. 懸空峽谷/深坑自動搭橋鋪路 (Auto-Bridging across gaps & ravines)
+        // 1. 懸空腳下自動鋪墊防浮空 (Ensure solid footing under feet if airborne)
+        if (!fakePlayer.nms.onGround && groundUnderFeet.type.isAir && !inWater) {
+            placeScaffoldBlock(fakePlayer, groundUnderFeet)
+        }
+
+        // 2. 懸空峽谷/深坑自動搭橋鋪路 (Auto-Bridging across gaps & ravines)
         val drop1 = frontLoc.clone().add(0.0, -1.0, 0.0).block
         val drop2 = frontLoc.clone().add(0.0, -2.0, 0.0).block
         val isDeepDrop = (drop1.type.isAir || drop1.isLiquid) && (drop2.type.isAir || drop2.isLiquid)
@@ -480,7 +487,8 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
                     player.setRotation(yaw, 60.0f)
                 } else if (fakePlayer.nms.onGround) {
                     // 無方塊可搭時停步煞車防掉落深淵
-                    val stopVec = Vector(0.0, minOf(player.velocity.y, 0.0), 0.0)
+                    val currentVy = fakePlayer.nms.getDeltaMovement().y
+                    val stopVec = Vector(0.0, currentVy, 0.0)
                     fakePlayer.nms.setDeltaMovement(stopVec)
                     player.velocity = stopVec
                     return false
@@ -488,7 +496,7 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
             }
         }
 
-        // 2. 攀爬高台/高於1格的斷崖自動墊腳搭路 (Pillaring / Scaffolding up cliffs)
+        // 3. 攀爬高台/高於1格的斷崖自動墊腳搭路 (Pillaring / Scaffolding up cliffs)
         val isHighWall = (!frontBlock.type.isAir && frontBlock.type.isSolid && !frontAbove.type.isAir)
         val targetMuchHigher = dy > 1.0 && horizontalDist < 2.5
 
@@ -504,7 +512,7 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
             }
         }
 
-        // 3. 正常1格高障礙跳躍與行走
+        // 4. 正常1格高障礙跳躍與行走
         val obstacleInFront = !frontBlock.type.isAir && frontBlock.type.isSolid && frontAbove.type.isAir
 
         if (obstacleInFront && fakePlayer.nms.onGround) {
@@ -515,7 +523,7 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
             player.velocity = moveVec
         } else {
             fakePlayer.nms.setJumping(false)
-            val currentVy = minOf(player.velocity.y, 0.0)
+            val currentVy = fakePlayer.nms.getDeltaMovement().y
             val moveVec = Vector(vx, currentVy, vz)
             fakePlayer.nms.setDeltaMovement(moveVec)
             player.velocity = moveVec
@@ -634,13 +642,13 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
                         if (x == playerBlockX && z == playerBlockZ && y <= playerBlockY) {
                             score += 100.0
                         }
-                        // 避免挖掘任意在線協同假人正站立的腳下方塊
+                        // 避免挖掘任意在線協同假人正站立的腳下方塊或身軀方塊（防止自挖落腳點導致懸空浮空）
                         val isUnderWorker = onlineWorkers.any { w ->
                             val wLoc = w.player.location
-                            x == wLoc.blockX && z == wLoc.blockZ && y == wLoc.blockY - 1
+                            x == wLoc.blockX && z == wLoc.blockZ && (y == wLoc.blockY - 1 || y == wLoc.blockY)
                         }
                         if (isUnderWorker) {
-                            score += 200.0
+                            continue
                         }
 
                         // 水源/岩漿源優先於流動水

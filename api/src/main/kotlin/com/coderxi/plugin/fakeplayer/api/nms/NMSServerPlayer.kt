@@ -45,6 +45,8 @@ interface NMSServerPlayer {
     fun doTick()
     /** 移动玩家 */
     fun absMoveTo(x: Double, y: Double, z: Double, yRot: Float, xRot: Float)
+    /** 获取相对移动 */
+    fun getDeltaMovement(): Vector
     /** 设置相对移动 */
     fun setDeltaMovement(vector: Vector)
 

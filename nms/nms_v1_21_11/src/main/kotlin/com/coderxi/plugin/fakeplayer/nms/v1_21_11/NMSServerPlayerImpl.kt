@@ -81,6 +81,7 @@ open class NMSServerPlayerImpl(override val player: Player) : NMSServerPlayer {
         handle.deltaMovement = Vec3(finalX, dm.y, finalZ)
     }
     override fun absMoveTo(x: Double, y: Double, z: Double, yRot: Float, xRot: Float) = handle.absSnapTo(x, y, z, yRot, xRot)
+    override fun getDeltaMovement(): Vector = Vector(handle.deltaMovement.x, handle.deltaMovement.y, handle.deltaMovement.z)
     override fun setDeltaMovement(vector: Vector) { handle.deltaMovement = Vec3(vector.x, vector.y, vector.z) }
     override fun startRiding(entity: Entity, force: Boolean, triggerEvents: Boolean): Boolean = handle.startRiding((entity as CraftEntity).handle,force,triggerEvents)
     override fun stopRiding() = handle.stopRiding()
