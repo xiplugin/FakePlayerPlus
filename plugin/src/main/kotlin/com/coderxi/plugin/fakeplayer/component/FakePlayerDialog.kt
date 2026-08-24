@@ -395,6 +395,22 @@ object FakePlayerDialog {
             }, ACTION_OPTIONS)
         ))
 
+        val isHighlighting = FlattenSelectionManager.isHighlightingChests(viewer)
+        val highlightLabel = if (isHighlighting) {
+            tl("fakeplayer.gui.flatten.chest.btn.highlight-on")
+        } else {
+            tl("fakeplayer.gui.flatten.chest.btn.highlight-off")
+        }
+        actionButtons.add(ActionButton.create(
+            highlightLabel, null, 100,
+            DialogAction.customClick({ _, _ ->
+                FlattenSelectionManager.toggleHighlightingChests(viewer)
+                runOnPlayerThread(viewer) {
+                    viewer.showDialog(FakePlayerDialog.chestListDialog(viewer, fakePlayer))
+                }
+            }, ACTION_OPTIONS)
+        ))
+
         chestBlocks.forEachIndexed { index, cb ->
             actionButtons.add(ActionButton.create(
                 tl("fakeplayer.gui.flatten.chest.btn.remove", index + 1, "${cb.x}, ${cb.y}, ${cb.z}"), null, 100,
@@ -435,7 +451,8 @@ object FakePlayerDialog {
             val listStr = chestBlocks.mapIndexed { i, cb ->
                 "<gray>• #${i + 1}:</gray> <yellow>${cb.type.name}</yellow> <gold>(${cb.x}, ${cb.y}, ${cb.z})</gold>"
             }.joinToString("\n")
-            tl("fakeplayer.gui.flatten.chest.list.header", chestBlocks.size, listStr)
+            val effectStatus = if (isHighlighting) "<green>✔ 粒子特效已開啟</green>" else "<gray>✖ 粒子特效已關閉</gray>"
+            tl("fakeplayer.gui.flatten.chest.list.header", chestBlocks.size, listStr, effectStatus)
         }
 
         val cols = if (actionButtons.size >= 3) 2 else 1

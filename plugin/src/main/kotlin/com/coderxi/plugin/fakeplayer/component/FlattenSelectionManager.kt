@@ -1,6 +1,10 @@
 package com.coderxi.plugin.fakeplayer.component
 
+import com.coderxi.plugin.fakeplayer.utils.isFolia
+import com.coderxi.plugin.fakeplayer.utils.plugin
 import com.coderxi.plugin.fakeplayer.utils.tlp
+import org.bukkit.Bukkit
+import org.bukkit.Particle
 import org.bukkit.block.Block
 import org.bukkit.block.Container
 import org.bukkit.entity.Player
@@ -58,9 +62,62 @@ object FlattenSelectionManager : Listener {
     private val selections = ConcurrentHashMap<UUID, FlattenSelection>()
     private val selectingPlayers = ConcurrentHashMap.newKeySet<UUID>()
     private val selectingChestPlayers = ConcurrentHashMap.newKeySet<UUID>()
+    private val chestHighlightPlayers = ConcurrentHashMap.newKeySet<UUID>()
+    private var isParticleTaskStarted = false
 
     fun isSelecting(player: Player): Boolean = selectingPlayers.contains(player.uniqueId)
     fun isSelectingChest(player: Player): Boolean = selectingChestPlayers.contains(player.uniqueId)
+    fun isHighlightingChests(player: Player): Boolean = chestHighlightPlayers.contains(player.uniqueId)
+
+    fun setHighlightingChests(player: Player, enable: Boolean) {
+        if (enable) {
+            chestHighlightPlayers.add(player.uniqueId)
+            ensureParticleTask()
+        } else {
+            chestHighlightPlayers.remove(player.uniqueId)
+        }
+    }
+
+    fun toggleHighlightingChests(player: Player): Boolean {
+        val current = isHighlightingChests(player)
+        setHighlightingChests(player, !current)
+        return !current
+    }
+
+    fun ensureParticleTask() {
+        if (isParticleTaskStarted) return
+        isParticleTaskStarted = true
+
+        val runnable = Runnable {
+            if (chestHighlightPlayers.isEmpty()) return@Runnable
+            for (uuid in chestHighlightPlayers) {
+                val player = Bukkit.getPlayer(uuid)
+                if (player == null || !player.isOnline) {
+                    chestHighlightPlayers.remove(uuid)
+                    continue
+                }
+                val selection = selections[uuid] ?: continue
+                if (selection.chestBlocks.isEmpty()) continue
+
+                for (cb in selection.chestBlocks) {
+                    if (cb.world != player.world) continue
+                    if (cb.location.distanceSquared(player.location) > 48 * 48) continue
+
+                    val center = cb.location.clone().add(0.5, 0.6, 0.5)
+                    // 箱子方塊周圍持續產生閃爍光芒與粒子效果
+                    player.spawnParticle(Particle.HAPPY_VILLAGER, center.clone().add(0.0, 0.2, 0.0), 3, 0.25, 0.15, 0.25, 0.0)
+                    player.spawnParticle(Particle.WAX_ON, center, 4, 0.25, 0.25, 0.25, 0.0)
+                    player.spawnParticle(Particle.END_ROD, center.clone().add(0.0, 0.45, 0.0), 1, 0.05, 0.05, 0.05, 0.01)
+                }
+            }
+        }
+
+        if (isFolia) {
+            Bukkit.getGlobalRegionScheduler().runAtFixedRate(plugin, { _ -> runnable.run() }, 10L, 10L)
+        } else {
+            Bukkit.getScheduler().runTaskTimer(plugin, runnable, 10L, 10L)
+        }
+    }
 
     fun startSelection(player: Player) {
         selectingPlayers.add(player.uniqueId)
@@ -73,6 +130,7 @@ object FlattenSelectionManager : Listener {
     fun startChestSelection(player: Player) {
         selectingChestPlayers.add(player.uniqueId)
         selectingPlayers.remove(player.uniqueId)
+        setHighlightingChests(player, true) // 進入綁定模式時預設開啟粒子特效，方便玩家查看
         if (!selections.containsKey(player.uniqueId)) {
             selections[player.uniqueId] = FlattenSelection()
         }
