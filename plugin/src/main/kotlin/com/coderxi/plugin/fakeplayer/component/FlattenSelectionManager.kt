@@ -101,6 +101,10 @@ object FlattenSelectionManager : Listener {
         return false
     }
 
+    fun stopChestSelection(player: Player) {
+        selectingChestPlayers.remove(player.uniqueId)
+    }
+
     fun stopSelectingMode(player: Player) {
         selectingPlayers.remove(player.uniqueId)
         selectingChestPlayers.remove(player.uniqueId)
@@ -113,10 +117,16 @@ object FlattenSelectionManager : Listener {
         val player = event.player
         if (event.hand != EquipmentSlot.HAND) return
 
-        val clicked = event.clickedBlock ?: return
-
-        // 綁定箱子模式 (支援多箱子依序綁定)
+        // 綁定箱子模式 (支援多箱子依序綁定，Shift+點擊退出)
         if (isSelectingChest(player)) {
+            if (player.isSneaking) {
+                stopChestSelection(player)
+                player.sendMessage(tlp("fakeplayer.flatten.chest.exit"))
+                event.isCancelled = true
+                return
+            }
+
+            val clicked = event.clickedBlock ?: return
             if (event.action == Action.RIGHT_CLICK_BLOCK || event.action == Action.LEFT_CLICK_BLOCK) {
                 event.isCancelled = true
                 if (clicked.state is Container) {
@@ -134,8 +144,16 @@ object FlattenSelectionManager : Listener {
             return
         }
 
-        // 兩點選區模式
+        // 兩點選區模式 (Shift+點擊退出)
         if (isSelecting(player)) {
+            if (player.isSneaking) {
+                stopSelectingMode(player)
+                player.sendMessage(tlp("fakeplayer.flatten.cancel"))
+                event.isCancelled = true
+                return
+            }
+
+            val clicked = event.clickedBlock ?: return
             val selection = selections.getOrPut(player.uniqueId) { FlattenSelection() }
             when (event.action) {
                 Action.LEFT_CLICK_BLOCK -> {
