@@ -87,6 +87,7 @@ class FakePlayerPlusPlugin: FakePlayerPlusPluginApi, JavaPlugin() {
             FakePlayerLimiter(fpm).also { fakePlayerLimiter = it },
             FakePlayerPingUpdater(fpm),
             FakePlayerSelector,
+            FlattenSelectionManager,
             FakePlayerReplenishListener(fpm),
             FakePlayerDummyVarsNotifyListener(fpm),
             FakePlayerAutoFishListener(fpm),

@@ -9,5 +9,6 @@ enum class ActionType(val track: ActionTrack) {
     DROP_ITEM(INTERACTION),
     JUMP(POSTURE),
     SNEAK(POSTURE),
+    FLATTEN(INTERACTION),
     ;
 }

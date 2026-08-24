@@ -43,3 +43,18 @@ class SneakAction private constructor(mode: ActionMode): Action.Base(mode) {
     constructor(mode: Once) : this(mode as ActionMode)
     constructor(mode: Continuous) : this(mode as ActionMode)
 }
+
+class FlattenAction private constructor(override val mode: ActionMode): Action.Base(mode) {
+    companion object { @JvmField val type = FLATTEN }
+    constructor(mode: Continuous) : this(mode as ActionMode)
+    var world: org.bukkit.World? = null
+    var minX: Int = 0
+    var minY: Int = 0
+    var minZ: Int = 0
+    var maxX: Int = 0
+    var maxY: Int = 0
+    var maxZ: Int = 0
+    var target: Block? = null
+    var progress = 0f
+    var freezeTick = 0
+}

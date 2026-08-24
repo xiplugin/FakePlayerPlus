@@ -12,7 +12,8 @@ object ActionProcessorRegistry {
         UseItemProcessor,
         DropItemProcessor,
         JumpProcessor,
-        SneakProcessor
+        SneakProcessor,
+        FlattenProcessor
     )
 
     private val registry = processors.associateBy { it.actionType.getDeclaredField("type").apply { isAccessible = true }.get(null) as ActionType }

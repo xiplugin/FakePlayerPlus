@@ -3,6 +3,7 @@ package com.coderxi.plugin.fakeplayer.command
 import com.coderxi.plugin.fakeplayer.api.action.Action
 import com.coderxi.plugin.fakeplayer.api.action.ActionMode
 import com.coderxi.plugin.fakeplayer.api.action.ActionType
+import com.coderxi.plugin.fakeplayer.api.action.FlattenAction
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
 import com.coderxi.plugin.fakeplayer.api.manager.FakePlayerManager
 import com.coderxi.plugin.fakeplayer.command.annotaion.HelpLine
@@ -14,6 +15,7 @@ import com.coderxi.plugin.fakeplayer.command.permission.Permission.*
 import com.coderxi.plugin.fakeplayer.component.FakePlayerDialog
 import com.coderxi.plugin.fakeplayer.component.FakePlayerLimiter
 import com.coderxi.plugin.fakeplayer.component.FakePlayerSelector.selected
+import com.coderxi.plugin.fakeplayer.component.FlattenSelectionManager
 import com.coderxi.plugin.fakeplayer.provider.invsee.InvseeProvider
 import com.coderxi.plugin.fakeplayer.utils.*
 import kotlinx.coroutines.Dispatchers
@@ -282,6 +284,45 @@ class FakePlayerCommand {
                 }
             }
         })
+    }
+
+    @Subcommand("flatten")
+    @Permission(FLATTEN, BASIC)
+    @HelpLine("fakeplayer.help.cmd.flatten", children = [
+        HelpLine("fakeplayer.help.cmd.flatten-cancel", "fp flatten cancel", playerOnly = true)
+    ], playerOnly = true)
+    fun Player.flatten(@Select fakePlayer: FakePlayer) {
+        val selection = FlattenSelectionManager.getSelection(this)
+        if (selection == null || !selection.isComplete) {
+            FlattenSelectionManager.startSelection(this)
+            sendMessage(tlp("fakeplayer.flatten.select.mode"))
+            return
+        }
+        val p1 = selection.pos1!!
+        val p2 = selection.pos2!!
+        if (p1.world != fakePlayer.player.world) {
+            sendMessage(tlp("fakeplayer.flatten.world.mismatch"))
+            return
+        }
+        val action = FlattenAction(ActionMode.Continuous).apply {
+            world = p1.world
+            minX = selection.minX
+            maxX = selection.maxX
+            minY = selection.minY
+            maxY = selection.maxY
+            minZ = selection.minZ
+            maxZ = selection.maxZ
+        }
+        fakePlayer.actions.dispatch(action)
+        FlattenSelectionManager.stopSelectingMode(this)
+        sendMessage(tlp("fakeplayer.flatten.start", fakePlayer.name, selection.blockCount))
+    }
+
+    @Subcommand("flatten cancel")
+    @Permission(FLATTEN, BASIC)
+    fun Player.flattenCancel() {
+        FlattenSelectionManager.cancelSelection(this)
+        sendMessage(tlp("fakeplayer.flatten.cancel"))
     }
 
     @Subcommand("owner", "owner list")
