@@ -87,9 +87,11 @@ class FakePlayerPlusPlugin: FakePlayerPlusPluginApi, JavaPlugin() {
             FakePlayerLimiter(fpm).also { fakePlayerLimiter = it },
             FakePlayerPingUpdater(fpm),
             FakePlayerSelector,
+            FlattenSelectionManager,
             FakePlayerReplenishListener(fpm),
             FakePlayerDummyVarsNotifyListener(fpm),
             FakePlayerAutoFishListener(fpm),
+            FakePlayerAutoRejoinManager(fpm, (fpm as FakePlayerManagerImpl).repository),
             StaticFakePlayerManager(fpm, ConfigManager.create(StaticFakePlayersConfig::class.java).apply {
                 configure { opt ->
                     opt.configurer(YamlBukkitConfigurer().apply {
@@ -130,7 +132,7 @@ class FakePlayerPlusPlugin: FakePlayerPlusPluginApi, JavaPlugin() {
     }
 
     override fun onDisable() {
-        globalCoroutineScope.cancel()
+        runCatching { globalCoroutineScope.cancel() }
         HandlerList.unregisterAll(this)
         executeDisable()
     }

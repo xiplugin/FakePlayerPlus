@@ -85,14 +85,17 @@ tasks.jar {
 tasks.shadowJar {
     archiveBaseName.set(rootProject.name)
     archiveClassifier.set("")
-    archiveVersion.set(project.version.toString())
     relocate("eu.okaeri", "${project.group}.libs.okaeri")
     manifest {
         platformVersions.forEach { (platform, versionsStr) ->
             attributes("Support-Versions-$platform" to versionsStr)
         }
     }
-    minimize()
+    minimize {
+        exclude(dependency("org.jetbrains.kotlinx:kotlinx-coroutines-core:.*"))
+        exclude(dependency("org.jetbrains.kotlin:.*"))
+        exclude(dependency("io.github.revxrsal:.*"))
+    }
     mergeServiceFiles()
     doLast {
         copy {

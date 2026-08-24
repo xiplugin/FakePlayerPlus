@@ -69,8 +69,19 @@ open class NMSServerPlayerImpl(override val player: Player) : NMSServerPlayer {
     override val blockReachDistance: Double get() = handle.getAttributeValue(Attributes.BLOCK_INTERACTION_RANGE)
     override val entityReachDistance: Double get() = handle.getAttributeValue(Attributes.ENTITY_INTERACTION_RANGE)
 
-    override fun doTick() = handle.doTick()
+    override fun doTick() {
+        handle.doTick()
+        // 假人缺乏真實客戶端計算摩擦力，受擊擊退 (Knockback) 後需自動衰減水平動量，防止無限後退
+        val dm = handle.deltaMovement
+        val friction = if (handle.onGround) 0.6 else 0.91
+        val newX = if (kotlin.math.abs(dm.x) > 0.0001) dm.x * friction else 0.0
+        val newZ = if (kotlin.math.abs(dm.z) > 0.0001) dm.z * friction else 0.0
+        val finalX = if (kotlin.math.abs(newX) < 0.002) 0.0 else newX
+        val finalZ = if (kotlin.math.abs(newZ) < 0.002) 0.0 else newZ
+        handle.deltaMovement = Vec3(finalX, dm.y, finalZ)
+    }
     override fun absMoveTo(x: Double, y: Double, z: Double, yRot: Float, xRot: Float) = handle.absSnapTo(x, y, z, yRot, xRot)
+    override fun getDeltaMovement(): Vector = Vector(handle.deltaMovement.x, handle.deltaMovement.y, handle.deltaMovement.z)
     override fun setDeltaMovement(vector: Vector) { handle.deltaMovement = Vec3(vector.x, vector.y, vector.z) }
     override fun startRiding(entity: Entity, force: Boolean, triggerEvents: Boolean): Boolean = handle.startRiding((entity as CraftEntity).handle,force,triggerEvents)
     override fun stopRiding() = handle.stopRiding()

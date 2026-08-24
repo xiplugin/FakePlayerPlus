@@ -7,9 +7,7 @@ import com.coderxi.plugin.fakeplayer.api.event.FakePlayerQuitedEvent
 import com.coderxi.plugin.fakeplayer.api.event.FakePlayerSpawnedEvent
 import com.coderxi.plugin.fakeplayer.api.manager.FakePlayerManager
 import com.coderxi.plugin.fakeplayer.api.nms.NMSServerPlayer
-import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandException.SpawnDuplicateSpawningException
-import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandException.SpawnDisallowedException
-import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandException.SpawnNoAvailableSequenceNameException
+import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandException.*
 import com.coderxi.plugin.fakeplayer.command.permission.Permission
 import com.coderxi.plugin.fakeplayer.config.PreventKickingType
 import com.coderxi.plugin.fakeplayer.entity.StandardFakePlayer
@@ -115,6 +113,113 @@ class FakePlayerManagerImpl : FakePlayerManager, Listener {
             }
         }
         return fakePlayer
+    }
+
+    override suspend fun rename(fakePlayer: FakePlayer, newName: String, operator: CommandSender): FakePlayer? {
+        val player = operator as? Player
+        if (!plugin.config.name.pattern.matches(newName)) throw SpawnNameInvalidException(newName)
+        if (get(newName) != null) throw SpawnAlreadyExistsException(newName)
+        if (player != null && isNameUsed(newName)) {
+            val fakePlayerInRepo = getFromRepository(newName)
+            if (fakePlayerInRepo != null && fakePlayerInRepo.ownerUuids.isNotEmpty() && !fakePlayerInRepo.ownerUuids.contains(player.uniqueId) && !player.hasPermission(Permission.ADMIN.value)) {
+                throw SpawnNameAlreadyUsedException(newName)
+            }
+        }
+
+        val oldUuid = fakePlayer.uuid
+        val newUuid = uuid(newName)
+        val location = fakePlayer.player.location.clone()
+        val skin = fakePlayer.skin
+        val settings = fakePlayer.settings.copy()
+        val creatorUuid = fakePlayer.creatorUuid
+        val ownerUuids = fakePlayer.ownerUuids.toMutableSet()
+        val oldPlayer = fakePlayer.player
+
+        // 完整拷貝舊假人的所有背包物品、裝備、副手、終界箱、血量、飢餓度、經驗與藥水效果
+        val invContents = oldPlayer.inventory.contents.map { it?.clone() }.toTypedArray()
+        val armorContents = oldPlayer.inventory.armorContents.map { it?.clone() }.toTypedArray()
+        val extraContents = oldPlayer.inventory.extraContents.map { it?.clone() }.toTypedArray()
+        val enderChestContents = oldPlayer.enderChest.contents.map { it?.clone() }.toTypedArray()
+        val health = oldPlayer.health
+        val foodLevel = oldPlayer.foodLevel
+        val exp = oldPlayer.exp
+        val level = oldPlayer.level
+        val totalExperience = oldPlayer.totalExperience
+        val gameMode = oldPlayer.gameMode
+        val potionEffects = oldPlayer.activePotionEffects.toList()
+
+        // 1. 強制保存舊假人資料至磁碟並退出
+        withContext(fakePlayer.dispatcher) {
+            oldPlayer.saveData()
+            fakePlayer.quit("Renamed to $newName")
+        }
+
+        // 2. 遷移 SQLite 數據與磁碟上的 playerdata / stats / advancements
+        val newFakePlayer = StandardFakePlayer(newName, newUuid, creatorUuid, ownerUuids, skin, settings)
+        withContext(Dispatchers.IO) {
+            repository.rename(oldUuid, newFakePlayer)
+
+            val worldContainer = Bukkit.getWorldContainer()
+            val worlds = Bukkit.getWorlds()
+            val targetFolders = mutableSetOf<File>()
+            worlds.forEach { targetFolders.add(it.worldFolder) }
+            targetFolders.add(File(worldContainer, "world"))
+
+            for (folder in targetFolders) {
+                val oldDat = File(folder, "playerdata/$oldUuid.dat")
+                if (oldDat.exists()) {
+                    val newDat = File(folder, "playerdata/$newUuid.dat")
+                    oldDat.copyTo(newDat, overwrite = true)
+                    oldDat.delete()
+                }
+                val oldDatOld = File(folder, "playerdata/$oldUuid.dat_old")
+                if (oldDatOld.exists()) {
+                    val newDatOld = File(folder, "playerdata/$newUuid.dat_old")
+                    oldDatOld.copyTo(newDatOld, overwrite = true)
+                    oldDatOld.delete()
+                }
+                val oldStats = File(folder, "stats/$oldUuid.json")
+                if (oldStats.exists()) {
+                    val newStats = File(folder, "stats/$newUuid.json")
+                    oldStats.copyTo(newStats, overwrite = true)
+                    oldStats.delete()
+                }
+                val oldAdv = File(folder, "advancements/$oldUuid.json")
+                if (oldAdv.exists()) {
+                    val newAdv = File(folder, "advancements/$newUuid.json")
+                    oldAdv.copyTo(newAdv, overwrite = true)
+                    oldAdv.delete()
+                }
+            }
+        }
+
+        // 3. 原地生成新假人
+        delay(200)
+        val spawnedFakePlayer = spawn(newName, operator, location)
+
+        // 4. 將舊假人的背包物資與設定完整注入新假人
+        withContext(spawnedFakePlayer.dispatcher) {
+            spawnedFakePlayer.settings = settings.copy()
+            val newPlayer = spawnedFakePlayer.player
+            newPlayer.inventory.contents = invContents
+            newPlayer.inventory.armorContents = armorContents
+            newPlayer.inventory.extraContents = extraContents
+            newPlayer.enderChest.contents = enderChestContents
+            newPlayer.health = health.coerceAtMost(newPlayer.maxHealth)
+            newPlayer.foodLevel = foodLevel
+            newPlayer.exp = exp
+            newPlayer.level = level
+            newPlayer.totalExperience = totalExperience
+            newPlayer.gameMode = gameMode
+            potionEffects.forEach { newPlayer.addPotionEffect(it) }
+            newPlayer.saveData()
+        }
+
+        withContext(Dispatchers.IO) {
+            repository.saveSettings(spawnedFakePlayer)
+        }
+
+        return spawnedFakePlayer
     }
 
     private suspend fun NMSServerPlayer.setupDefaultSkin(spawner: CommandSender) {

@@ -18,6 +18,7 @@ object MineProcessor : ActionProcessor<MineAction> {
         player.swingMainHand()
         if (action.target == null || action.target != target) {
             if (action.target != null) resetMining(fakePlayer, action)
+            com.coderxi.plugin.fakeplayer.utils.ToolHelper.equipBestTool(player, target)
             fakePlayer.nms.doBlockBreakAction(target, START)
             action.target = target
             action.progress = 0f

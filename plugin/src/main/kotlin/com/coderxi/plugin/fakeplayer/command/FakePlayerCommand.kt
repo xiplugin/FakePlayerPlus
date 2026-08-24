@@ -3,6 +3,7 @@ package com.coderxi.plugin.fakeplayer.command
 import com.coderxi.plugin.fakeplayer.api.action.Action
 import com.coderxi.plugin.fakeplayer.api.action.ActionMode
 import com.coderxi.plugin.fakeplayer.api.action.ActionType
+import com.coderxi.plugin.fakeplayer.api.action.FlattenAction
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
 import com.coderxi.plugin.fakeplayer.api.manager.FakePlayerManager
 import com.coderxi.plugin.fakeplayer.command.annotaion.HelpLine
@@ -14,6 +15,7 @@ import com.coderxi.plugin.fakeplayer.command.permission.Permission.*
 import com.coderxi.plugin.fakeplayer.component.FakePlayerDialog
 import com.coderxi.plugin.fakeplayer.component.FakePlayerLimiter
 import com.coderxi.plugin.fakeplayer.component.FakePlayerSelector.selected
+import com.coderxi.plugin.fakeplayer.component.FlattenSelectionManager
 import com.coderxi.plugin.fakeplayer.provider.invsee.InvseeProvider
 import com.coderxi.plugin.fakeplayer.utils.*
 import kotlinx.coroutines.Dispatchers
@@ -264,13 +266,48 @@ class FakePlayerCommand {
     @Subcommand("settings")
     @Permission(SETTINGS,BASIC)
     @HelpLine("fakeplayer.help.cmd.settings", playerOnly = true)
-    fun Player.settings(@Select fakePlayer: FakePlayer) {
-        showDialog(FakePlayerDialog.settingsDialog(fakePlayer) {
-            sendMessage(tlp("fakeplayer.gui.settings.submit.success", fakePlayer.name))
-            launch {
-                fpm.saveSettings(fakePlayer)
+    fun Player.settings(@Select fakePlayer: FakePlayer, context: CommandContext) {
+        val player = this
+        showDialog(FakePlayerDialog.settingsDialog(player, fakePlayer) { newName ->
+            if (newName != null && newName != fakePlayer.name) {
+                launch(context) {
+                    val renamed = fpm.rename(fakePlayer, newName, player)
+                    if (renamed != null) {
+                        player.selected = renamed
+                        sendMessage(tlp("fakeplayer.gui.settings.rename.success", renamed.name))
+                    }
+                }
+            } else {
+                sendMessage(tlp("fakeplayer.gui.settings.submit.success", fakePlayer.name))
+                launch {
+                    fpm.saveSettings(fakePlayer)
+                }
             }
         })
+    }
+
+    @Subcommand("flatten")
+    @Permission(FLATTEN, BASIC)
+    @HelpLine("fakeplayer.help.cmd.flatten", children = [
+        HelpLine("fakeplayer.help.cmd.flatten-cancel", "fp flatten cancel", playerOnly = true)
+    ], playerOnly = true)
+    fun Player.flatten() {
+        val fpm = com.coderxi.plugin.fakeplayer.utils.plugin.fakePlayerManager
+        val targetFp = this.selected ?: fpm.fakeplayersByOwnerUuid(uniqueId).firstOrNull() ?: fpm.fakeplayers().firstOrNull()
+        showDialog(FakePlayerDialog.flattenDialog(this, targetFp))
+    }
+
+    @Subcommand("flatten")
+    @Permission(FLATTEN, BASIC)
+    fun Player.flatten(@Named("name") fakePlayer: FakePlayer) {
+        showDialog(FakePlayerDialog.flattenDialog(this, fakePlayer))
+    }
+
+    @Subcommand("flatten cancel")
+    @Permission(FLATTEN, BASIC)
+    fun Player.flattenCancel() {
+        FlattenSelectionManager.cancelSelection(this)
+        sendMessage(tlp("fakeplayer.flatten.cancel"))
     }
 
     @Subcommand("owner", "owner list")
@@ -333,15 +370,22 @@ class FakePlayerCommand {
         HelpLine("fakeplayer.help.cmd.action-stopall", "fp action stopall [name]", playerOnly = true),
         HelpLine("fakeplayer.help.cmd.action-stop", "fp action stop <action> [name]", playerOnly = true),
     ])
-    fun Player.actionListUI(@Select fakePlayer: FakePlayer) {
-        showDialog(FakePlayerDialog.actionListDialog(this,fakePlayer))
+    fun Player.actionListUI() {
+        val targetFp = this.selected ?: fpm.fakeplayersByOwnerUuid(uniqueId).firstOrNull() ?: fpm.fakeplayers().firstOrNull() ?: throw NoSelectedException()
+        showDialog(FakePlayerDialog.actionListDialog(this, targetFp))
+    }
+
+    @Subcommand("action")
+    @Permission(ACTION, BASIC)
+    fun Player.actionListUI(@Named("name") fakePlayer: FakePlayer) {
+        showDialog(FakePlayerDialog.actionListDialog(this, fakePlayer))
     }
 
     @Subcommand("action start")
     @Permission(ACTION, BASIC)
     fun Player.actionUI(type: ActionType, @Select fakePlayer: FakePlayer) {
         assertPermission("${ACTION.value}.${type.name.lowercase()}", BASIC)
-        showDialog(FakePlayerDialog.actionExecuteDialog(fakePlayer, type))
+        showDialog(FakePlayerDialog.actionExecuteDialog(this, fakePlayer, type))
     }
 
     @Subcommand("action execute")

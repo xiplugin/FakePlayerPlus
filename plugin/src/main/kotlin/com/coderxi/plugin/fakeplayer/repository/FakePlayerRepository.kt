@@ -37,6 +37,12 @@ class FakePlayerRepository {
         mapToEntity(po, findOwnerUuidsByUuid(conn, po.uuid))
     }
 
+    fun findAutoRejoinFakePlayers(): List<FakePlayer> = open().use { conn ->
+        val pos = conn.createQuery("SELECT id, name, uuid, creator_uuid AS creatorUuid, skin, settings FROM fakeplayer WHERE settings LIKE '%\"autoRejoin\":true%'")
+            .executeAndFetch(FakePlayerPO::class.java)
+        pos.map { po -> mapToEntity(po, findOwnerUuidsByUuid(conn, po.uuid)) }
+    }
+
     private fun findOwnerUuidsByUuid(conn: Connection, fakePlayerUuid: String): MutableSet<UUID> {
         return conn.createQuery("SELECT owner_uuid FROM ref_fakeplayer_owner WHERE fakeplayer_uuid = :fakePlayerUuid")
             .addParameter("fakePlayerUuid", fakePlayerUuid)
@@ -116,6 +122,49 @@ class FakePlayerRepository {
                 .addParameter("uuid", fakePlayer.uuid.toString())
                 .addParameter("settings", if (plugin.config.defaultSettings.equals2(fakePlayer.settings)) null else gson.toJson(fakePlayer.settings))
                 .executeUpdate()
+        }
+    }
+
+    fun rename(oldUuid: UUID, newFakePlayer: FakePlayer) {
+        plugin.sql2o.beginTransaction().use { conn ->
+            try {
+                conn.createQuery("DELETE FROM fakeplayer WHERE uuid = :oldUuid")
+                    .addParameter("oldUuid", oldUuid.toString())
+                    .executeUpdate()
+
+                conn.createQuery("DELETE FROM ref_fakeplayer_owner WHERE fakeplayer_uuid = :oldUuid")
+                    .addParameter("oldUuid", oldUuid.toString())
+                    .executeUpdate()
+
+                val sql = "INSERT INTO fakeplayer (name, uuid, creator_uuid, skin, settings) VALUES (:name, :uuid, :creatorUuid, :skin, :settings)"
+                conn.createQuery(sql)
+                    .addParameter("name", newFakePlayer.name)
+                    .addParameter("uuid", newFakePlayer.uuid.toString())
+                    .addParameter("creatorUuid", newFakePlayer.creatorUuid?.toString())
+                    .addParameter("skin", if (newFakePlayer.skin == null) null else "${newFakePlayer.skin!!.textures}|${newFakePlayer.skin!!.signature}")
+                    .addParameter("settings", if (plugin.config.defaultSettings.equals2(newFakePlayer.settings)) null else gson.toJson(newFakePlayer.settings))
+                    .executeUpdate()
+
+                if (newFakePlayer.ownerUuids.isNotEmpty()) {
+                    val batchQuery = conn.createQuery("INSERT INTO ref_fakeplayer_owner (fakeplayer_uuid, owner_uuid) VALUES (:fakePlayerUuid, :ownerUuid)")
+                    for (ownerUuid in newFakePlayer.ownerUuids) {
+                        batchQuery.addParameter("fakePlayerUuid", newFakePlayer.uuid.toString())
+                            .addParameter("ownerUuid", ownerUuid.toString())
+                            .addToBatch()
+                    }
+                    batchQuery.executeBatch()
+                }
+
+                conn.createQuery("UPDATE fakeplayer_flatten_task SET fakeplayer_uuid = :newUuid WHERE fakeplayer_uuid = :oldUuid")
+                    .addParameter("oldUuid", oldUuid.toString())
+                    .addParameter("newUuid", newFakePlayer.uuid.toString())
+                    .executeUpdate()
+
+                conn.commit()
+            } catch (e: Exception) {
+                conn.rollback()
+                throw e
+            }
         }
     }
 

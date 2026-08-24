@@ -34,6 +34,8 @@ enum class Permission(val value: String) {
     ACTION_DROP_ITEM("fakeplayer.action.drop-item"),
     ACTION_JUMP("fakeplayer.action.jump"),
     ACTION_SNEAK("fakeplayer.action.sneak"),
+    ACTION_FLATTEN("fakeplayer.action.flatten"),
+    FLATTEN("fakeplayer.flatten"),
 
     OWNER_ADD("fakeplayer.owner.add"),
     OWNER_LIST("fakeplayer.owner.list"),
