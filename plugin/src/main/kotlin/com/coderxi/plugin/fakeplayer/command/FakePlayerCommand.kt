@@ -370,8 +370,15 @@ class FakePlayerCommand {
         HelpLine("fakeplayer.help.cmd.action-stopall", "fp action stopall [name]", playerOnly = true),
         HelpLine("fakeplayer.help.cmd.action-stop", "fp action stop <action> [name]", playerOnly = true),
     ])
-    fun Player.actionListUI(@Select fakePlayer: FakePlayer) {
-        showDialog(FakePlayerDialog.actionListDialog(this,fakePlayer))
+    fun Player.actionListUI() {
+        val targetFp = this.selected ?: fpm.fakeplayersByOwnerUuid(uniqueId).firstOrNull() ?: fpm.fakeplayers().firstOrNull() ?: throw NoSelectedException()
+        showDialog(FakePlayerDialog.actionListDialog(this, targetFp))
+    }
+
+    @Subcommand("action")
+    @Permission(ACTION, BASIC)
+    fun Player.actionListUI(@Named("name") fakePlayer: FakePlayer) {
+        showDialog(FakePlayerDialog.actionListDialog(this, fakePlayer))
     }
 
     @Subcommand("action start")

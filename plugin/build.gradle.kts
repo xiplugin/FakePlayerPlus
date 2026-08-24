@@ -94,6 +94,7 @@ tasks.shadowJar {
     minimize {
         exclude(dependency("org.jetbrains.kotlinx:kotlinx-coroutines-core:.*"))
         exclude(dependency("org.jetbrains.kotlin:.*"))
+        exclude(dependency("io.github.revxrsal:.*"))
     }
     mergeServiceFiles()
     doLast {
