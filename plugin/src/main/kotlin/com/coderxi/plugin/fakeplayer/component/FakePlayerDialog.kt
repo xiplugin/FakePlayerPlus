@@ -569,9 +569,9 @@ object FakePlayerDialog {
         val activeWorkers = selectedWorkersMap.computeIfAbsent(viewer.uniqueId) { mutableSetOf(fakePlayer.uuid) }
         val inputs = mutableListOf<DialogInput>()
 
-        for (worker in availableWorkers) {
+        for ((index, worker) in availableWorkers.withIndex()) {
             val isChecked = activeWorkers.contains(worker.uuid)
-            inputs.add(boolInput("worker_${worker.uuid}", Component.text(worker.name)).initial(isChecked).build())
+            inputs.add(boolInput("worker_$index", Component.text(worker.name)).initial(isChecked).build())
         }
 
         val actionButtons = mutableListOf<ActionButton>()
@@ -605,8 +605,8 @@ object FakePlayerDialog {
             tl("fakeplayer.gui.submit"), null, 100,
             DialogAction.customClick({ view, _ ->
                 activeWorkers.clear()
-                for (worker in availableWorkers) {
-                    if (view.getBoolean("worker_${worker.uuid}") == true) {
+                for ((index, worker) in availableWorkers.withIndex()) {
+                    if (view.getBoolean("worker_$index") == true) {
                         activeWorkers.add(worker.uuid)
                     }
                 }
@@ -623,8 +623,8 @@ object FakePlayerDialog {
             tl("fakeplayer.gui.back-to-flatten"), null, 100,
             DialogAction.customClick({ view, _ ->
                 activeWorkers.clear()
-                for (worker in availableWorkers) {
-                    if (view.getBoolean("worker_${worker.uuid}") == true) {
+                for ((index, worker) in availableWorkers.withIndex()) {
+                    if (view.getBoolean("worker_$index") == true) {
                         activeWorkers.add(worker.uuid)
                     }
                 }
