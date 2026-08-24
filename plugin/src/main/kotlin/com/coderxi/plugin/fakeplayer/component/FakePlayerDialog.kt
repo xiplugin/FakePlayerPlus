@@ -278,25 +278,20 @@ object FakePlayerDialog {
             }, ACTION_OPTIONS)
         ))
 
+        val manageChestsLabel = if (hasChests) {
+            tl("fakeplayer.gui.flatten.btn.manage-chests-count", selection.chestBlocks.size)
+        } else {
+            tl("fakeplayer.gui.flatten.btn.manage-chests")
+        }
+
         actionButtons.add(ActionButton.create(
-            tl("fakeplayer.gui.flatten.btn.bind-chest"), null, 100,
+            manageChestsLabel, null, 100,
             DialogAction.customClick({ _, _ ->
-                FlattenSelectionManager.startChestSelection(viewer)
-                viewer.sendMessage(com.coderxi.plugin.fakeplayer.utils.tlp("fakeplayer.flatten.chest.mode"))
+                runOnPlayerThread(viewer) {
+                    viewer.showDialog(FakePlayerDialog.chestListDialog(viewer, fakePlayer))
+                }
             }, ACTION_OPTIONS)
         ))
-
-        if (hasChests) {
-            actionButtons.add(ActionButton.create(
-                tl("fakeplayer.gui.flatten.btn.clear-chest", selection.chestBlocks.size), null, 100,
-                DialogAction.customClick({ _, _ ->
-                    FlattenSelectionManager.clearChestBlocks(viewer)
-                    runOnPlayerThread(viewer) {
-                        viewer.showDialog(FakePlayerDialog.flattenDialog(viewer, fakePlayer))
-                    }
-                }, ACTION_OPTIONS)
-            ))
-        }
 
         if (isComplete && selection != null) {
             actionButtons.add(ActionButton.create(
@@ -381,6 +376,73 @@ object FakePlayerDialog {
                 .inputs(inputs)
                 .build())
             .type(DialogType.multiAction(actionButtons).columns(cols).exitAction(CANCEL_BTN).build())
+        }
+    }
+
+    fun chestListDialog(viewer: org.bukkit.entity.Player, fakePlayer: FakePlayer): DialogLike {
+        val selection = FlattenSelectionManager.getSelection(viewer)
+        val chestBlocks = selection?.chestBlocks ?: emptyList()
+        val actionButtons = mutableListOf<ActionButton>()
+
+        actionButtons.add(ActionButton.create(
+            tl("fakeplayer.gui.flatten.chest.btn.add"), null, 100,
+            DialogAction.customClick({ _, _ ->
+                FlattenSelectionManager.startChestSelection(viewer)
+                viewer.sendMessage(com.coderxi.plugin.fakeplayer.utils.tlp("fakeplayer.flatten.chest.mode"))
+            }, ACTION_OPTIONS)
+        ))
+
+        chestBlocks.forEachIndexed { index, cb ->
+            actionButtons.add(ActionButton.create(
+                tl("fakeplayer.gui.flatten.chest.btn.remove", index + 1, "${cb.x}, ${cb.y}, ${cb.z}"), null, 100,
+                DialogAction.customClick({ _, _ ->
+                    FlattenSelectionManager.removeChestBlock(viewer, index)
+                    runOnPlayerThread(viewer) {
+                        viewer.showDialog(FakePlayerDialog.chestListDialog(viewer, fakePlayer))
+                    }
+                }, ACTION_OPTIONS)
+            ))
+        }
+
+        if (chestBlocks.isNotEmpty()) {
+            actionButtons.add(ActionButton.create(
+                tl("fakeplayer.gui.flatten.chest.btn.clear-all"), null, 100,
+                DialogAction.customClick({ _, _ ->
+                    FlattenSelectionManager.clearChestBlocks(viewer)
+                    runOnPlayerThread(viewer) {
+                        viewer.showDialog(FakePlayerDialog.chestListDialog(viewer, fakePlayer))
+                    }
+                }, ACTION_OPTIONS)
+            ))
+        }
+
+        val backBtn = ActionButton.create(
+            tl("fakeplayer.gui.back"), null, 100,
+            DialogAction.customClick({ _, _ ->
+                runOnPlayerThread(viewer) {
+                    viewer.showDialog(FakePlayerDialog.flattenDialog(viewer, fakePlayer))
+                }
+            }, ACTION_OPTIONS)
+        )
+        actionButtons.add(backBtn)
+
+        val bodyMsg = if (chestBlocks.isEmpty()) {
+            tl("fakeplayer.gui.flatten.chest.list.empty")
+        } else {
+            val listStr = chestBlocks.mapIndexed { i, cb ->
+                "<gray>• #${i + 1}:</gray> <yellow>${cb.type.name}</yellow> <gold>(${cb.x}, ${cb.y}, ${cb.z})</gold>"
+            }.joinToString("\n")
+            tl("fakeplayer.gui.flatten.chest.list.header", chestBlocks.size, listStr)
+        }
+
+        val cols = if (actionButtons.size >= 3) 2 else 1
+
+        return Dialog.create { builder -> builder.empty()
+            .base(DialogBase.builder(tl("fakeplayer.gui.flatten.chest.title", fakePlayer.name))
+                .canCloseWithEscape(true)
+                .body(listOf(DialogBody.plainMessage(bodyMsg)))
+                .build())
+            .type(DialogType.multiAction(actionButtons).columns(cols).exitAction(backBtn).build())
         }
     }
 

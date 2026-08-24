@@ -92,6 +92,15 @@ object FlattenSelectionManager : Listener {
         selections[player.uniqueId]?.clearChestBlocks()
     }
 
+    fun removeChestBlock(player: Player, index: Int): Boolean {
+        val selection = selections[player.uniqueId] ?: return false
+        if (index in selection.chestBlocks.indices) {
+            selection.chestBlocks.removeAt(index)
+            return true
+        }
+        return false
+    }
+
     fun stopSelectingMode(player: Player) {
         selectingPlayers.remove(player.uniqueId)
         selectingChestPlayers.remove(player.uniqueId)
