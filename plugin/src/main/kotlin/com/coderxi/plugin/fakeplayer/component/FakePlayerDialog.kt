@@ -8,6 +8,7 @@ import com.coderxi.plugin.fakeplayer.api.config.FakePlayerSettings
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
 import com.coderxi.plugin.fakeplayer.api.utils.ParamName
 import com.coderxi.plugin.fakeplayer.utils.tl
+import com.coderxi.plugin.fakeplayer.utils.tls
 import io.papermc.paper.dialog.Dialog
 import io.papermc.paper.registry.data.dialog.ActionButton
 import io.papermc.paper.registry.data.dialog.DialogBase
@@ -353,10 +354,10 @@ object FakePlayerDialog {
                 val cb = selection.chestBlocks.first()
                 "${cb.x}, ${cb.y}, ${cb.z}"
             } else {
-                tl("fakeplayer.gui.flatten.chest.multi", selection.chestBlocks.size)
+                tls("fakeplayer.gui.flatten.chest.multi", selection.chestBlocks.size)
             }
         } else {
-            tl("fakeplayer.gui.flatten.chest.none")
+            tls("fakeplayer.gui.flatten.chest.none")
         }
 
         val bodyMsg = if (isComplete && selection != null) {
