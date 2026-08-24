@@ -68,11 +68,18 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
             val standLoc = findStandLocation(player, target)
             walkTowards(fakePlayer, standLoc)
 
-            // 卡住檢測與地面自動脫困
+            val heightDiff = standLoc.y - player.location.y
+            val isHighObstacle = heightDiff > 1.4 // 目標位於正常跳躍無法爬上的高台或懸崖
+
+            // 卡住或無法爬上時的自動 TP 脫困機制
             val lastLoc = action.lastLoc
-            if (lastLoc != null && lastLoc.distanceSquared(player.location) < 0.04) {
+            val isStagnant = lastLoc != null && lastLoc.distanceSquared(player.location) < 0.04
+
+            if (isStagnant || isHighObstacle) {
                 action.stuckTick++
-                if (action.stuckTick >= 40) { // 在坑內或障礙卡住超過 2 秒
+                // 若遇高台 20 ticks (1秒) 或卡在原地 30 ticks (1.5秒) 無法上去，直接改用 TP 瞬移上去
+                val threshold = if (isHighObstacle) 20 else 30
+                if (action.stuckTick >= threshold) {
                     val groundBlock = standLoc.block.getRelative(0, -1, 0)
                     if (standLoc != player.location && groundBlock.type.isSolid) {
                         player.teleport(standLoc)
@@ -208,8 +215,10 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
                 }
             }
         }
-        // 嚴格確保只回傳地面有效站立點，若周圍無地面則保持當前玩家位置，絕不回傳半空中
-        return candidates.minByOrNull { it.distanceSquared(pLoc) } ?: pLoc
+        // 優先挑選觸及範圍內（<=3.5格）的站立點，若有多個則選離假人最近者
+        val targetCenter = target.location.clone().add(0.5, 0.5, 0.5)
+        val inReach = candidates.filter { it.distanceSquared(targetCenter) <= 12.25 }
+        return (inReach.minByOrNull { it.distanceSquared(pLoc) } ?: candidates.minByOrNull { it.distanceSquared(pLoc) }) ?: pLoc
     }
 
     private fun findNextBlock(world: org.bukkit.World, action: FlattenAction, currentLoc: Location): Block? {
