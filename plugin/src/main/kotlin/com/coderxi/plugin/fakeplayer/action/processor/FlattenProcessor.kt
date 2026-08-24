@@ -414,16 +414,17 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
         val pLoc = player.location
         val candidates = mutableListOf<Location>()
         val offsets = arrayOf(
-            intArrayOf(0, 0),
             intArrayOf(1, 0), intArrayOf(-1, 0), intArrayOf(0, 1), intArrayOf(0, -1),
             intArrayOf(1, 1), intArrayOf(-1, -1), intArrayOf(1, -1), intArrayOf(-1, 1),
-            intArrayOf(2, 0), intArrayOf(-2, 0), intArrayOf(0, 2), intArrayOf(0, -2)
+            intArrayOf(2, 0), intArrayOf(-2, 0), intArrayOf(0, 2), intArrayOf(0, -2),
+            intArrayOf(2, 1), intArrayOf(2, -1), intArrayOf(-2, 1), intArrayOf(-2, -1),
+            intArrayOf(1, 2), intArrayOf(-1, 2), intArrayOf(1, -2), intArrayOf(-1, -2)
         )
         for (offset in offsets) {
             val sx = target.x + offset[0]
             val sz = target.z + offset[1]
-            val startY = minOf(target.y + 2, world.maxHeight - 2)
-            val minY = maxOf(target.y - 8, world.minHeight)
+            val startY = minOf(target.y + 3, world.maxHeight - 2)
+            val minY = maxOf(target.y - 4, world.minHeight)
             for (sy in startY downTo minY) {
                 val ground = world.getBlockAt(sx, sy, sz)
                 val feet = world.getBlockAt(sx, sy + 1, sz)
@@ -436,10 +437,16 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
                 }
             }
         }
-        // 優先挑選觸及範圍內（<=3.5格）的站立點，若有多個則選離假人最近者
         val targetCenter = target.location.clone().add(0.5, 0.5, 0.5)
         val inReach = candidates.filter { it.distanceSquared(targetCenter) <= 12.25 }
-        return (inReach.minByOrNull { it.distanceSquared(pLoc) } ?: candidates.minByOrNull { it.distanceSquared(pLoc) }) ?: pLoc
+        if (inReach.isNotEmpty()) {
+            val topLevel = inReach.filter { it.y >= target.y }
+            if (topLevel.isNotEmpty()) {
+                return topLevel.minByOrNull { it.distanceSquared(pLoc) }!!
+            }
+            return inReach.minByOrNull { it.distanceSquared(pLoc) }!!
+        }
+        return candidates.minByOrNull { it.distanceSquared(pLoc) } ?: pLoc
     }
 
     private fun findFillBlockSlot(player: Player): Int? {
@@ -484,18 +491,26 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
     }
 
     private fun findNextBlock(world: org.bukkit.World, action: FlattenAction, currentLoc: Location, canFillLiquid: Boolean = false): Block? {
+        val playerBlockX = currentLoc.blockX
+        val playerBlockZ = currentLoc.blockZ
+        val playerBlockY = currentLoc.blockY
+
         for (y in action.maxY downTo action.minY) {
             var closestBlock: Block? = null
-            var minDistanceSq = Double.MAX_VALUE
+            var minScore = Double.MAX_VALUE
             for (x in action.minX..action.maxX) {
                 for (z in action.minZ..action.maxZ) {
                     val block = world.getBlockAt(x, y, z)
                     val isMinable = isMinedBlock(block) && (!action.preserveOres || !isOreBlock(block))
                     val isLiquid = canFillLiquid && isLiquidBlock(block)
                     if (isMinable || isLiquid) {
-                        val dSq = block.location.distanceSquared(currentLoc)
-                        if (dSq < minDistanceSq) {
-                            minDistanceSq = dSq
+                        var score = block.location.distanceSquared(currentLoc)
+                        // 若為玩家正腳下的方塊，給予優先級懲罰，優先挖掘周圍方塊以防止挖坑掉落受困
+                        if (x == playerBlockX && z == playerBlockZ && y <= playerBlockY) {
+                            score += 100.0
+                        }
+                        if (score < minScore) {
+                            minScore = score
                             closestBlock = block
                         }
                     }
