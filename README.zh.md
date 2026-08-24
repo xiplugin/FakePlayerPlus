@@ -1,4 +1,4 @@
-[**English**](./README.md) | **简体中文**
+[English](./README.md) | **简体中文** | [繁體中文](./README.zh-TW.md)
 
 <img align="right" src="https://github.com/user-attachments/assets/1ce21dfc-fd0c-4e6c-b006-ee3844adb274" border="0" alt="" />
 
