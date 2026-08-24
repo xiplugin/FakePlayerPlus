@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.1](https://github.com/xiplugin/FakePlayerPlus/compare/v1.9.0...v1.9.1) (2026-08-24)
+
+
+### Bug Fixes
+
+* **i18n:** fix traditional chinese strings in messages_zh_TW ([b0bcbb7](https://github.com/xiplugin/FakePlayerPlus/commit/b0bcbb79047c73a56ae8a0419babf4b9c6d46441))
+
 ## [1.9.0](https://github.com/xiplugin/FakePlayerPlus/compare/v1.8.0...v1.9.0) (2026-08-23)
 
 
