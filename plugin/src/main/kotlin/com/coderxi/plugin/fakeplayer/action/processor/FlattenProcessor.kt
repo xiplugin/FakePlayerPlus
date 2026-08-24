@@ -7,6 +7,7 @@ import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
 import com.coderxi.plugin.fakeplayer.api.nms.NMSServerPlayer.BlockBreakActionType.*
 import com.coderxi.plugin.fakeplayer.utils.tlp
 import org.bukkit.Location
+import org.bukkit.attribute.Attribute
 import org.bukkit.block.Block
 import org.bukkit.entity.Item
 import org.bukkit.entity.Player
@@ -22,6 +23,11 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
         if (action.freezeTick > 0) { action.freezeTick--; return }
         val player = fakePlayer.player
         val world = action.world ?: player.world
+
+        // 提高假人跨步高度，使其能平滑走上一格高的台階與坑洞邊緣
+        player.getAttribute(Attribute.STEP_HEIGHT)?.let {
+            if (it.baseValue < 1.25) it.baseValue = 1.25
+        }
 
         // 初始化總需挖掘方塊計數
         if (action.totalBlocks == 0) {
@@ -60,6 +66,20 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
         if (distToTarget > 3.5) {
             val standLoc = findStandLocation(player, target)
             walkTowards(fakePlayer, standLoc)
+
+            // 卡住檢測與自動脫困
+            val lastLoc = action.lastLoc
+            if (lastLoc != null && lastLoc.distanceSquared(player.location) < 0.04) {
+                action.stuckTick++
+                if (action.stuckTick >= 30) { // 在坑內或障礙卡住超過 1.5 秒
+                    player.teleport(standLoc)
+                    action.stuckTick = 0
+                }
+            } else {
+                action.lastLoc = player.location.clone()
+                action.stuckTick = 0
+            }
+
             if (player.location.distance(targetCenter) > 4.2) {
                 return
             }
@@ -116,26 +136,29 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
         val player = fakePlayer.player
         val pLoc = player.location
         val dx = targetLoc.x - pLoc.x
+        val dy = targetLoc.y - pLoc.y
         val dz = targetLoc.z - pLoc.z
         val horizontalDist = sqrt(dx * dx + dz * dz)
 
-        if (horizontalDist < 0.3) return
+        if (horizontalDist < 0.25) return
 
         val yaw = Math.toDegrees(atan2(-dx, dz)).toFloat()
         player.setRotation(yaw, player.location.pitch)
 
-        val speed = 0.22 // 原版正常行走速度
+        val speed = 0.24 // 原版正常行走速度
         val vx = (dx / horizontalDist) * speed
         val vz = (dz / horizontalDist) * speed
 
         val frontLoc = pLoc.clone().add((dx / horizontalDist) * 0.6, 0.0, (dz / horizontalDist) * 0.6)
         val frontBlock = frontLoc.block
         val frontAbove = frontLoc.clone().add(0.0, 1.0, 0.0).block
-        val needJump = (!frontBlock.type.isAir && frontBlock.type.isSolid && frontAbove.type.isAir && fakePlayer.nms.onGround)
+        val needJump = (dy > 0.3 || (!frontBlock.type.isAir && frontBlock.type.isSolid && frontAbove.type.isAir)) && fakePlayer.nms.onGround
 
         var vy = player.velocity.y
         if (needJump) {
-            vy = 0.42
+            fakePlayer.nms.jumpFromGround()
+            fakePlayer.nms.setJumping(true)
+            vy = 0.45 // 給予充足跳躍力爬出坑洞
         }
 
         val moveVec = Vector(vx, vy, vz)
@@ -227,6 +250,9 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
 
     override fun onStop(fakePlayer: FakePlayer, action: FlattenAction) {
         resetMining(fakePlayer, action)
+        fakePlayer.player.getAttribute(Attribute.STEP_HEIGHT)?.let {
+            it.baseValue = 0.6
+        }
     }
 
 }

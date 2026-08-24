@@ -63,4 +63,6 @@ class FlattenAction private constructor(override val mode: ActionMode): Action.B
     var tickDelay: Int = 2
     var totalBlocks: Int = 0
     var clearedBlocks: Int = 0
+    var stuckTick: Int = 0
+    var lastLoc: org.bukkit.Location? = null
 }
