@@ -183,7 +183,6 @@ object FakePlayerDialog {
         // 未在整地中的面板
         inputs.add(boolInput("preserveOres", tl("fakeplayer.gui.flatten.preserve-ores")).initial(false).build())
         inputs.add(boolInput("pickupItems", tl("fakeplayer.gui.flatten.pickup-items")).initial(true).build())
-        inputs.add(numberRange("radius", tl("fakeplayer.gui.flatten.radius-quick"), 1f, 20f).step(1f).initial(5f).build())
 
         actionButtons.add(ActionButton.create(
             tl("fakeplayer.gui.flatten.btn.select"), null, 100,
@@ -193,17 +192,15 @@ object FakePlayerDialog {
             }, ACTION_OPTIONS)
         ))
 
-        actionButtons.add(ActionButton.create(
-            tl("fakeplayer.gui.flatten.btn.quick-radius"), null, 100,
-            DialogAction.customClick({ view, _ ->
-                val r = view.getFloat("radius")?.toInt() ?: 5
-                val sel = FlattenSelectionManager.setSelectionByRadius(viewer, fakePlayer.player.location, r)
-                viewer.sendMessage(com.coderxi.plugin.fakeplayer.utils.tlp("fakeplayer.flatten.area.ready", sel.blockCount))
-                viewer.showDialog(FakePlayerDialog.flattenDialog(viewer, fakePlayer))
-            }, ACTION_OPTIONS)
-        ))
-
         if (isComplete && selection != null) {
+            actionButtons.add(ActionButton.create(
+                tl("fakeplayer.gui.flatten.btn.clear"), null, 100,
+                DialogAction.customClick({ _, _ ->
+                    FlattenSelectionManager.clearSelection(viewer)
+                    viewer.showDialog(FakePlayerDialog.flattenDialog(viewer, fakePlayer))
+                }, ACTION_OPTIONS)
+            ))
+
             actionButtons.add(ActionButton.create(
                 tl("fakeplayer.gui.flatten.btn.start"), null, 100,
                 DialogAction.customClick({ view, _ ->
@@ -222,14 +219,6 @@ object FakePlayerDialog {
                     fakePlayer.actions.dispatch(action)
                     FlattenSelectionManager.stopSelectingMode(viewer)
                     viewer.sendMessage(com.coderxi.plugin.fakeplayer.utils.tlp("fakeplayer.flatten.start", fakePlayer.name, selection.blockCount))
-                }, ACTION_OPTIONS)
-            ))
-
-            actionButtons.add(ActionButton.create(
-                tl("fakeplayer.gui.flatten.btn.clear"), null, 100,
-                DialogAction.customClick({ _, _ ->
-                    FlattenSelectionManager.clearSelection(viewer)
-                    viewer.showDialog(FakePlayerDialog.flattenDialog(viewer, fakePlayer))
                 }, ACTION_OPTIONS)
             ))
         }
@@ -253,13 +242,15 @@ object FakePlayerDialog {
             tl("fakeplayer.gui.flatten.status.not-selected")
         }
 
+        val cols = if (actionButtons.size >= 3) 2 else 1
+
         return Dialog.create { builder -> builder.empty()
             .base(DialogBase.builder(tl("fakeplayer.gui.flatten.title", fakePlayer.name))
                 .canCloseWithEscape(true)
                 .body(listOf(DialogBody.plainMessage(bodyMsg)))
                 .inputs(inputs)
                 .build())
-            .type(DialogType.multiAction(actionButtons).columns(2).exitAction(CANCEL_BTN).build())
+            .type(DialogType.multiAction(actionButtons).columns(cols).exitAction(CANCEL_BTN).build())
         }
     }
 
