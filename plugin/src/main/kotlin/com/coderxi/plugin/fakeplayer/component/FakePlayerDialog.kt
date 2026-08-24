@@ -184,7 +184,7 @@ object FakePlayerDialog {
                 }
                 viewer.showDialog(FakePlayerDialog.flattenDialog(viewer, fakePlayer, isAutoLoop = true))
             }, 20L, 20L)
-            task?.let { autoRefreshTasks[viewer.uniqueId] = it }
+            autoRefreshTasks[viewer.uniqueId] = task
         }
     }
 
@@ -205,18 +205,33 @@ object FakePlayerDialog {
         }
     }
 
-    fun flattenDialog(viewer: org.bukkit.entity.Player, fakePlayer: FakePlayer, isAutoLoop: Boolean = false): DialogLike {
-        viewer.selected = fakePlayer
-        val currentAction = fakePlayer.actions.getActiveActions()[ActionType.FLATTEN.track] as? com.coderxi.plugin.fakeplayer.api.action.FlattenAction
-        val isRunning = currentAction != null
+    fun flattenDialog(viewer: org.bukkit.entity.Player, fakePlayer: FakePlayer? = null, isAutoLoop: Boolean = false): DialogLike {
+        if (fakePlayer != null) {
+            viewer.selected = fakePlayer
+        }
+        val availableWorkers = getAvailableWorkers(viewer)
         val selection = FlattenSelectionManager.getOrCreateSelection(viewer)
+        val activeFakePlayer = fakePlayer ?: viewer.selected ?: availableWorkers.firstOrNull { selection.selectedWorkers.contains(it.uuid) } ?: availableWorkers.firstOrNull()
+        if (activeFakePlayer != null && viewer.selected == null) {
+            viewer.selected = activeFakePlayer
+        }
+
+        val fpm = com.coderxi.plugin.fakeplayer.utils.plugin.fakePlayerManager
+        val allActiveWorkers = fpm.fakeplayers().filter { fp ->
+            fp.actions.getActiveActions()[ActionType.FLATTEN.track] is com.coderxi.plugin.fakeplayer.api.action.FlattenAction
+        }
+        val currentWorker = activeFakePlayer ?: allActiveWorkers.firstOrNull()
+        val currentAction = (currentWorker?.actions?.getActiveActions()?.get(ActionType.FLATTEN.track) as? com.coderxi.plugin.fakeplayer.api.action.FlattenAction)
+            ?: (allActiveWorkers.firstOrNull()?.actions?.getActiveActions()?.get(ActionType.FLATTEN.track) as? com.coderxi.plugin.fakeplayer.api.action.FlattenAction)
+        val isRunning = currentAction != null
+
         val isComplete = selection.isComplete
         val actionButtons = mutableListOf<ActionButton>()
         val inputs = mutableListOf<DialogInput>()
 
         if (isRunning) {
-            if (!isAutoLoop) {
-                startAutoRefresh(viewer, fakePlayer)
+            if (!isAutoLoop && currentWorker != null) {
+                startAutoRefresh(viewer, currentWorker)
             }
 
             val total = currentAction.totalBlocks
@@ -233,34 +248,31 @@ object FakePlayerDialog {
                 DialogAction.customClick({ view, _ ->
                     val auto = view.getBoolean("autoRefresh") ?: true
                     autoRefreshEnabledMap[viewer.uniqueId] = auto
-                    if (auto) {
-                        startAutoRefresh(viewer, fakePlayer)
+                    if (auto && currentWorker != null) {
+                        startAutoRefresh(viewer, currentWorker)
                     } else {
                         stopAutoRefresh(viewer)
                     }
                     runOnPlayerThread(viewer) {
-                        viewer.showDialog(FakePlayerDialog.flattenDialog(viewer, fakePlayer))
+                        viewer.showDialog(FakePlayerDialog.flattenDialog(viewer, activeFakePlayer))
                     }
                 }, ACTION_OPTIONS)
             ))
-
-            val fpm = com.coderxi.plugin.fakeplayer.utils.plugin.fakePlayerManager
-            val allActiveWorkers = fpm.fakeplayers().filter { fp ->
-                fp.actions.getActiveActions()[ActionType.FLATTEN.track] is com.coderxi.plugin.fakeplayer.api.action.FlattenAction
-            }
 
             val stopLabel = if (allActiveWorkers.size > 1) tl("fakeplayer.gui.flatten.btn.stop-this") else tl("fakeplayer.gui.action.stop")
             actionButtons.add(ActionButton.create(
                 stopLabel, null, 100,
                 DialogAction.customClick({ _, _ ->
                     stopAutoRefresh(viewer)
-                    fakePlayer.actions.stop(ActionType.FLATTEN.track)
-                    fakePlayer.actions.stop(com.coderxi.plugin.fakeplayer.api.action.ActionTrack.INTERACTION)
-                    com.coderxi.plugin.fakeplayer.component.FlattenTargetRegistry.release(fakePlayer.uuid)
-                    com.coderxi.plugin.fakeplayer.repository.FlattenRepository().deleteTask(fakePlayer.uuid)
-                    viewer.sendMessage(com.coderxi.plugin.fakeplayer.utils.tlp("fakeplayer.flatten.stopped", fakePlayer.name))
+                    if (currentWorker != null) {
+                        currentWorker.actions.stop(ActionType.FLATTEN.track)
+                        currentWorker.actions.stop(com.coderxi.plugin.fakeplayer.api.action.ActionTrack.INTERACTION)
+                        com.coderxi.plugin.fakeplayer.component.FlattenTargetRegistry.release(currentWorker.uuid)
+                        com.coderxi.plugin.fakeplayer.repository.FlattenRepository().deleteTask(currentWorker.uuid)
+                        viewer.sendMessage(com.coderxi.plugin.fakeplayer.utils.tlp("fakeplayer.flatten.stopped", currentWorker.name))
+                    }
                     runOnPlayerThread(viewer) {
-                        viewer.showDialog(FakePlayerDialog.flattenDialog(viewer, fakePlayer))
+                        viewer.showDialog(FakePlayerDialog.flattenDialog(viewer, activeFakePlayer))
                     }
                 }, ACTION_OPTIONS)
             ))
@@ -278,7 +290,7 @@ object FakePlayerDialog {
                         }
                         viewer.sendMessage(com.coderxi.plugin.fakeplayer.utils.tlp("fakeplayer.flatten.stopped.all", allActiveWorkers.size))
                         runOnPlayerThread(viewer) {
-                            viewer.showDialog(FakePlayerDialog.flattenDialog(viewer, fakePlayer))
+                            viewer.showDialog(FakePlayerDialog.flattenDialog(viewer, activeFakePlayer))
                         }
                     }, ACTION_OPTIONS)
                 ))
@@ -291,8 +303,9 @@ object FakePlayerDialog {
                 }, ACTION_OPTIONS)
             )
 
+            val dialogTitle = if (currentWorker != null) tl("fakeplayer.gui.flatten.title", currentWorker.name) else tl("fakeplayer.gui.flatten.title-global")
             return Dialog.create { builder -> builder.empty()
-                .base(DialogBase.builder(tl("fakeplayer.gui.flatten.title", fakePlayer.name))
+                .base(DialogBase.builder(dialogTitle)
                     .canCloseWithEscape(true)
                     .body(listOf(DialogBody.plainMessage(bodyMsg)))
                     .inputs(inputs)
@@ -307,10 +320,13 @@ object FakePlayerDialog {
         inputs.add(boolInput("pickupItems", tl("fakeplayer.gui.flatten.pickup-items")).initial(selection.pickupItems).build())
         inputs.add(boolInput("autoDeposit", tl("fakeplayer.gui.flatten.auto-deposit")).initial(selection.autoDeposit).build())
 
-        if (selection.selectedWorkers.isEmpty() || !selection.selectedWorkers.contains(fakePlayer.uuid)) {
-            selection.selectedWorkers.add(fakePlayer.uuid)
+        if (selection.selectedWorkers.isEmpty()) {
+            if (activeFakePlayer != null) {
+                selection.selectedWorkers.add(activeFakePlayer.uuid)
+            } else if (availableWorkers.isNotEmpty()) {
+                selection.selectedWorkers.addAll(availableWorkers.map { it.uuid })
+            }
         }
-        val availableWorkers = getAvailableWorkers(viewer)
         val validWorkerCount = selection.selectedWorkers.count { wUuid -> availableWorkers.any { it.uuid == wUuid } }
 
         actionButtons.add(ActionButton.create(
@@ -334,7 +350,7 @@ object FakePlayerDialog {
                 view.getBoolean("autoDeposit")?.let { selection.autoDeposit = it }
                 FlattenSelectionManager.saveSelection(viewer)
                 runOnPlayerThread(viewer) {
-                    viewer.showDialog(FakePlayerDialog.chestListDialog(viewer, fakePlayer, ChestRole.OUTPUT))
+                    viewer.showDialog(FakePlayerDialog.chestListDialog(viewer, activeFakePlayer, ChestRole.OUTPUT))
                 }
             }, ACTION_OPTIONS)
         ))
@@ -348,7 +364,7 @@ object FakePlayerDialog {
                 view.getBoolean("autoDeposit")?.let { selection.autoDeposit = it }
                 FlattenSelectionManager.saveSelection(viewer)
                 runOnPlayerThread(viewer) {
-                    viewer.showDialog(FakePlayerDialog.chestListDialog(viewer, fakePlayer, ChestRole.TOOL))
+                    viewer.showDialog(FakePlayerDialog.chestListDialog(viewer, activeFakePlayer, ChestRole.TOOL))
                 }
             }, ACTION_OPTIONS)
         ))
@@ -362,7 +378,7 @@ object FakePlayerDialog {
                 view.getBoolean("autoDeposit")?.let { selection.autoDeposit = it }
                 FlattenSelectionManager.saveSelection(viewer)
                 runOnPlayerThread(viewer) {
-                    viewer.showDialog(FakePlayerDialog.collaborativeWorkersDialog(viewer, fakePlayer))
+                    viewer.showDialog(FakePlayerDialog.collaborativeWorkersDialog(viewer, activeFakePlayer))
                 }
             }, ACTION_OPTIONS)
         ))
@@ -376,7 +392,7 @@ object FakePlayerDialog {
                     view.getBoolean("autoDeposit")?.let { selection.autoDeposit = it }
                     FlattenSelectionManager.clearSelection(viewer)
                     runOnPlayerThread(viewer) {
-                        viewer.showDialog(FakePlayerDialog.flattenDialog(viewer, fakePlayer))
+                        viewer.showDialog(FakePlayerDialog.flattenDialog(viewer, activeFakePlayer))
                     }
                 }, ACTION_OPTIONS)
             ))
@@ -390,9 +406,19 @@ object FakePlayerDialog {
                     FlattenSelectionManager.saveSelection(viewer)
                     val p1 = selection.pos1!!
 
-                    val fpm = com.coderxi.plugin.fakeplayer.utils.plugin.fakePlayerManager
                     val targetWorkers = selection.selectedWorkers.mapNotNull { fpm.get(it) }.filter { it.player.isOnline }
-                    val workersToDispatch = if (targetWorkers.isNotEmpty()) targetWorkers else listOf(fakePlayer)
+                    val workersToDispatch = if (targetWorkers.isNotEmpty()) {
+                        targetWorkers
+                    } else if (activeFakePlayer != null && activeFakePlayer.player.isOnline) {
+                        listOf(activeFakePlayer)
+                    } else {
+                        availableWorkers.filter { it.player.isOnline }
+                    }
+
+                    if (workersToDispatch.isEmpty()) {
+                        viewer.sendMessage(com.coderxi.plugin.fakeplayer.utils.tlp("fakeplayer.flatten.no-workers"))
+                        return@customClick
+                    }
 
                     for (worker in workersToDispatch) {
                         val action = com.coderxi.plugin.fakeplayer.api.action.FlattenAction(ActionMode.Continuous).apply {
@@ -430,7 +456,7 @@ object FakePlayerDialog {
                     if (workersToDispatch.size > 1) {
                         viewer.sendMessage(com.coderxi.plugin.fakeplayer.utils.tlp("fakeplayer.flatten.start.multi", workersToDispatch.size, selection.blockCount))
                     } else {
-                        viewer.sendMessage(com.coderxi.plugin.fakeplayer.utils.tlp("fakeplayer.flatten.start", fakePlayer.name, selection.blockCount))
+                        viewer.sendMessage(com.coderxi.plugin.fakeplayer.utils.tlp("fakeplayer.flatten.start", workersToDispatch.first().name, selection.blockCount))
                     }
                 }, ACTION_OPTIONS)
             ))
@@ -465,8 +491,9 @@ object FakePlayerDialog {
             }, ACTION_OPTIONS)
         )
 
+        val dialogTitle = if (activeFakePlayer != null) tl("fakeplayer.gui.flatten.title", activeFakePlayer.name) else tl("fakeplayer.gui.flatten.title-global")
         return Dialog.create { builder -> builder.empty()
-            .base(DialogBase.builder(tl("fakeplayer.gui.flatten.title", fakePlayer.name))
+            .base(DialogBase.builder(dialogTitle)
                 .canCloseWithEscape(true)
                 .body(listOf(DialogBody.plainMessage(bodyMsg)))
                 .inputs(inputs)
@@ -474,9 +501,10 @@ object FakePlayerDialog {
             .type(DialogType.multiAction(actionButtons).columns(cols).exitAction(exitBtn).build())
         }
     }
-
-    fun chestListDialog(viewer: org.bukkit.entity.Player, fakePlayer: FakePlayer, role: ChestRole = ChestRole.OUTPUT): DialogLike {
-        viewer.selected = fakePlayer
+    fun chestListDialog(viewer: org.bukkit.entity.Player, fakePlayer: FakePlayer? = null, role: ChestRole = ChestRole.OUTPUT): DialogLike {
+        if (fakePlayer != null) {
+            viewer.selected = fakePlayer
+        }
         val selection = FlattenSelectionManager.getSelection(viewer)
         val targetChests = if (role == ChestRole.TOOL) selection?.toolChests ?: emptyList() else selection?.outputChests ?: emptyList()
         val actionButtons = mutableListOf<ActionButton>()
@@ -556,10 +584,11 @@ object FakePlayerDialog {
             }, ACTION_OPTIONS)
         )
 
+        val targetName = fakePlayer?.name ?: tl("fakeplayer.gui.flatten.title-global")
         val dialogTitle = if (role == ChestRole.TOOL) {
-            tl("fakeplayer.gui.flatten.chest.tool.title", fakePlayer.name)
+            tl("fakeplayer.gui.flatten.chest.tool.title", targetName)
         } else {
-            tl("fakeplayer.gui.flatten.chest.output.title", fakePlayer.name)
+            tl("fakeplayer.gui.flatten.chest.output.title", targetName)
         }
 
         val bodyMsg = if (targetChests.isEmpty()) {
@@ -622,11 +651,15 @@ object FakePlayerDialog {
         }
     }
 
-    fun collaborativeWorkersDialog(viewer: org.bukkit.entity.Player, fakePlayer: FakePlayer): DialogLike {
+    fun collaborativeWorkersDialog(viewer: org.bukkit.entity.Player, fakePlayer: FakePlayer? = null): DialogLike {
         val selection = FlattenSelectionManager.getOrCreateSelection(viewer)
         val availableWorkers = getAvailableWorkers(viewer)
-        if (selection.selectedWorkers.isEmpty() || !selection.selectedWorkers.contains(fakePlayer.uuid)) {
-            selection.selectedWorkers.add(fakePlayer.uuid)
+        if (selection.selectedWorkers.isEmpty()) {
+            if (fakePlayer != null) {
+                selection.selectedWorkers.add(fakePlayer.uuid)
+            } else if (availableWorkers.isNotEmpty()) {
+                selection.selectedWorkers.addAll(availableWorkers.map { it.uuid })
+            }
         }
         val inputs = mutableListOf<DialogInput>()
 
@@ -655,7 +688,11 @@ object FakePlayerDialog {
             tl("fakeplayer.gui.flatten.workers.select-current-only"), null, 100,
             DialogAction.customClick({ _, _ ->
                 selection.selectedWorkers.clear()
-                selection.selectedWorkers.add(fakePlayer.uuid)
+                if (fakePlayer != null) {
+                    selection.selectedWorkers.add(fakePlayer.uuid)
+                } else if (availableWorkers.isNotEmpty()) {
+                    selection.selectedWorkers.add(availableWorkers.first().uuid)
+                }
                 FlattenSelectionManager.saveSelection(viewer)
                 runOnPlayerThread(viewer) {
                     viewer.showDialog(FakePlayerDialog.collaborativeWorkersDialog(viewer, fakePlayer))
@@ -674,7 +711,11 @@ object FakePlayerDialog {
                     }
                 }
                 if (selection.selectedWorkers.isEmpty()) {
-                    selection.selectedWorkers.add(fakePlayer.uuid)
+                    if (fakePlayer != null) {
+                        selection.selectedWorkers.add(fakePlayer.uuid)
+                    } else if (availableWorkers.isNotEmpty()) {
+                        selection.selectedWorkers.add(availableWorkers.first().uuid)
+                    }
                 }
                 FlattenSelectionManager.saveSelection(viewer)
                 runOnPlayerThread(viewer) {
@@ -693,7 +734,11 @@ object FakePlayerDialog {
                     }
                 }
                 if (selection.selectedWorkers.isEmpty()) {
-                    selection.selectedWorkers.add(fakePlayer.uuid)
+                    if (fakePlayer != null) {
+                        selection.selectedWorkers.add(fakePlayer.uuid)
+                    } else if (availableWorkers.isNotEmpty()) {
+                        selection.selectedWorkers.add(availableWorkers.first().uuid)
+                    }
                 }
                 FlattenSelectionManager.saveSelection(viewer)
                 runOnPlayerThread(viewer) {
