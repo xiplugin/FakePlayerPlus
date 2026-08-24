@@ -35,7 +35,7 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
         // 防飛天安全保護：若假人異常超出選區上限 + 2 格，強制校正回選區頂部
         if (player.location.y > action.maxY + 2) {
             val resetLoc = Location(player.world, player.location.x, (action.maxY + 1).toDouble(), player.location.z, player.location.yaw, player.location.pitch)
-            player.teleport(resetLoc)
+            player.teleportAsync(resetLoc)
             val zeroVec = Vector(0.0, 0.0, 0.0)
             fakePlayer.nms.setDeltaMovement(zeroVec)
             player.velocity = zeroVec
@@ -117,7 +117,7 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
 
             // 若距離目標過遠 (> 5 格，例如剛啟動任務或位於遠處)，直接瞬間傳送到工作點，絕不在遠處遊蕩跑掉
             if (distToTarget > 5.0) {
-                player.teleport(standLoc)
+                player.teleportAsync(standLoc)
                 val zeroVec = Vector(0.0, 0.0, 0.0)
                 fakePlayer.nms.setDeltaMovement(zeroVec)
                 player.velocity = zeroVec
@@ -132,7 +132,7 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
             if (action.stuckTick >= 25) {
                 val groundBlock = standLoc.block.getRelative(0, -1, 0)
                 if (standLoc != player.location && (groundBlock.type.isSolid || groundBlock.isLiquid)) {
-                    player.teleport(standLoc)
+                    player.teleportAsync(standLoc)
                     val zeroVec = Vector(0.0, 0.0, 0.0)
                     fakePlayer.nms.setDeltaMovement(zeroVec)
                     player.velocity = zeroVec
@@ -276,7 +276,7 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
             val standLoc = findStandLocation(player, chestBlock)
 
             // 一律直接瞬間傳送到箱子旁
-            player.teleport(standLoc)
+            player.teleportAsync(standLoc)
             val zeroVec = Vector(0.0, 0.0, 0.0)
             fakePlayer.nms.setDeltaMovement(zeroVec)
             player.velocity = zeroVec
@@ -342,7 +342,7 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
         }
 
         // 存放完畢後，直接瞬間傳送回原開挖點
-        player.teleport(returnLoc)
+        player.teleportAsync(returnLoc)
         val zeroVec = Vector(0.0, 0.0, 0.0)
         fakePlayer.nms.setDeltaMovement(zeroVec)
         player.velocity = zeroVec
@@ -385,7 +385,7 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
             val standLoc = findStandLocation(player, chestBlock)
 
             // 一律直接瞬間傳送到箱子旁
-            player.teleport(standLoc)
+            player.teleportAsync(standLoc)
             val zeroVec = Vector(0.0, 0.0, 0.0)
             fakePlayer.nms.setDeltaMovement(zeroVec)
             player.velocity = zeroVec
@@ -407,7 +407,7 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
                     it.sendMessage(tlp("fakeplayer.flatten.chest.restocked", fakePlayer.name))
                 }
                 // 補給完成後，直接瞬間傳送回原開挖點
-                player.teleport(returnLoc)
+                player.teleportAsync(returnLoc)
                 fakePlayer.nms.setDeltaMovement(zeroVec)
                 player.velocity = zeroVec
                 return true
@@ -415,7 +415,7 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
         }
 
         // 遍歷所有箱子後傳送回原開挖點
-        player.teleport(returnLoc)
+        player.teleportAsync(returnLoc)
         val zeroVec = Vector(0.0, 0.0, 0.0)
         fakePlayer.nms.setDeltaMovement(zeroVec)
         player.velocity = zeroVec

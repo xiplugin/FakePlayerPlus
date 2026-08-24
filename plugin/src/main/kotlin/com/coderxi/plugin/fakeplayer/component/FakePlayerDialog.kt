@@ -451,7 +451,7 @@ object FakePlayerDialog {
                         worker.actions.dispatch(action)
                         com.coderxi.plugin.fakeplayer.repository.FlattenRepository().saveTask(worker.uuid, action)
                         val startLoc = org.bukkit.Location(p1.world, ((selection.minX + selection.maxX) / 2.0) + 0.5, (selection.maxY + 1).toDouble(), ((selection.minZ + selection.maxZ) / 2.0) + 0.5)
-                        worker.player.teleport(startLoc)
+                        worker.player.teleportAsync(startLoc)
                     }
 
                     FlattenSelectionManager.stopSelectingMode(viewer)
