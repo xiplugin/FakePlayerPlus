@@ -56,6 +56,7 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
             action.target = target
             action.lastTargetName = target.type.name
             action.progress = 0f
+            com.coderxi.plugin.fakeplayer.utils.ToolHelper.equipBestTool(player, target)
         }
 
         val targetCenter = target.location.add(0.5, 0.5, 0.5)
