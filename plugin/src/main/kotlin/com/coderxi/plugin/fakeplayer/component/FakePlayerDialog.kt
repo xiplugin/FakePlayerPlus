@@ -189,6 +189,14 @@ object FakePlayerDialog {
         }
     }
 
+    private fun runOnPlayerThread(viewer: org.bukkit.entity.Player, runnable: Runnable) {
+        if (com.coderxi.plugin.fakeplayer.utils.isFolia) {
+            viewer.scheduler.run(com.coderxi.plugin.fakeplayer.utils.plugin, { _ -> runnable.run() }, null)
+        } else {
+            com.coderxi.plugin.fakeplayer.utils.plugin.server.scheduler.runTask(com.coderxi.plugin.fakeplayer.utils.plugin, runnable)
+        }
+    }
+
     fun flattenDialog(viewer: org.bukkit.entity.Player, fakePlayer: FakePlayer, isAutoLoop: Boolean = false): DialogLike {
         val currentAction = fakePlayer.actions.getActiveActions()[ActionType.FLATTEN.track] as? com.coderxi.plugin.fakeplayer.api.action.FlattenAction
         val isRunning = currentAction != null
@@ -221,9 +229,9 @@ object FakePlayerDialog {
                     } else {
                         stopAutoRefresh(viewer)
                     }
-                    com.coderxi.plugin.fakeplayer.utils.plugin.server.scheduler.runTask(com.coderxi.plugin.fakeplayer.utils.plugin, Runnable {
+                    runOnPlayerThread(viewer) {
                         viewer.showDialog(FakePlayerDialog.flattenDialog(viewer, fakePlayer))
-                    })
+                    }
                 }, ACTION_OPTIONS)
             ))
 
@@ -232,9 +240,9 @@ object FakePlayerDialog {
                 DialogAction.customClick({ _, _ ->
                     stopAutoRefresh(viewer)
                     fakePlayer.actions.stop(ActionType.FLATTEN.track)
-                    com.coderxi.plugin.fakeplayer.utils.plugin.server.scheduler.runTask(com.coderxi.plugin.fakeplayer.utils.plugin, Runnable {
+                    runOnPlayerThread(viewer) {
                         viewer.showDialog(FakePlayerDialog.flattenDialog(viewer, fakePlayer))
-                    })
+                    }
                 }, ACTION_OPTIONS)
             ))
 
@@ -272,7 +280,9 @@ object FakePlayerDialog {
                 tl("fakeplayer.gui.flatten.btn.clear"), null, 100,
                 DialogAction.customClick({ _, _ ->
                     FlattenSelectionManager.clearSelection(viewer)
-                    viewer.showDialog(FakePlayerDialog.flattenDialog(viewer, fakePlayer))
+                    runOnPlayerThread(viewer) {
+                        viewer.showDialog(FakePlayerDialog.flattenDialog(viewer, fakePlayer))
+                    }
                 }, ACTION_OPTIONS)
             ))
 
