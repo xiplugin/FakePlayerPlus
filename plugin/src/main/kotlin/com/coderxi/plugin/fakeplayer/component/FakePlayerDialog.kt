@@ -140,7 +140,56 @@ object FakePlayerDialog {
         }
     }
 
-    fun flattenDialog(viewer: org.bukkit.entity.Player, fakePlayer: FakePlayer): DialogLike {
+    private val autoRefreshEnabledMap = java.util.concurrent.ConcurrentHashMap<java.util.UUID, Boolean>()
+    private val autoRefreshTasks = java.util.concurrent.ConcurrentHashMap<java.util.UUID, Any>()
+
+    fun startAutoRefresh(viewer: org.bukkit.entity.Player, fakePlayer: FakePlayer) {
+        stopAutoRefresh(viewer)
+        if (!autoRefreshEnabledMap.getOrDefault(viewer.uniqueId, true)) return
+
+        if (com.coderxi.plugin.fakeplayer.utils.isFolia) {
+            val task = viewer.scheduler.runAtFixedRate(com.coderxi.plugin.fakeplayer.utils.plugin, { task ->
+                if (!viewer.isOnline) {
+                    task.cancel()
+                    autoRefreshTasks.remove(viewer.uniqueId)
+                    return@runAtFixedRate
+                }
+                val currentAction = fakePlayer.actions.getActiveActions()[ActionType.FLATTEN.track] as? com.coderxi.plugin.fakeplayer.api.action.FlattenAction
+                if (currentAction == null || !autoRefreshEnabledMap.getOrDefault(viewer.uniqueId, true)) {
+                    task.cancel()
+                    autoRefreshTasks.remove(viewer.uniqueId)
+                    return@runAtFixedRate
+                }
+                viewer.showDialog(FakePlayerDialog.flattenDialog(viewer, fakePlayer, isAutoLoop = true))
+            }, null, 20L, 20L)
+            task?.let { autoRefreshTasks[viewer.uniqueId] = it }
+        } else {
+            val task = com.coderxi.plugin.fakeplayer.utils.plugin.server.scheduler.runTaskTimer(com.coderxi.plugin.fakeplayer.utils.plugin, Runnable {
+                if (!viewer.isOnline) {
+                    stopAutoRefresh(viewer)
+                    return@Runnable
+                }
+                val currentAction = fakePlayer.actions.getActiveActions()[ActionType.FLATTEN.track] as? com.coderxi.plugin.fakeplayer.api.action.FlattenAction
+                if (currentAction == null || !autoRefreshEnabledMap.getOrDefault(viewer.uniqueId, true)) {
+                    stopAutoRefresh(viewer)
+                    return@Runnable
+                }
+                viewer.showDialog(FakePlayerDialog.flattenDialog(viewer, fakePlayer, isAutoLoop = true))
+            }, 20L, 20L)
+            task?.let { autoRefreshTasks[viewer.uniqueId] = it }
+        }
+    }
+
+    fun stopAutoRefresh(viewer: org.bukkit.entity.Player) {
+        val task = autoRefreshTasks.remove(viewer.uniqueId) ?: return
+        if (com.coderxi.plugin.fakeplayer.utils.isFolia) {
+            (task as? io.papermc.paper.threadedregions.scheduler.ScheduledTask)?.cancel()
+        } else {
+            (task as? org.bukkit.scheduler.BukkitTask)?.cancel()
+        }
+    }
+
+    fun flattenDialog(viewer: org.bukkit.entity.Player, fakePlayer: FakePlayer, isAutoLoop: Boolean = false): DialogLike {
         val currentAction = fakePlayer.actions.getActiveActions()[ActionType.FLATTEN.track] as? com.coderxi.plugin.fakeplayer.api.action.FlattenAction
         val isRunning = currentAction != null
         val selection = FlattenSelectionManager.getSelection(viewer)
@@ -149,6 +198,10 @@ object FakePlayerDialog {
         val inputs = mutableListOf<DialogInput>()
 
         if (isRunning) {
+            if (!isAutoLoop) {
+                startAutoRefresh(viewer, fakePlayer)
+            }
+
             val total = currentAction.totalBlocks
             val cleared = currentAction.clearedBlocks
             val percent = if (total > 0) (cleared * 100 / total) else 0
@@ -156,9 +209,18 @@ object FakePlayerDialog {
 
             val bodyMsg = tl("fakeplayer.gui.flatten.status.running", percent, cleared, total, targetName)
 
+            inputs.add(boolInput("autoRefresh", tl("fakeplayer.gui.flatten.auto-refresh")).initial(autoRefreshEnabledMap.getOrDefault(viewer.uniqueId, true)).build())
+
             actionButtons.add(ActionButton.create(
                 tl("fakeplayer.gui.flatten.btn.refresh"), null, 100,
-                DialogAction.customClick({ _, _ ->
+                DialogAction.customClick({ view, _ ->
+                    val auto = view.getBoolean("autoRefresh") ?: true
+                    autoRefreshEnabledMap[viewer.uniqueId] = auto
+                    if (auto) {
+                        startAutoRefresh(viewer, fakePlayer)
+                    } else {
+                        stopAutoRefresh(viewer)
+                    }
                     com.coderxi.plugin.fakeplayer.utils.plugin.server.scheduler.runTask(com.coderxi.plugin.fakeplayer.utils.plugin, Runnable {
                         viewer.showDialog(FakePlayerDialog.flattenDialog(viewer, fakePlayer))
                     })
@@ -168,6 +230,7 @@ object FakePlayerDialog {
             actionButtons.add(ActionButton.create(
                 tl("fakeplayer.gui.action.stop"), null, 100,
                 DialogAction.customClick({ _, _ ->
+                    stopAutoRefresh(viewer)
                     fakePlayer.actions.stop(ActionType.FLATTEN.track)
                     com.coderxi.plugin.fakeplayer.utils.plugin.server.scheduler.runTask(com.coderxi.plugin.fakeplayer.utils.plugin, Runnable {
                         viewer.showDialog(FakePlayerDialog.flattenDialog(viewer, fakePlayer))
@@ -179,6 +242,7 @@ object FakePlayerDialog {
                 .base(DialogBase.builder(tl("fakeplayer.gui.flatten.title", fakePlayer.name))
                     .canCloseWithEscape(true)
                     .body(listOf(DialogBody.plainMessage(bodyMsg)))
+                    .inputs(inputs)
                     .build())
                 .type(DialogType.multiAction(actionButtons).columns(2).exitAction(CANCEL_BTN).build())
             }
