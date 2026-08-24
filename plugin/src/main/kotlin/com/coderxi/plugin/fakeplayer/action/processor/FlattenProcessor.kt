@@ -32,6 +32,15 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
             if (it.baseValue < 1.25) it.baseValue = 1.25
         }
 
+        // 防飛天安全保護：若假人異常超出選區上限 + 2 格，強制校正回選區頂部
+        if (player.location.y > action.maxY + 2) {
+            val resetLoc = Location(player.world, player.location.x, (action.maxY + 1).toDouble(), player.location.z, player.location.yaw, player.location.pitch)
+            player.teleport(resetLoc)
+            val zeroVec = Vector(0.0, 0.0, 0.0)
+            fakePlayer.nms.setDeltaMovement(zeroVec)
+            player.velocity = zeroVec
+        }
+
         // 初始化總需挖掘方塊計數
         if (action.totalBlocks == 0) {
             action.totalBlocks = countSolidBlocks(world, action)
@@ -379,7 +388,7 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
 
         if (inWater) {
             fakePlayer.nms.setJumping(false)
-            val vy = if (dy > 0.3) 0.08 else if (dy < -0.3) -0.10 else 0.0
+            val vy = if (dy > 0.5 && pLoc.y < targetLoc.y) 0.05 else if (dy < -0.5) -0.08 else minOf(player.velocity.y, 0.0)
             val moveVec = Vector(vx, vy, vz)
             fakePlayer.nms.setDeltaMovement(moveVec)
             player.velocity = moveVec
@@ -401,7 +410,7 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
 
         if (isCliffHazard && fakePlayer.nms.onGround) {
             // 前方為深坑/懸崖/岩漿，立即停步煞車防掉落
-            val stopVec = Vector(0.0, player.velocity.y, 0.0)
+            val stopVec = Vector(0.0, minOf(player.velocity.y, 0.0), 0.0)
             fakePlayer.nms.setDeltaMovement(stopVec)
             player.velocity = stopVec
             return false
@@ -417,8 +426,8 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
             player.velocity = moveVec
         } else {
             fakePlayer.nms.setJumping(false)
-            // 陸地行走保持正常重力與水平速度，不強行施加持續向上動量
-            val currentVy = minOf(player.velocity.y, 0.1)
+            // 陸地行走保持正常重力下降，絕不覆蓋正向向上速度
+            val currentVy = minOf(player.velocity.y, 0.0)
             val moveVec = Vector(vx, currentVy, vz)
             fakePlayer.nms.setDeltaMovement(moveVec)
             player.velocity = moveVec
@@ -439,13 +448,15 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
         for (offset in offsets) {
             val sx = target.x + offset[0]
             val sz = target.z + offset[1]
-            val startY = minOf(target.y + 1, world.maxHeight - 2)
-            val minY = maxOf(target.y - 12, world.minHeight)
+            val startY = minOf(target.y + 2, world.maxHeight - 2)
+            val minY = maxOf(target.y - 8, world.minHeight)
             for (sy in startY downTo minY) {
                 val ground = world.getBlockAt(sx, sy, sz)
                 val feet = world.getBlockAt(sx, sy + 1, sz)
                 val head = world.getBlockAt(sx, sy + 2, sz)
-                if (!ground.type.isAir && ground.type.isSolid && feet.type.isAir && head.type.isAir) {
+                val groundOk = !ground.type.isAir && (ground.type.isSolid || ground.isLiquid)
+                val spaceOk = (feet.type.isAir || feet.isLiquid) && (head.type.isAir || head.isLiquid)
+                if (groundOk && spaceOk) {
                     candidates.add(Location(world, sx + 0.5, (sy + 1).toDouble(), sz + 0.5))
                     break
                 }
