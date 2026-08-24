@@ -68,9 +68,9 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
             }
         }
 
-        // 尋找或驗證目標方塊（實體可挖掘方塊）
+        // 尋找或驗證目標方塊（實體可挖掘方塊或待抽乾液體）
         var target = action.target
-        val isTargetValid = target != null && target.world == world && isMinedBlock(target) && (!action.preserveOres || !isOreBlock(target))
+        val isTargetValid = target != null && target.world == world && (isMinedBlock(target) || isLiquidBlock(target)) && (!action.preserveOres || !isOreBlock(target))
         if (!isTargetValid) {
             target = findNextBlock(world, action, player.location, fakePlayer.uuid)
             if (target == null) {
@@ -92,10 +92,12 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
             action.lastTargetName = target.type.name
             action.progress = 0f
             com.coderxi.plugin.fakeplayer.component.FlattenTargetRegistry.reserve(world, target.x, target.y, target.z, fakePlayer.uuid)
-            if (hasChests && !com.coderxi.plugin.fakeplayer.utils.ToolHelper.hasToolForBlock(player, target)) {
-                restockToolsFromBoundChests(fakePlayer, action, com.coderxi.plugin.fakeplayer.utils.ToolHelper.getNeededToolSuffix(target))
+            if (isMinedBlock(target)) {
+                if (hasChests && !com.coderxi.plugin.fakeplayer.utils.ToolHelper.hasToolForBlock(player, target)) {
+                    restockToolsFromBoundChests(fakePlayer, action, com.coderxi.plugin.fakeplayer.utils.ToolHelper.getNeededToolSuffix(target))
+                }
+                com.coderxi.plugin.fakeplayer.utils.ToolHelper.equipBestTool(player, target)
             }
-            com.coderxi.plugin.fakeplayer.utils.ToolHelper.equipBestTool(player, target)
         }
 
         val targetCenter = target.location.add(0.5, 0.5, 0.5)
@@ -145,6 +147,29 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
             val yaw = Math.toDegrees(atan2(-dir.x, dir.z)).toFloat()
             val pitch = Math.toDegrees(atan2(-dir.y, sqrt(dir.x * dir.x + dir.z * dir.z))).toFloat()
             player.setRotation(yaw, pitch)
+        }
+
+        // 若目標為水/岩漿液體方塊，直接進行抽乾/清理，絕不放置實體方塊造成反覆挖掘死循環
+        if (isLiquidBlock(target)) {
+            player.swingMainHand()
+            val isLava = target.type == org.bukkit.Material.LAVA
+            val data = target.blockData
+            if (data is org.bukkit.block.data.Waterlogged && data.isWaterlogged) {
+                data.isWaterlogged = false
+                target.blockData = data
+            } else {
+                target.setType(org.bukkit.Material.AIR, false)
+            }
+            val sound = if (isLava) org.bukkit.Sound.ITEM_BUCKET_FILL_LAVA else org.bukkit.Sound.ITEM_BUCKET_FILL
+            world.playSound(target.location, sound, 0.8f, 1.0f)
+            action.clearedBlocks++
+            if (action.clearedBlocks % 20 == 0) {
+                com.coderxi.plugin.fakeplayer.repository.FlattenRepository().updateTaskProgress(fakePlayer.uuid, action.totalBlocks, action.clearedBlocks)
+            }
+            com.coderxi.plugin.fakeplayer.component.FlattenTargetRegistry.release(fakePlayer.uuid)
+            action.target = null
+            action.freezeTick = 2
+            return
         }
 
         player.swingMainHand()
@@ -602,7 +627,8 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
                     }
                     val block = world.getBlockAt(x, y, z)
                     val isMinable = isMinedBlock(block) && (!action.preserveOres || !isOreBlock(block))
-                    if (isMinable) {
+                    val isLiquid = isLiquidBlock(block)
+                    if (isMinable || isLiquid) {
                         var score = block.location.distanceSquared(currentLoc)
                         // 若為玩家正腳下的方塊，給予優先級懲罰，優先挖掘周圍方塊以防止挖坑掉落受困
                         if (x == playerBlockX && z == playerBlockZ && y <= playerBlockY) {
@@ -615,6 +641,14 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
                         }
                         if (isUnderWorker) {
                             score += 200.0
+                        }
+
+                        // 水源/岩漿源優先於流動水
+                        if (isLiquid) {
+                            val data = block.blockData
+                            if (data is org.bukkit.block.data.Levelled && data.level > 0) {
+                                score += 50.0
+                            }
                         }
 
                         if (score < minScore) {
@@ -642,7 +676,7 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
             for (x in action.minX..action.maxX) {
                 for (z in action.minZ..action.maxZ) {
                     val b = world.getBlockAt(x, y, z)
-                    if (isMinedBlock(b)) {
+                    if (isMinedBlock(b) || isLiquidBlock(b)) {
                         if (!action.preserveOres || !isOreBlock(b)) {
                             count++
                         }
