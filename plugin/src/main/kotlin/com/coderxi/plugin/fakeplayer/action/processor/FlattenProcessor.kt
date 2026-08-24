@@ -9,7 +9,9 @@ import com.coderxi.plugin.fakeplayer.utils.tlp
 import org.bukkit.Location
 import org.bukkit.attribute.Attribute
 import org.bukkit.block.Block
+import org.bukkit.block.Chest
 import org.bukkit.block.Container
+import org.bukkit.block.DoubleChest
 import org.bukkit.entity.Item
 import org.bukkit.entity.Player
 import org.bukkit.util.Vector
@@ -160,7 +162,7 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
                 emptySlots++
             }
         }
-        return emptySlots <= 1
+        return emptySlots <= 2 && hasItemsToDeposit(player)
     }
 
     private fun hasItemsToDeposit(player: Player): Boolean {
@@ -194,8 +196,19 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
         for (loc in chestList) {
             val world = loc.world ?: action.world ?: player.world
             val chestBlock = world.getBlockAt(loc)
-            val state = chestBlock.state
-            if (state !is Container) continue
+            val blockState = chestBlock.getState(false)
+            if (blockState !is Container) continue
+
+            val targetInv = if (blockState is Chest) {
+                val holder = blockState.inventory.holder
+                if (holder is DoubleChest) {
+                    holder.inventory
+                } else {
+                    blockState.inventory
+                }
+            } else {
+                blockState.inventory
+            }
 
             val chestCenter = chestBlock.location.clone().add(0.5, 0.5, 0.5)
             val dist = player.location.distance(chestCenter)
@@ -220,8 +233,8 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
                 player.setRotation(yaw, pitch)
             }
             player.swingMainHand()
+            world.playSound(chestBlock.location, org.bukkit.Sound.BLOCK_CHEST_OPEN, 0.5f, 1.0f)
 
-            val chestInv = state.inventory
             val playerInv = player.inventory
 
             for (slot in 0..35) {
@@ -234,7 +247,7 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
                         name.endsWith("_HELMET") || name.endsWith("_CHESTPLATE") || name.endsWith("_LEGGINGS") || name.endsWith("_BOOTS")
 
                 if (!isTool) {
-                    val remaining = chestInv.addItem(item)
+                    val remaining = targetInv.addItem(item)
                     if (remaining.isEmpty()) {
                         playerInv.setItem(slot, null)
                         depositedAny = true
@@ -244,8 +257,6 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
                     }
                 }
             }
-
-            state.update()
 
             // 若身上物資已全數存入，跳出箱子循環
             if (!hasItemsToDeposit(player)) {
