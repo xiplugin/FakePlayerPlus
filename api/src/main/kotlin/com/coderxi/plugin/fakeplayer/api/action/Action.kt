@@ -16,6 +16,7 @@ sealed interface Action {
             DropItemAction::class.java,
             JumpAction::class.java,
             SneakAction::class.java,
+            FlattenAction::class.java,
         ).associateBy {
             it.getDeclaredField("type").get(null) as ActionType
         }

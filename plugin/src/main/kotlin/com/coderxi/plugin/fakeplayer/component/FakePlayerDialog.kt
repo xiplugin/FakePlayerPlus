@@ -78,7 +78,7 @@ object FakePlayerDialog {
         }
     }
 
-    fun actionExecuteDialog(fakePlayer: FakePlayer, actionType: ActionType): DialogLike {
+    fun actionExecuteDialog(viewer: CommandSender, fakePlayer: FakePlayer, actionType: ActionType): DialogLike {
         val actionButtons = mutableListOf<ActionButton>()
         var columns = 0
         val modes = Action.getSupportModes(actionType)
@@ -105,6 +105,20 @@ object FakePlayerDialog {
                        }.toTypedArray<Any?>())
                    }
                    val action = Action.toClass(actionType).getConstructor(modeClass).newInstance(modeInstance)
+                   if (action is com.coderxi.plugin.fakeplayer.api.action.FlattenAction && viewer is org.bukkit.entity.Player) {
+                       val selection = FlattenSelectionManager.getSelection(viewer)
+                       if (selection != null && selection.isComplete) {
+                           action.world = selection.pos1!!.world
+                           action.minX = selection.minX
+                           action.maxX = selection.maxX
+                           action.minY = selection.minY
+                           action.maxY = selection.maxY
+                           action.minZ = selection.minZ
+                           action.maxZ = selection.maxZ
+                           FlattenSelectionManager.stopSelectingMode(viewer)
+                           viewer.sendMessage(com.coderxi.plugin.fakeplayer.utils.tlp("fakeplayer.flatten.start", fakePlayer.name, selection.blockCount))
+                       }
+                   }
                    fakePlayer.actions.dispatch(action) }, ACTION_OPTIONS)))
             columns++
         }
@@ -130,8 +144,19 @@ object FakePlayerDialog {
         val actionTypes = if (viewer.hasPermission(BASIC)) ActionType.entries else ActionType.entries.filter { viewer.hasPermission("${ACTION.value}.${it.name.lowercase()}") }
         val textAndAction = actionTypes
             .associateTo((mutableMapOf())) { type ->
-                tl("fakeplayer.action.${type.name.lowercase().replace("_","-")}") to
-                        { viewer.showDialog(FakePlayerDialog.actionExecuteDialog(fakePlayer, type)) }
+                tl("fakeplayer.action.${type.name.lowercase().replace("_","-")}") to {
+                    if (type == ActionType.FLATTEN && viewer is org.bukkit.entity.Player) {
+                        val selection = FlattenSelectionManager.getSelection(viewer)
+                        if (selection == null || !selection.isComplete) {
+                            FlattenSelectionManager.startSelection(viewer)
+                            viewer.sendMessage(com.coderxi.plugin.fakeplayer.utils.tlp("fakeplayer.flatten.select.mode"))
+                        } else {
+                            viewer.showDialog(FakePlayerDialog.actionExecuteDialog(viewer, fakePlayer, type))
+                        }
+                    } else {
+                        viewer.showDialog(FakePlayerDialog.actionExecuteDialog(viewer, fakePlayer, type))
+                    }
+                }
             }
         if (textAndAction.isNotEmpty()) textAndAction[tl("fakeplayer.gui.action.stop-all")] = {fakePlayer.actions.stopAll()}
         val actionButtons = textAndAction.map { (text, action) ->

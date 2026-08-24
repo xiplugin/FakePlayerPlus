@@ -393,7 +393,7 @@ class FakePlayerCommand {
     @Permission(ACTION, BASIC)
     fun Player.actionUI(type: ActionType, @Select fakePlayer: FakePlayer) {
         assertPermission("${ACTION.value}.${type.name.lowercase()}", BASIC)
-        showDialog(FakePlayerDialog.actionExecuteDialog(fakePlayer, type))
+        showDialog(FakePlayerDialog.actionExecuteDialog(this, fakePlayer, type))
     }
 
     @Subcommand("action execute")
