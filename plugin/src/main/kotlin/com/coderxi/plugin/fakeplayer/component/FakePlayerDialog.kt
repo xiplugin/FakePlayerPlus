@@ -266,7 +266,8 @@ object FakePlayerDialog {
         // 未在整地中的面板
         inputs.add(boolInput("preserveOres", tl("fakeplayer.gui.flatten.preserve-ores")).initial(false).build())
         inputs.add(boolInput("pickupItems", tl("fakeplayer.gui.flatten.pickup-items")).initial(true).build())
-        inputs.add(boolInput("autoDeposit", tl("fakeplayer.gui.flatten.auto-deposit")).initial(selection?.chestBlock != null).build())
+        val hasChests = selection != null && selection.chestBlocks.isNotEmpty()
+        inputs.add(boolInput("autoDeposit", tl("fakeplayer.gui.flatten.auto-deposit")).initial(hasChests).build())
 
         actionButtons.add(ActionButton.create(
             tl("fakeplayer.gui.flatten.btn.select"), null, 100,
@@ -284,11 +285,11 @@ object FakePlayerDialog {
             }, ACTION_OPTIONS)
         ))
 
-        if (selection?.chestBlock != null) {
+        if (hasChests) {
             actionButtons.add(ActionButton.create(
-                tl("fakeplayer.gui.flatten.btn.clear-chest"), null, 100,
+                tl("fakeplayer.gui.flatten.btn.clear-chest", selection.chestBlocks.size), null, 100,
                 DialogAction.customClick({ _, _ ->
-                    FlattenSelectionManager.clearChestBlock(viewer)
+                    FlattenSelectionManager.clearChestBlocks(viewer)
                     runOnPlayerThread(viewer) {
                         viewer.showDialog(FakePlayerDialog.flattenDialog(viewer, fakePlayer))
                     }
@@ -321,12 +322,16 @@ object FakePlayerDialog {
                         maxZ = selection.maxZ
                         preserveOres = view.getBoolean("preserveOres") ?: false
                         pickupItems = view.getBoolean("pickupItems") ?: true
-                        autoDeposit = view.getBoolean("autoDeposit") ?: (selection.chestBlock != null)
-                        if (selection.chestBlock != null) {
-                            chestWorld = selection.chestBlock!!.world
-                            chestX = selection.chestBlock!!.x
-                            chestY = selection.chestBlock!!.y
-                            chestZ = selection.chestBlock!!.z
+                        autoDeposit = view.getBoolean("autoDeposit") ?: hasChests
+                        selection.chestBlocks.forEach { cb ->
+                            chestLocations.add(cb.location)
+                        }
+                        if (selection.chestBlocks.isNotEmpty()) {
+                            val first = selection.chestBlocks.first()
+                            chestWorld = first.world
+                            chestX = first.x
+                            chestY = first.y
+                            chestZ = first.z
                         }
                     }
                     fakePlayer.actions.dispatch(action)
@@ -343,9 +348,13 @@ object FakePlayerDialog {
             }, ACTION_OPTIONS)
         ))
 
-        val chestInfo = if (selection?.chestBlock != null) {
-            val cb = selection.chestBlock!!
-            "${cb.x}, ${cb.y}, ${cb.z}"
+        val chestInfo = if (selection != null && selection.chestBlocks.isNotEmpty()) {
+            if (selection.chestBlocks.size == 1) {
+                val cb = selection.chestBlocks.first()
+                "${cb.x}, ${cb.y}, ${cb.z}"
+            } else {
+                tl("fakeplayer.gui.flatten.chest.multi", selection.chestBlocks.size)
+            }
         } else {
             tl("fakeplayer.gui.flatten.chest.none")
         }

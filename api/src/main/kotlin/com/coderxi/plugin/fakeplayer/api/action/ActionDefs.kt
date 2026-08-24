@@ -69,6 +69,7 @@ class FlattenAction private constructor(override val mode: ActionMode): Action.B
     var chestX: Int? = null
     var chestY: Int? = null
     var chestZ: Int? = null
+    var chestLocations: MutableList<org.bukkit.Location> = mutableListOf()
     var autoDeposit: Boolean = true
     var isDepositing: Boolean = false
 }

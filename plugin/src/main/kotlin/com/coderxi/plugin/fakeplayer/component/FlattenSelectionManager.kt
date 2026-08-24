@@ -1,7 +1,6 @@
 package com.coderxi.plugin.fakeplayer.component
 
 import com.coderxi.plugin.fakeplayer.utils.tlp
-import org.bukkit.Location
 import org.bukkit.block.Block
 import org.bukkit.block.Container
 import org.bukkit.entity.Player
@@ -18,9 +17,11 @@ import kotlin.math.abs
 data class FlattenSelection(
     var pos1: Block? = null,
     var pos2: Block? = null,
-    var chestBlock: Block? = null
+    val chestBlocks: MutableList<Block> = mutableListOf()
 ) {
     val isComplete: Boolean get() = pos1 != null && pos2 != null && pos1?.world == pos2?.world
+
+    val chestBlock: Block? get() = chestBlocks.firstOrNull()
 
     val blockCount: Int get() {
         val p1 = pos1 ?: return 0
@@ -38,6 +39,18 @@ data class FlattenSelection(
     val sizeX: Int get() = abs(maxX - minX) + 1
     val sizeY: Int get() = abs(maxY - minY) + 1
     val sizeZ: Int get() = abs(maxZ - minZ) + 1
+
+    fun addChestBlock(block: Block): Boolean {
+        if (chestBlocks.any { it.world == block.world && it.x == block.x && it.y == block.y && it.z == block.z }) {
+            return false
+        }
+        chestBlocks.add(block)
+        return true
+    }
+
+    fun clearChestBlocks() {
+        chestBlocks.clear()
+    }
 }
 
 object FlattenSelectionManager : Listener {
@@ -75,8 +88,8 @@ object FlattenSelectionManager : Listener {
         selections.remove(player.uniqueId)
     }
 
-    fun clearChestBlock(player: Player) {
-        selections[player.uniqueId]?.chestBlock = null
+    fun clearChestBlocks(player: Player) {
+        selections[player.uniqueId]?.clearChestBlocks()
     }
 
     fun stopSelectingMode(player: Player) {
@@ -93,15 +106,18 @@ object FlattenSelectionManager : Listener {
 
         val clicked = event.clickedBlock ?: return
 
-        // 綁定箱子模式
+        // 綁定箱子模式 (支援多箱子依序綁定)
         if (isSelectingChest(player)) {
             if (event.action == Action.RIGHT_CLICK_BLOCK || event.action == Action.LEFT_CLICK_BLOCK) {
                 event.isCancelled = true
                 if (clicked.state is Container) {
                     val selection = selections.getOrPut(player.uniqueId) { FlattenSelection() }
-                    selection.chestBlock = clicked
-                    selectingChestPlayers.remove(player.uniqueId)
-                    player.sendMessage(tlp("fakeplayer.flatten.chest.set", clicked.x, clicked.y, clicked.z))
+                    val added = selection.addChestBlock(clicked)
+                    if (added) {
+                        player.sendMessage(tlp("fakeplayer.flatten.chest.added", clicked.x, clicked.y, clicked.z, selection.chestBlocks.size))
+                    } else {
+                        player.sendMessage(tlp("fakeplayer.flatten.chest.already-bound", selection.chestBlocks.size))
+                    }
                 } else {
                     player.sendMessage(tlp("fakeplayer.flatten.chest.invalid"))
                 }
