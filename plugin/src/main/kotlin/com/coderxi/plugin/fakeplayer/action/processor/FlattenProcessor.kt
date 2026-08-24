@@ -646,6 +646,9 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
         fakePlayer.player.getAttribute(Attribute.STEP_HEIGHT)?.let {
             it.baseValue = 0.6
         }
+        val zeroVec = Vector(0.0, 0.0, 0.0)
+        fakePlayer.nms.setDeltaMovement(zeroVec)
+        fakePlayer.player.velocity = zeroVec
     }
 
 }

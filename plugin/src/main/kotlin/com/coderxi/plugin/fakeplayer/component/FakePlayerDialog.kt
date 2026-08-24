@@ -244,17 +244,45 @@ object FakePlayerDialog {
                 }, ACTION_OPTIONS)
             ))
 
+            val fpm = com.coderxi.plugin.fakeplayer.utils.plugin.fakePlayerManager
+            val allActiveWorkers = fpm.fakeplayers().filter { fp ->
+                fp.actions.getActiveActions()[ActionType.FLATTEN.track] is com.coderxi.plugin.fakeplayer.api.action.FlattenAction
+            }
+
+            val stopLabel = if (allActiveWorkers.size > 1) tl("fakeplayer.gui.flatten.btn.stop-this") else tl("fakeplayer.gui.action.stop")
             actionButtons.add(ActionButton.create(
-                tl("fakeplayer.gui.action.stop"), null, 100,
+                stopLabel, null, 100,
                 DialogAction.customClick({ _, _ ->
                     stopAutoRefresh(viewer)
                     fakePlayer.actions.stop(ActionType.FLATTEN.track)
+                    fakePlayer.actions.stop(com.coderxi.plugin.fakeplayer.api.action.ActionTrack.INTERACTION)
+                    com.coderxi.plugin.fakeplayer.component.FlattenTargetRegistry.release(fakePlayer.uuid)
                     com.coderxi.plugin.fakeplayer.repository.FlattenRepository().deleteTask(fakePlayer.uuid)
+                    viewer.sendMessage(com.coderxi.plugin.fakeplayer.utils.tlp("fakeplayer.flatten.stopped", fakePlayer.name))
                     runOnPlayerThread(viewer) {
                         viewer.showDialog(FakePlayerDialog.flattenDialog(viewer, fakePlayer))
                     }
                 }, ACTION_OPTIONS)
             ))
+
+            if (allActiveWorkers.size > 1) {
+                actionButtons.add(ActionButton.create(
+                    tl("fakeplayer.gui.flatten.btn.stop-all-workers", allActiveWorkers.size), null, 100,
+                    DialogAction.customClick({ _, _ ->
+                        stopAutoRefresh(viewer)
+                        for (w in allActiveWorkers) {
+                            w.actions.stop(ActionType.FLATTEN.track)
+                            w.actions.stop(com.coderxi.plugin.fakeplayer.api.action.ActionTrack.INTERACTION)
+                            com.coderxi.plugin.fakeplayer.component.FlattenTargetRegistry.release(w.uuid)
+                            com.coderxi.plugin.fakeplayer.repository.FlattenRepository().deleteTask(w.uuid)
+                        }
+                        viewer.sendMessage(com.coderxi.plugin.fakeplayer.utils.tlp("fakeplayer.flatten.stopped.all", allActiveWorkers.size))
+                        runOnPlayerThread(viewer) {
+                            viewer.showDialog(FakePlayerDialog.flattenDialog(viewer, fakePlayer))
+                        }
+                    }, ACTION_OPTIONS)
+                ))
+            }
 
             val cancelExitBtn = ActionButton.create(
                 tl("fakeplayer.gui.cancel"), null, 100,

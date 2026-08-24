@@ -43,14 +43,14 @@ class FakePlayerAutoRejoinManager(
                 }
             }
 
-            delay(1000L)
+            // 確保所有已在線的假人（若未在 spawn 事件中自動恢復）檢查並恢復任務
+            delay(500L)
             val flattenRepo = com.coderxi.plugin.fakeplayer.repository.FlattenRepository()
-            val activeTasks = flattenRepo.findAllActiveTasks()
-            for ((fakeUuid, task) in activeTasks) {
-                val fakePlayer = fpm.get(fakeUuid) ?: continue
+            for (fakePlayer in fpm.fakeplayers()) {
                 if (fakePlayer.player.isOnline) {
                     val current = fakePlayer.actions.getActiveActions()[com.coderxi.plugin.fakeplayer.api.action.ActionType.FLATTEN.track]
                     if (current == null) {
+                        val task = flattenRepo.loadTask(fakePlayer.uuid) ?: continue
                         fakePlayer.actions.dispatch(task)
                         fakePlayer.owners.forEach { owner ->
                             owner.sendMessage(com.coderxi.plugin.fakeplayer.utils.tlp("fakeplayer.flatten.resume", fakePlayer.name))
