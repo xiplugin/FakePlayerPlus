@@ -467,12 +467,15 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
         val frontBlock = frontLoc.block
         val frontAbove = frontLoc.clone().add(0.0, 1.0, 0.0).block
 
-        // 1. 懸空峽谷/深坑自動水平搭橋鋪路 (Auto-Bridging across horizontal gaps at current walking level)
-        val dropUnderFront = frontLoc.clone().add(0.0, -1.0, 0.0).block
-        val isGapAhead = (dropUnderFront.type.isAir || dropUnderFront.isLiquid)
+        // 1. 懸空峽谷/深坑自動水平搭橋鋪路 (僅在前方為深淵/深坑 > 3 格且目標在同高度時才搭橋，避免在正常坡度與邊緣鋪無意義的路)
+        val drop1 = frontLoc.clone().add(0.0, -1.0, 0.0).block
+        val drop2 = frontLoc.clone().add(0.0, -2.0, 0.0).block
+        val drop3 = frontLoc.clone().add(0.0, -3.0, 0.0).block
+        val isDeepAbyss = (drop1.type.isAir || drop1.isLiquid) && (drop2.type.isAir || drop2.isLiquid) && (drop3.type.isAir || drop3.isLiquid)
+        val targetAtSameOrHigherLevel = dy >= -1.0
 
-        if (isGapAhead && horizontalDist > 0.4) {
-            // 僅在與玩家當前落腳水平相同 (y - 1) 的位置鋪設單層水平橋面，絕不向上墊高或向下無限堆高塔
+        if (isDeepAbyss && targetAtSameOrHigherLevel && horizontalDist > 0.8) {
+            // 僅在橫跨真正的深淵峽谷時鋪設單層水平橋面
             val bridgeBlock = pLoc.world.getBlockAt(frontLoc.blockX, pLoc.blockY - 1, frontLoc.blockZ)
             if (bridgeBlock.type.isAir || bridgeBlock.isLiquid) {
                 val placed = placeScaffoldBlock(fakePlayer, bridgeBlock)
