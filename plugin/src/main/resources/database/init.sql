@@ -15,19 +15,20 @@ CREATE TABLE IF NOT EXISTS ref_fakeplayer_owner (
 );
 
 CREATE TABLE IF NOT EXISTS player_flatten_selection (
-  player_uuid     TEXT NOT NULL PRIMARY KEY,
-  pos1_world      TEXT,
-  pos1_x          INTEGER,
-  pos1_y          INTEGER,
-  pos1_z          INTEGER,
-  pos2_world      TEXT,
-  pos2_x          INTEGER,
-  pos2_y          INTEGER,
-  pos2_z          INTEGER,
-  chest_blocks    TEXT,
-  preserve_ores   INTEGER NOT NULL DEFAULT 0,
-  pickup_items    INTEGER NOT NULL DEFAULT 1,
-  auto_deposit    INTEGER NOT NULL DEFAULT 1
+  player_uuid      TEXT NOT NULL PRIMARY KEY,
+  pos1_world       TEXT,
+  pos1_x           INTEGER,
+  pos1_y           INTEGER,
+  pos1_z           INTEGER,
+  pos2_world       TEXT,
+  pos2_x           INTEGER,
+  pos2_y           INTEGER,
+  pos2_z           INTEGER,
+  chest_blocks     TEXT,
+  selected_workers TEXT,
+  preserve_ores    INTEGER NOT NULL DEFAULT 0,
+  pickup_items     INTEGER NOT NULL DEFAULT 1,
+  auto_deposit     INTEGER NOT NULL DEFAULT 1
 );
 
 CREATE TABLE IF NOT EXISTS fakeplayer_flatten_task (

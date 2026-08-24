@@ -18,6 +18,15 @@ class FlattenRepository {
 
     private val gson = Gson()
     private val blockLocListType = object : TypeToken<List<BlockLocDTO>>() {}.type
+    private val stringListType = object : TypeToken<List<String>>() {}.type
+
+    init {
+        runCatching {
+            open().use { conn ->
+                conn.createQuery("ALTER TABLE player_flatten_selection ADD COLUMN selected_workers TEXT").executeUpdate()
+            }
+        }
+    }
 
     private fun open(): Connection = plugin.sql2o.open()
 
@@ -58,6 +67,15 @@ class FlattenRepository {
                 }
             }
 
+            val workersJson = row.getString("selected_workers")
+            val selectedWorkers = mutableSetOf<UUID>()
+            if (!workersJson.isNullOrBlank()) {
+                val workerUuids = runCatching { gson.fromJson<List<String>>(workersJson, stringListType) }.getOrNull() ?: emptyList()
+                for (uStr in workerUuids) {
+                    runCatching { UUID.fromString(uStr) }.getOrNull()?.let { selectedWorkers.add(it) }
+                }
+            }
+
             val preserveOres = (row.getInteger("preserve_ores") ?: 0) == 1
             val pickupItems = (row.getInteger("pickup_items") ?: 1) == 1
             val autoDeposit = (row.getInteger("auto_deposit") ?: 1) == 1
@@ -67,6 +85,7 @@ class FlattenRepository {
                 pos2 = pos2,
                 outputChests = outputChests,
                 toolChests = toolChests,
+                selectedWorkers = selectedWorkers,
                 preserveOres = preserveOres,
                 pickupItems = pickupItems,
                 autoDeposit = autoDeposit
@@ -79,15 +98,15 @@ class FlattenRepository {
             INSERT INTO player_flatten_selection (
                 player_uuid, pos1_world, pos1_x, pos1_y, pos1_z,
                 pos2_world, pos2_x, pos2_y, pos2_z,
-                chest_blocks, preserve_ores, pickup_items, auto_deposit
+                chest_blocks, selected_workers, preserve_ores, pickup_items, auto_deposit
             ) VALUES (
                 :playerUuid, :pos1World, :pos1X, :pos1Y, :pos1Z,
                 :pos2World, :pos2X, :pos2Y, :pos2Z,
-                :chestBlocks, :preserveOres, :pickupItems, :autoDeposit
+                :chestBlocks, :selectedWorkers, :preserveOres, :pickupItems, :autoDeposit
             ) ON CONFLICT(player_uuid) DO UPDATE SET
                 pos1_world = excluded.pos1_world, pos1_x = excluded.pos1_x, pos1_y = excluded.pos1_y, pos1_z = excluded.pos1_z,
                 pos2_world = excluded.pos2_world, pos2_x = excluded.pos2_x, pos2_y = excluded.pos2_y, pos2_z = excluded.pos2_z,
-                chest_blocks = excluded.chest_blocks,
+                chest_blocks = excluded.chest_blocks, selected_workers = excluded.selected_workers,
                 preserve_ores = excluded.preserve_ores, pickup_items = excluded.pickup_items, auto_deposit = excluded.auto_deposit
         """.trimIndent()
 
@@ -97,6 +116,7 @@ class FlattenRepository {
         selection.outputChests.forEach { chestDtos.add(BlockLocDTO(it.world.name, it.x, it.y, it.z, "OUTPUT")) }
         selection.toolChests.forEach { chestDtos.add(BlockLocDTO(it.world.name, it.x, it.y, it.z, "TOOL")) }
         val chestJson = gson.toJson(chestDtos)
+        val workersJson = gson.toJson(selection.selectedWorkers.map { it.toString() })
 
         open().use { conn ->
             conn.createQuery(sql)
@@ -110,6 +130,7 @@ class FlattenRepository {
                 .addParameter("pos2Y", p2?.y)
                 .addParameter("pos2Z", p2?.z)
                 .addParameter("chestBlocks", chestJson)
+                .addParameter("selectedWorkers", workersJson)
                 .addParameter("preserveOres", if (selection.preserveOres) 1 else 0)
                 .addParameter("pickupItems", if (selection.pickupItems) 1 else 0)
                 .addParameter("autoDeposit", if (selection.autoDeposit) 1 else 0)

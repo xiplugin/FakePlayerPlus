@@ -31,6 +31,7 @@ data class FlattenSelection(
     var pos2: Block? = null,
     val outputChests: MutableList<Block> = mutableListOf(),
     val toolChests: MutableList<Block> = mutableListOf(),
+    val selectedWorkers: MutableSet<UUID> = mutableSetOf(),
     var preserveOres: Boolean = false,
     var pickupItems: Boolean = true,
     var autoDeposit: Boolean = true
