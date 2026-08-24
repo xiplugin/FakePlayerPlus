@@ -157,6 +157,13 @@ object FakePlayerDialog {
             val bodyMsg = tl("fakeplayer.gui.flatten.status.running", percent, cleared, total, targetName)
 
             actionButtons.add(ActionButton.create(
+                tl("fakeplayer.gui.flatten.btn.refresh"), null, 100,
+                DialogAction.customClick({ _, _ ->
+                    viewer.showDialog(FakePlayerDialog.flattenDialog(viewer, fakePlayer))
+                }, ACTION_OPTIONS)
+            ))
+
+            actionButtons.add(ActionButton.create(
                 tl("fakeplayer.gui.action.stop"), null, 100,
                 DialogAction.customClick({ _, _ ->
                     fakePlayer.actions.stop(ActionType.FLATTEN.track)
@@ -169,7 +176,7 @@ object FakePlayerDialog {
                     .canCloseWithEscape(true)
                     .body(listOf(DialogBody.plainMessage(bodyMsg)))
                     .build())
-                .type(DialogType.multiAction(actionButtons).columns(1).exitAction(CANCEL_BTN).build())
+                .type(DialogType.multiAction(actionButtons).columns(2).exitAction(CANCEL_BTN).build())
             }
         }
 
@@ -252,7 +259,7 @@ object FakePlayerDialog {
                 .body(listOf(DialogBody.plainMessage(bodyMsg)))
                 .inputs(inputs)
                 .build())
-            .type(DialogType.multiAction(actionButtons).columns(1).exitAction(CANCEL_BTN).build())
+            .type(DialogType.multiAction(actionButtons).columns(2).exitAction(CANCEL_BTN).build())
         }
     }
 
