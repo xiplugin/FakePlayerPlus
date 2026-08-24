@@ -241,6 +241,7 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
 
         if (chestList.isEmpty()) return true
 
+        val returnLoc = player.location.clone()
         var depositedAny = false
 
         for (loc in chestList) {
@@ -261,18 +262,13 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
             }
 
             val chestCenter = chestBlock.location.clone().add(0.5, 0.5, 0.5)
-            val dist = player.location.distance(chestCenter)
+            val standLoc = findStandLocation(player, chestBlock)
 
-            if (dist > 3.5) {
-                val standLoc = findStandLocation(player, chestBlock)
-                val canWalk = walkTowards(fakePlayer, standLoc)
-                if (!canWalk || dist > 6.0 || player.location.distance(chestCenter) > 4.2) {
-                    player.teleport(standLoc)
-                }
-                if (player.location.distance(chestCenter) > 4.2) {
-                    return false
-                }
-            }
+            // 一律直接瞬間傳送到箱子旁
+            player.teleport(standLoc)
+            val zeroVec = Vector(0.0, 0.0, 0.0)
+            fakePlayer.nms.setDeltaMovement(zeroVec)
+            player.velocity = zeroVec
 
             // 朝向箱子並揮手打開存放
             val eyeLoc = player.eyeLocation
@@ -334,6 +330,12 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
             }
         }
 
+        // 存放完畢後，直接瞬間傳送回原開挖點
+        player.teleport(returnLoc)
+        val zeroVec = Vector(0.0, 0.0, 0.0)
+        fakePlayer.nms.setDeltaMovement(zeroVec)
+        player.velocity = zeroVec
+
         return true
     }
 
@@ -353,6 +355,8 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
 
         if (chestList.isEmpty()) return false
 
+        val returnLoc = player.location.clone()
+
         for (loc in chestList) {
             val world = loc.world ?: action.world ?: player.world
             val chestBlock = world.getBlockAt(loc)
@@ -367,15 +371,13 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
             }
 
             val chestCenter = chestBlock.location.clone().add(0.5, 0.5, 0.5)
-            val dist = player.location.distance(chestCenter)
+            val standLoc = findStandLocation(player, chestBlock)
 
-            if (dist > 3.5) {
-                val standLoc = findStandLocation(player, chestBlock)
-                val canWalk = walkTowards(fakePlayer, standLoc)
-                if (!canWalk || dist > 6.0 || player.location.distance(chestCenter) > 4.2) {
-                    player.teleport(standLoc)
-                }
-            }
+            // 一律直接瞬間傳送到箱子旁
+            player.teleport(standLoc)
+            val zeroVec = Vector(0.0, 0.0, 0.0)
+            fakePlayer.nms.setDeltaMovement(zeroVec)
+            player.velocity = zeroVec
 
             // 朝向箱子並揮手打開
             val eyeLoc = player.eyeLocation
@@ -393,9 +395,19 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
                 fakePlayer.owners.forEach {
                     it.sendMessage(tlp("fakeplayer.flatten.chest.restocked", fakePlayer.name))
                 }
+                // 補給完成後，直接瞬間傳送回原開挖點
+                player.teleport(returnLoc)
+                fakePlayer.nms.setDeltaMovement(zeroVec)
+                player.velocity = zeroVec
                 return true
             }
         }
+
+        // 遍歷所有箱子後傳送回原開挖點
+        player.teleport(returnLoc)
+        val zeroVec = Vector(0.0, 0.0, 0.0)
+        fakePlayer.nms.setDeltaMovement(zeroVec)
+        player.velocity = zeroVec
         return false
     }
 
