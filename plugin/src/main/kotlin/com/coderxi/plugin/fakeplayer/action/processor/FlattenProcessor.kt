@@ -68,13 +68,11 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
             }
         }
 
-        // 尋找或驗證目標方塊（實體方塊或需填埋的液體方塊）
-        val fillSlot = findFillBlockSlot(player)
-        val canFillLiquid = fillSlot != null
+        // 尋找或驗證目標方塊（實體可挖掘方塊）
         var target = action.target
-        val isTargetValid = target != null && target.world == world && (isMinedBlock(target) || (canFillLiquid && isLiquidBlock(target)))
+        val isTargetValid = target != null && target.world == world && isMinedBlock(target) && (!action.preserveOres || !isOreBlock(target))
         if (!isTargetValid) {
-            target = findNextBlock(world, action, player.location, canFillLiquid, fakePlayer.uuid)
+            target = findNextBlock(world, action, player.location, fakePlayer.uuid)
             if (target == null) {
                 // 選區內方塊已全數清空，最後自動存放一次
                 if (action.autoDeposit && hasChests) {
@@ -94,12 +92,10 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
             action.lastTargetName = target.type.name
             action.progress = 0f
             com.coderxi.plugin.fakeplayer.component.FlattenTargetRegistry.reserve(world, target.x, target.y, target.z, fakePlayer.uuid)
-            if (isMinedBlock(target)) {
-                if (hasChests && !com.coderxi.plugin.fakeplayer.utils.ToolHelper.hasToolForBlock(player, target)) {
-                    restockToolsFromBoundChests(fakePlayer, action, com.coderxi.plugin.fakeplayer.utils.ToolHelper.getNeededToolSuffix(target))
-                }
-                com.coderxi.plugin.fakeplayer.utils.ToolHelper.equipBestTool(player, target)
+            if (hasChests && !com.coderxi.plugin.fakeplayer.utils.ToolHelper.hasToolForBlock(player, target)) {
+                restockToolsFromBoundChests(fakePlayer, action, com.coderxi.plugin.fakeplayer.utils.ToolHelper.getNeededToolSuffix(target))
             }
+            com.coderxi.plugin.fakeplayer.utils.ToolHelper.equipBestTool(player, target)
         }
 
         val targetCenter = target.location.add(0.5, 0.5, 0.5)
@@ -149,28 +145,6 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
             val yaw = Math.toDegrees(atan2(-dir.x, dir.z)).toFloat()
             val pitch = Math.toDegrees(atan2(-dir.y, sqrt(dir.x * dir.x + dir.z * dir.z))).toFloat()
             player.setRotation(yaw, pitch)
-        }
-
-        // 若目標為液體方塊，執行填埋覆蓋
-        if (isLiquidBlock(target)) {
-            val currentFillSlot = findFillBlockSlot(player)
-            if (currentFillSlot != null) {
-                val fillItem = player.inventory.getItem(currentFillSlot)
-                if (fillItem != null && fillItem.type.isBlock && fillItem.type.isSolid) {
-                    val blockType = fillItem.type
-                    if (fillItem.amount > 1) {
-                        fillItem.amount--
-                    } else {
-                        player.inventory.setItem(currentFillSlot, null)
-                    }
-                    player.swingMainHand()
-                    target.type = blockType
-                    world.playSound(target.location, org.bukkit.Sound.BLOCK_STONE_PLACE, 0.8f, 1.0f)
-                    action.target = null
-                    action.freezeTick = 3
-                    return
-                }
-            }
         }
 
         player.swingMainHand()
@@ -610,10 +584,13 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
         return true
     }
 
-    private fun findNextBlock(world: org.bukkit.World, action: FlattenAction, currentLoc: Location, canFillLiquid: Boolean = false, fakePlayerUuid: java.util.UUID? = null): Block? {
+    private fun findNextBlock(world: org.bukkit.World, action: FlattenAction, currentLoc: Location, fakePlayerUuid: java.util.UUID? = null): Block? {
         val playerBlockX = currentLoc.blockX
         val playerBlockZ = currentLoc.blockZ
         val playerBlockY = currentLoc.blockY
+
+        val fpm = com.coderxi.plugin.fakeplayer.utils.plugin.fakePlayerManager
+        val onlineWorkers = fpm.fakeplayers().filter { it.player.isOnline }
 
         for (y in action.maxY downTo action.minY) {
             var closestBlock: Block? = null
@@ -625,13 +602,21 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
                     }
                     val block = world.getBlockAt(x, y, z)
                     val isMinable = isMinedBlock(block) && (!action.preserveOres || !isOreBlock(block))
-                    val isLiquid = canFillLiquid && isLiquidBlock(block)
-                    if (isMinable || isLiquid) {
+                    if (isMinable) {
                         var score = block.location.distanceSquared(currentLoc)
                         // 若為玩家正腳下的方塊，給予優先級懲罰，優先挖掘周圍方塊以防止挖坑掉落受困
                         if (x == playerBlockX && z == playerBlockZ && y <= playerBlockY) {
                             score += 100.0
                         }
+                        // 避免挖掘任意在線協同假人正站立的腳下方塊
+                        val isUnderWorker = onlineWorkers.any { w ->
+                            val wLoc = w.player.location
+                            x == wLoc.blockX && z == wLoc.blockZ && y == wLoc.blockY - 1
+                        }
+                        if (isUnderWorker) {
+                            score += 200.0
+                        }
+
                         if (score < minScore) {
                             minScore = score
                             closestBlock = block
