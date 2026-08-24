@@ -135,7 +135,9 @@ class FakePlayerManagerImpl : FakePlayerManager, Listener {
         val ownerUuids = fakePlayer.ownerUuids.toMutableSet()
 
         // 1. 退出舊假人
-        fakePlayer.quit("Renamed to $newName")
+        withContext(fakePlayer.dispatcher) {
+            fakePlayer.quit("Renamed to $newName")
+        }
 
         // 2. 遷移 SQLite 數據與 playerdata
         val newFakePlayer = StandardFakePlayer(newName, newUuid, creatorUuid, ownerUuids, skin, settings)
