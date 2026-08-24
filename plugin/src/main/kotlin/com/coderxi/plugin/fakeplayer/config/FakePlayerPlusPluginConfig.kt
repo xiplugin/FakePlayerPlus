@@ -171,19 +171,26 @@ class FakePlayerPlusPluginConfig : OkaeriConfig() {
         @Comment("Whether to enable auto-fishing")
         var autoFish: Boolean = true
 
+        @Comment("是否开启服务器重启自动加入 (OP专属)")
+        @Comment("Whether to enable auto-rejoin on server restart (OP only)")
+        @CustomKey("auto-rejoin")
+        var autoRejoin: Boolean = false
+
         fun clone() = FakePlayerSettings(
             collidable,
             pickupItems,
             invulnerable,
             autoReplenish,
-            autoFish
+            autoFish,
+            autoRejoin
         )
         fun equals2(that: FakePlayerSettings): Boolean =
             collidable==that.collidable &&
             pickupItems==that.pickupItems &&
             invulnerable==that.invulnerable &&
             autoReplenish==that.autoReplenish &&
-            autoFish==that.autoFish
+            autoFish==that.autoFish &&
+            autoRejoin==that.autoRejoin
     }
 
     @Comment(

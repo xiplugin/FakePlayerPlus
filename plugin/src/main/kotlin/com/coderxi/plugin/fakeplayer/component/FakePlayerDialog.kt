@@ -54,14 +54,20 @@ object FakePlayerDialog {
             boolInput("autoReplenish", tl("fakeplayer.gui.settings.auto-replenish")).initial(settings.autoReplenish).build(),
             boolInput("autoFish", tl("fakeplayer.gui.settings.auto-fish")).initial(settings.autoFish).build(),
         ))
+        val isOpLevel4 = viewer is org.bukkit.command.ConsoleCommandSender || (viewer is org.bukkit.entity.Player && (viewer.isOp || viewer.hasPermission(ADMIN)))
+        if (isOpLevel4) {
+            inputs.add(boolInput("autoRejoin", tl("fakeplayer.gui.settings.auto-rejoin")).initial(settings.autoRejoin).build())
+        }
         val onSubmitClick = DialogAction.customClick(
             { view, _ ->
+                val autoRejoin = if (isOpLevel4) (view.getBoolean("autoRejoin") ?: settings.autoRejoin) else settings.autoRejoin
                 fakePlayer.settings = FakePlayerSettings(
                     view.getBoolean("collidable") ?: settings.collidable,
                     view.getBoolean("pickupItems") ?: settings.pickupItems,
                     view.getBoolean("invulnerable") ?: settings.invulnerable,
                     view.getBoolean("autoReplenish") ?: settings.autoReplenish,
                     view.getBoolean("autoFish") ?: settings.autoFish,
+                    autoRejoin
                 )
                 val newName = if (canRename) view.getText("name")?.trim() else null
                 onSubmit.invoke(newName)

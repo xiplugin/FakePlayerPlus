@@ -37,6 +37,12 @@ class FakePlayerRepository {
         mapToEntity(po, findOwnerUuidsByUuid(conn, po.uuid))
     }
 
+    fun findAutoRejoinFakePlayers(): List<FakePlayer> = open().use { conn ->
+        val pos = conn.createQuery("SELECT id, name, uuid, creator_uuid AS creatorUuid, skin, settings FROM fakeplayer WHERE settings LIKE '%\"autoRejoin\":true%'")
+            .executeAndFetch(FakePlayerPO::class.java)
+        pos.map { po -> mapToEntity(po, findOwnerUuidsByUuid(conn, po.uuid)) }
+    }
+
     private fun findOwnerUuidsByUuid(conn: Connection, fakePlayerUuid: String): MutableSet<UUID> {
         return conn.createQuery("SELECT owner_uuid FROM ref_fakeplayer_owner WHERE fakeplayer_uuid = :fakePlayerUuid")
             .addParameter("fakePlayerUuid", fakePlayerUuid)

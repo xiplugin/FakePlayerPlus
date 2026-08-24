@@ -6,4 +6,5 @@ data class FakePlayerSettings(
     var invulnerable: Boolean,
     var autoReplenish: Boolean,
     var autoFish: Boolean,
+    var autoRejoin: Boolean = false,
 )
