@@ -249,6 +249,7 @@ object FakePlayerDialog {
                 DialogAction.customClick({ _, _ ->
                     stopAutoRefresh(viewer)
                     fakePlayer.actions.stop(ActionType.FLATTEN.track)
+                    com.coderxi.plugin.fakeplayer.repository.FlattenRepository().deleteTask(fakePlayer.uuid)
                     runOnPlayerThread(viewer) {
                         viewer.showDialog(FakePlayerDialog.flattenDialog(viewer, fakePlayer))
                     }
@@ -284,6 +285,7 @@ object FakePlayerDialog {
                 view.getBoolean("preserveOres")?.let { selection.preserveOres = it }
                 view.getBoolean("pickupItems")?.let { selection.pickupItems = it }
                 view.getBoolean("autoDeposit")?.let { selection.autoDeposit = it }
+                FlattenSelectionManager.saveSelection(viewer)
                 FlattenSelectionManager.startSelection(viewer)
                 viewer.sendMessage(com.coderxi.plugin.fakeplayer.utils.tlp("fakeplayer.flatten.select.mode"))
             }, ACTION_OPTIONS)
@@ -301,6 +303,7 @@ object FakePlayerDialog {
                 view.getBoolean("preserveOres")?.let { selection.preserveOres = it }
                 view.getBoolean("pickupItems")?.let { selection.pickupItems = it }
                 view.getBoolean("autoDeposit")?.let { selection.autoDeposit = it }
+                FlattenSelectionManager.saveSelection(viewer)
                 runOnPlayerThread(viewer) {
                     viewer.showDialog(FakePlayerDialog.chestListDialog(viewer, fakePlayer))
                 }
@@ -327,6 +330,7 @@ object FakePlayerDialog {
                     view.getBoolean("preserveOres")?.let { selection.preserveOres = it }
                     view.getBoolean("pickupItems")?.let { selection.pickupItems = it }
                     view.getBoolean("autoDeposit")?.let { selection.autoDeposit = it }
+                    FlattenSelectionManager.saveSelection(viewer)
                     val p1 = selection.pos1!!
 
                     val action = com.coderxi.plugin.fakeplayer.api.action.FlattenAction(ActionMode.Continuous).apply {
@@ -352,6 +356,7 @@ object FakePlayerDialog {
                         }
                     }
                     fakePlayer.actions.dispatch(action)
+                    com.coderxi.plugin.fakeplayer.repository.FlattenRepository().saveTask(fakePlayer.uuid, action)
                     FlattenSelectionManager.stopSelectingMode(viewer)
                     viewer.sendMessage(com.coderxi.plugin.fakeplayer.utils.tlp("fakeplayer.flatten.start", fakePlayer.name, selection.blockCount))
                 }, ACTION_OPTIONS)

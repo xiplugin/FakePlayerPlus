@@ -113,6 +113,8 @@ object FlattenSelectionManager : Listener {
     private val chestHighlightPlayers = ConcurrentHashMap.newKeySet<UUID>()
     private var isParticleTaskStarted = false
 
+    private val repository = com.coderxi.plugin.fakeplayer.repository.FlattenRepository()
+
     fun isSelecting(player: Player): Boolean = selectingPlayers.contains(player.uniqueId)
     fun isSelectingChest(player: Player): Boolean = selectingChestPlayers.contains(player.uniqueId)
     fun isHighlightingChests(player: Player): Boolean = chestHighlightPlayers.contains(player.uniqueId)
@@ -138,7 +140,7 @@ object FlattenSelectionManager : Listener {
 
         val renderParticlesForPlayer = { player: Player ->
             if (player.isOnline && isHighlightingChests(player)) {
-                val selection = selections[player.uniqueId]
+                val selection = getSelection(player)
                 if (selection != null && selection.chestBlocks.isNotEmpty()) {
                     for (cb in selection.chestBlocks) {
                         if (cb.world != player.world) continue
@@ -191,24 +193,21 @@ object FlattenSelectionManager : Listener {
     fun startSelection(player: Player) {
         selectingPlayers.add(player.uniqueId)
         selectingChestPlayers.remove(player.uniqueId)
-        if (!selections.containsKey(player.uniqueId)) {
-            selections[player.uniqueId] = FlattenSelection()
-        }
+        getOrCreateSelection(player)
     }
 
     fun startChestSelection(player: Player) {
         selectingChestPlayers.add(player.uniqueId)
         selectingPlayers.remove(player.uniqueId)
         setHighlightingChests(player, true) // 進入綁定模式時預設開啟粒子特效，方便玩家查看
-        if (!selections.containsKey(player.uniqueId)) {
-            selections[player.uniqueId] = FlattenSelection()
-        }
+        getOrCreateSelection(player)
     }
 
     fun cancelSelection(player: Player) {
         selectingPlayers.remove(player.uniqueId)
         selectingChestPlayers.remove(player.uniqueId)
         selections.remove(player.uniqueId)
+        repository.deleteSelection(player.uniqueId)
     }
 
     fun clearSelection(player: Player) {
@@ -216,17 +215,23 @@ object FlattenSelectionManager : Listener {
         if (sel != null) {
             sel.pos1 = null
             sel.pos2 = null
+            repository.saveSelection(player.uniqueId, sel)
         }
     }
 
     fun clearChestBlocks(player: Player) {
-        selections[player.uniqueId]?.clearChestBlocks()
+        val sel = selections[player.uniqueId]
+        if (sel != null) {
+            sel.clearChestBlocks()
+            repository.saveSelection(player.uniqueId, sel)
+        }
     }
 
     fun removeChestBlock(player: Player, index: Int): Boolean {
         val selection = selections[player.uniqueId] ?: return false
         if (index in selection.chestBlocks.indices) {
             selection.chestBlocks.removeAt(index)
+            repository.saveSelection(player.uniqueId, selection)
             return true
         }
         return false
@@ -241,10 +246,26 @@ object FlattenSelectionManager : Listener {
         selectingChestPlayers.remove(player.uniqueId)
     }
 
-    fun getSelection(player: Player): FlattenSelection? = selections[player.uniqueId]
+    fun getSelection(player: Player): FlattenSelection? {
+        var sel = selections[player.uniqueId]
+        if (sel == null) {
+            sel = repository.loadSelection(player.uniqueId)
+            if (sel != null) {
+                selections[player.uniqueId] = sel
+            }
+        }
+        return sel
+    }
 
     fun getOrCreateSelection(player: Player): FlattenSelection =
-        selections.computeIfAbsent(player.uniqueId) { FlattenSelection() }
+        selections.computeIfAbsent(player.uniqueId) {
+            repository.loadSelection(player.uniqueId) ?: FlattenSelection()
+        }
+
+    fun saveSelection(player: Player) {
+        val sel = selections[player.uniqueId] ?: return
+        repository.saveSelection(player.uniqueId, sel)
+    }
 
     @EventHandler(priority = EventPriority.LOW)
     fun onPlayerInteract(event: PlayerInteractEvent) {
@@ -264,9 +285,10 @@ object FlattenSelectionManager : Listener {
             if (event.action == Action.RIGHT_CLICK_BLOCK || event.action == Action.LEFT_CLICK_BLOCK) {
                 event.isCancelled = true
                 if (clicked.state is Container) {
-                    val selection = selections.getOrPut(player.uniqueId) { FlattenSelection() }
+                    val selection = getOrCreateSelection(player)
                     val added = selection.addChestBlock(clicked)
                     if (added) {
+                        repository.saveSelection(player.uniqueId, selection)
                         player.sendMessage(tlp("fakeplayer.flatten.chest.added", clicked.x, clicked.y, clicked.z, selection.chestBlocks.size))
                     } else {
                         player.sendMessage(tlp("fakeplayer.flatten.chest.already-bound", selection.chestBlocks.size))
@@ -288,10 +310,11 @@ object FlattenSelectionManager : Listener {
             }
 
             val clicked = event.clickedBlock ?: return
-            val selection = selections.getOrPut(player.uniqueId) { FlattenSelection() }
+            val selection = getOrCreateSelection(player)
             when (event.action) {
                 Action.LEFT_CLICK_BLOCK -> {
                     selection.pos1 = clicked
+                    repository.saveSelection(player.uniqueId, selection)
                     event.isCancelled = true
                     player.sendMessage(tlp("fakeplayer.flatten.pos1.set", clicked.x, clicked.y, clicked.z))
                     if (selection.isComplete) {
@@ -300,6 +323,7 @@ object FlattenSelectionManager : Listener {
                 }
                 Action.RIGHT_CLICK_BLOCK -> {
                     selection.pos2 = clicked
+                    repository.saveSelection(player.uniqueId, selection)
                     event.isCancelled = true
                     player.sendMessage(tlp("fakeplayer.flatten.pos2.set", clicked.x, clicked.y, clicked.z))
                     if (selection.isComplete) {

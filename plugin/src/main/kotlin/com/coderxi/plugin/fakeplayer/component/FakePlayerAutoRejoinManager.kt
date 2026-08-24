@@ -42,6 +42,38 @@ class FakePlayerAutoRejoinManager(
                     }
                 }
             }
+
+            delay(1000L)
+            val flattenRepo = com.coderxi.plugin.fakeplayer.repository.FlattenRepository()
+            val activeTasks = flattenRepo.findAllActiveTasks()
+            for ((fakeUuid, task) in activeTasks) {
+                val fakePlayer = fpm.get(fakeUuid) ?: continue
+                if (fakePlayer.player.isOnline) {
+                    val current = fakePlayer.actions.getActiveActions()[com.coderxi.plugin.fakeplayer.api.action.ActionType.FLATTEN.track]
+                    if (current == null) {
+                        fakePlayer.actions.dispatch(task)
+                        fakePlayer.owners.forEach { owner ->
+                            owner.sendMessage(com.coderxi.plugin.fakeplayer.utils.tlp("fakeplayer.flatten.resume", fakePlayer.name))
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @EventHandler
+    fun onFakePlayerSpawned(event: com.coderxi.plugin.fakeplayer.api.event.FakePlayerSpawnedEvent) {
+        val fakePlayer = event.fakePlayer
+        val flattenRepo = com.coderxi.plugin.fakeplayer.repository.FlattenRepository()
+        val task = flattenRepo.loadTask(fakePlayer.uuid) ?: return
+        if (fakePlayer.player.isOnline) {
+            val current = fakePlayer.actions.getActiveActions()[com.coderxi.plugin.fakeplayer.api.action.ActionType.FLATTEN.track]
+            if (current == null) {
+                fakePlayer.actions.dispatch(task)
+                fakePlayer.owners.forEach { owner ->
+                    owner.sendMessage(com.coderxi.plugin.fakeplayer.utils.tlp("fakeplayer.flatten.resume", fakePlayer.name))
+                }
+            }
         }
     }
 

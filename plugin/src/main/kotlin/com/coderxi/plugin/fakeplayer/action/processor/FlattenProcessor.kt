@@ -81,6 +81,7 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
                     depositItemsToChest(fakePlayer, action)
                 }
                 action.clearedBlocks = action.totalBlocks
+                com.coderxi.plugin.fakeplayer.repository.FlattenRepository().deleteTask(fakePlayer.uuid)
                 resetMining(fakePlayer, action)
                 fakePlayer.owners.forEach {
                     it.sendMessage(tlp("fakeplayer.flatten.complete", fakePlayer.name))
@@ -193,6 +194,9 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
 
         if (action.progress >= 1.0f) {
             action.clearedBlocks++
+            if (action.clearedBlocks % 20 == 0) {
+                com.coderxi.plugin.fakeplayer.repository.FlattenRepository().updateTaskProgress(fakePlayer.uuid, action.totalBlocks, action.clearedBlocks)
+            }
             fakePlayer.nms.doBlockBreakAction(target, STOP)
             if (isMinedBlock(target)) {
                 player.breakBlock(target)
