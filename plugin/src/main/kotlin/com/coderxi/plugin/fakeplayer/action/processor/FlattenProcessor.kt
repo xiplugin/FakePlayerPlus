@@ -114,11 +114,22 @@ object FlattenProcessor : ActionProcessor<FlattenAction> {
         // 若超出觸及距離，向目標方塊周圍的地面站立點行走靠近
         if (distToTarget > 3.8) {
             val standLoc = findStandLocation(player, target)
+
+            // 若距離目標過遠 (> 5 格，例如剛啟動任務或位於遠處)，直接瞬間傳送到工作點，絕不在遠處遊蕩跑掉
+            if (distToTarget > 5.0) {
+                player.teleport(standLoc)
+                val zeroVec = Vector(0.0, 0.0, 0.0)
+                fakePlayer.nms.setDeltaMovement(zeroVec)
+                player.velocity = zeroVec
+                action.stuckTick = 0
+                return
+            }
+
             val canWalk = walkTowards(fakePlayer, standLoc)
             action.stuckTick++
 
-            // 當 40 ticks (2 秒) 內無法走近目標時，防護瞬移至有效落腳點
-            if (action.stuckTick >= 40) {
+            // 當 25 ticks (1.2 秒) 內無法走近目標時，防護瞬移至有效落腳點
+            if (action.stuckTick >= 25) {
                 val groundBlock = standLoc.block.getRelative(0, -1, 0)
                 if (standLoc != player.location && (groundBlock.type.isSolid || groundBlock.isLiquid)) {
                     player.teleport(standLoc)
