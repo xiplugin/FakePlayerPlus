@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.0](https://github.com/xiplugin/FakePlayerPlus/compare/v1.9.1...v1.10.0) (2026-08-25)
+
+
+### Features
+
+* add /fp rename command to rename fake players and update language files ([c7c4f8b](https://github.com/xiplugin/FakePlayerPlus/commit/c7c4f8b3859ce47a38e16e6ed1685fac88dec917))
+
 ## [1.9.1](https://github.com/xiplugin/FakePlayerPlus/compare/v1.9.0...v1.9.1) (2026-08-24)
 
 
