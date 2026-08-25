@@ -14,4 +14,6 @@ interface NMSServer {
 
     fun placeNewPlayer(player: Player, address: InetAddress): NMSServerGamePacketListener
 
+    fun migratePlayerData(oldUuid: UUID, newUuid: UUID)
+
 }
