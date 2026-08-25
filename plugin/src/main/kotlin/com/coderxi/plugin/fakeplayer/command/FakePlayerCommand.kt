@@ -10,6 +10,7 @@ import com.coderxi.plugin.fakeplayer.command.annotaion.Select
 import com.coderxi.plugin.fakeplayer.command.annotaion.SuggestCommands
 import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandException.*
 import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandExceptionHandler.CommandContext
+import com.coderxi.plugin.fakeplayer.command.parameter.FakePlayerParameterType.DefaultSuggestions as SuggestOwnedFakePlayers
 import com.coderxi.plugin.fakeplayer.command.permission.Permission.*
 import com.coderxi.plugin.fakeplayer.component.FakePlayerDialog
 import com.coderxi.plugin.fakeplayer.component.FakePlayerLimiter
@@ -106,6 +107,19 @@ class FakePlayerCommand {
                 }
             }
             executeSpawn(name)
+        }
+    }
+
+    @Subcommand("rename")
+    @Permission(SPAWN_WITH_NAME, ADMIN)
+    @HelpLine("fakeplayer.help.cmd.rename")
+    fun CommandSender.rename(@SuggestWith(SuggestOwnedFakePlayers::class) @Named("name") oldName: String, @Named("newName") newName: String, @Switch("force") force: Boolean = false, context: CommandContext) {
+        val operator = this
+        if (!hasPermission(ADMIN) && force) throw NoPermissionException()
+        launch(context) {
+            val renamed = fpm.rename(oldName, newName, operator, force)
+            sendMessage(tlp("fakeplayer.rename.success", oldName, renamed.name))
+            selected = renamed
         }
     }
 
@@ -264,22 +278,11 @@ class FakePlayerCommand {
     @Subcommand("settings")
     @Permission(SETTINGS,BASIC)
     @HelpLine("fakeplayer.help.cmd.settings", playerOnly = true)
-    fun Player.settings(@Select fakePlayer: FakePlayer, context: CommandContext) {
-        val player = this
-        showDialog(FakePlayerDialog.settingsDialog(player, fakePlayer) { newName ->
-            if (newName != null && newName != fakePlayer.name) {
-                launch(context) {
-                    val renamed = fpm.rename(fakePlayer, newName, player)
-                    if (renamed != null) {
-                        player.selected = renamed
-                        sendMessage(tlp("fakeplayer.gui.settings.rename.success", renamed.name))
-                    }
-                }
-            } else {
-                sendMessage(tlp("fakeplayer.gui.settings.submit.success", fakePlayer.name))
-                launch {
-                    fpm.saveSettings(fakePlayer)
-                }
+    fun Player.settings(@Select fakePlayer: FakePlayer) {
+        showDialog(FakePlayerDialog.settingsDialog(fakePlayer) {
+            sendMessage(tlp("fakeplayer.gui.settings.submit.success", fakePlayer.name))
+            launch {
+                fpm.saveSettings(fakePlayer)
             }
         })
     }

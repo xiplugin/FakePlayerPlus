@@ -22,6 +22,9 @@ abstract class FakePlayerCommandException : CommandErrorException() {
     class SpawnDisallowedException(val causeMessage: Component) : FakePlayerCommandException()
     class SpawnDuplicateSpawningException(val name: String) : FakePlayerCommandException()
 
+    class RenameNameInvalidException(val name: String) : FakePlayerCommandException()
+    class RenameAlreadyExistsException(val name: String, val hintForce: Boolean = false) : FakePlayerCommandException()
+
     class UnsupportedActionModeException(val name: String) : FakePlayerCommandException()
 
     class HasNoMoreExperience(val name: String) : FakePlayerCommandException()

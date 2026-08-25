@@ -8,6 +8,7 @@ import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandExceptio
 import com.coderxi.plugin.fakeplayer.command.permission.Permission.ADMIN
 import com.coderxi.plugin.fakeplayer.component.FakePlayerSelector.selected
 import com.coderxi.plugin.fakeplayer.utils.hasPermission
+import com.coderxi.plugin.fakeplayer.utils.plugin
 import org.bukkit.command.ConsoleCommandSender
 import org.bukkit.entity.Player
 import revxrsal.commands.autocomplete.SuggestionProvider
@@ -39,16 +40,25 @@ class FakePlayerParameterType(private val fpm : FakePlayerManager) : ParameterTy
         return null
     }
 
-    private val emptySuggestions = listOf<String>()
 
-    override fun defaultSuggestions(): SuggestionProvider<BukkitCommandActor> = SuggestionProvider { context ->
-        val sender = context.actor().sender()
-        if (sender.hasPermission(ADMIN)) {
-            return@SuggestionProvider fpm.fakeplayers().map { it.name }
-        } else if (sender is Player) {
-            return@SuggestionProvider fpm.fakeplayersByOwnerUuid(sender.uniqueId).map { it.name }
+    val defaultSuggestions = DefaultSuggestions()
+
+    override fun defaultSuggestions() = defaultSuggestions
+
+    class DefaultSuggestions : SuggestionProvider<BukkitCommandActor> {
+
+        val fpm get() = plugin.fakePlayerManager
+        private val emptySuggestions = listOf<String>()
+
+        override fun getSuggestions(context: ExecutionContext<BukkitCommandActor?>): Collection<String?> {
+            val sender = context.actor().sender()
+            if (sender.hasPermission(ADMIN)) {
+                return fpm.fakeplayers().map { it.name }
+            } else if (sender is Player) {
+                return fpm.fakeplayersByOwnerUuid(sender.uniqueId).map { it.name }
+            }
+            return emptySuggestions
         }
-        return@SuggestionProvider emptySuggestions
     }
 
 }

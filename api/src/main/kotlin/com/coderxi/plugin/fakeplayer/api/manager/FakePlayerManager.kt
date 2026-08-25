@@ -41,7 +41,7 @@ interface FakePlayerManager {
 
     suspend fun spawn(name: String, spawner: CommandSender, location: Location? = null): FakePlayer?
 
-    suspend fun rename(fakePlayer: FakePlayer, newName: String, operator: CommandSender): FakePlayer?
+    suspend fun rename(oldName: String, newName: String, operator: CommandSender, force: Boolean): FakePlayer
 
     suspend fun sequenceName(spawner: Player, reservedSequenceLength: Int = 1): String
 

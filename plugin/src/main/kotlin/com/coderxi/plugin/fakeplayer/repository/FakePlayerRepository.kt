@@ -12,6 +12,7 @@ import kotlinx.coroutines.withContext
 import org.sql2o.Connection
 import org.sql2o.Sql2o
 import java.io.File
+import java.sql.SQLException
 import java.util.UUID
 
 class FakePlayerRepository {
@@ -188,5 +189,21 @@ class FakePlayerRepository {
         }
     }
 
+    fun delete(uuid: UUID) {
+        plugin.sql2o.beginTransaction().use { conn ->
+            try {
+                conn.createQuery("DELETE FROM fakeplayer WHERE uuid = :uuid")
+                    .addParameter("uuid", uuid.toString())
+                    .executeUpdate()
 
+                conn.createQuery("DELETE FROM ref_fakeplayer_owner WHERE fakeplayer_uuid = :uuid")
+                    .addParameter("uuid", uuid.toString())
+                    .executeUpdate()
+                conn.commit()
+            }
+            catch (ex: SQLException) {
+                conn.rollback()
+            }
+        }
+    }
 }
