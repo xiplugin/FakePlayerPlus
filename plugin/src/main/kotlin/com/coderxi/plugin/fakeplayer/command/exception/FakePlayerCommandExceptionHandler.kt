@@ -39,11 +39,7 @@ class FakePlayerCommandExceptionHandler : BukkitExceptionHandler() {
         actor.sender().sendMessage(tlp("fakeplayer.help.error.page-invalid", e.page(), e.numberOfPages()))
     }
 
-    override fun onMissingArgument(
-        e: MissingArgumentException,
-        actor: BukkitCommandActor,
-        parameter: ParameterNode<BukkitCommandActor, *>
-    ) {
+    override fun onMissingArgument(e: MissingArgumentException, actor: BukkitCommandActor, parameter: ParameterNode<BukkitCommandActor, *>) {
         actor.sender().sendMessage(tlp("fakeplayer.command.missing-argument", parameter.name()))
     }
 
