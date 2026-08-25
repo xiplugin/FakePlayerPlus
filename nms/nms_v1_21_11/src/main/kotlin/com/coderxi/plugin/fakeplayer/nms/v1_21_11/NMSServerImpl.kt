@@ -17,8 +17,14 @@ import org.bukkit.craftbukkit.CraftServer
 import org.bukkit.craftbukkit.CraftWorld
 import org.bukkit.craftbukkit.entity.CraftPlayer
 import org.bukkit.entity.Player
+import java.io.IOException
 import java.net.InetAddress
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.StandardCopyOption
 import java.util.UUID
+import kotlin.io.path.notExists
+import com.coderxi.plugin.fakeplayer.api.FakePlayerPlusPluginApi.Companion.javaPlugin as plugin
 
 open class NMSServerImpl(override val server: Server) : NMSServer {
 
@@ -55,6 +61,25 @@ open class NMSServerImpl(override val server: Server) : NMSServer {
         cookie: CommonListenerCookie
     ): T where T : ServerGamePacketListenerImpl, T : NMSServerGamePacketListener {
         return NMSServerGamePacketListenerImpl(server, connection, handle, cookie) as T
+    }
+
+    override fun migratePlayerData(oldUuid: UUID, newUuid: UUID) {
+        val worldPath = server.worldContainer.toPath().resolve("world")
+        migratePlayerDataFile(worldPath.resolve("advancements"), oldUuid, newUuid, ".json")
+        migratePlayerDataFile(worldPath.resolve("playerdata"), oldUuid, newUuid, ".dat")
+        migratePlayerDataFile(worldPath.resolve("playerdata"), oldUuid, newUuid, ".dat_old")
+        migratePlayerDataFile(worldPath.resolve("stats"), oldUuid, newUuid, ".json")
+    }
+
+    fun migratePlayerDataFile(folder: Path, oldUuid: UUID, newUuid: UUID, suffix: String) {
+        val oldPath = folder.resolve("$oldUuid$suffix")
+        if (oldPath.notExists()) return
+        val newPath = folder.resolve("$newUuid$suffix")
+        try {
+            Files.move(oldPath, newPath, StandardCopyOption.REPLACE_EXISTING)
+        } catch (_: IOException) {
+            plugin.logger.warning { "Failed to migrate player data file $oldUuid to $newUuid" }
+        }
     }
 
 }

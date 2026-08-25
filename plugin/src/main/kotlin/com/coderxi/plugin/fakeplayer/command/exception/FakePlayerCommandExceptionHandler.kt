@@ -12,6 +12,9 @@ import revxrsal.commands.exception.UnknownCommandException
 import revxrsal.commands.node.ExecutionContext
 import java.util.concurrent.TimeUnit
 
+import revxrsal.commands.exception.MissingArgumentException
+import revxrsal.commands.node.ParameterNode
+
 class FakePlayerCommandExceptionHandler : BukkitExceptionHandler() {
 
     typealias CommandContext = ExecutionContext<BukkitCommandActor>
@@ -36,6 +39,10 @@ class FakePlayerCommandExceptionHandler : BukkitExceptionHandler() {
         actor.sender().sendMessage(tlp("fakeplayer.help.error.page-invalid", e.page(), e.numberOfPages()))
     }
 
+    override fun onMissingArgument(e: MissingArgumentException, actor: BukkitCommandActor, parameter: ParameterNode<BukkitCommandActor, *>) {
+        actor.sender().sendMessage(tlp("fakeplayer.command.missing-argument", parameter.name()))
+    }
+
     @HandleException
     fun handleCommandException(e: FakePlayerCommandException, actor: BukkitCommandActor) {
         val message = when (e) {
@@ -54,6 +61,8 @@ class FakePlayerCommandExceptionHandler : BukkitExceptionHandler() {
             is SpawnTpsAdaptiveLimitedException -> tlp("fakeplayer.spawn.failed.tps-adaptive-limited")
             is SpawnDisallowedException -> tlp("fakeplayer.spawn.failed.disallowed").append(e.causeMessage)
             is SpawnDuplicateSpawningException -> tlp("fakeplayer.spawn.failed.duplicate-spawning", e.name)
+            is RenameNameInvalidException -> tlp("fakeplayer.rename.failed.name-invalid", e.name)
+            is RenameAlreadyExistsException -> if (!e.hintForce) tlp("fakeplayer.rename.failed.already-exists", e.name) else tlp("fakeplayer.rename.failed.already-exists-hint-force", e.name)
             is UnsupportedActionModeException -> tlp("fakeplayer.command.unsupported-action-mode", e.name)
             is HasNoMoreExperience -> tlp("fakeplayer.expme.failed.has-no-experience",e.name)
             is OwnerMustBeHumanException -> tlp("fakeplayer.owner.add.failed.must-be-human", e.ownerName, e.fakePlayerName)

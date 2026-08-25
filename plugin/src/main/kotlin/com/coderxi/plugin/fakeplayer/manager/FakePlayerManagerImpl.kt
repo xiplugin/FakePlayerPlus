@@ -7,10 +7,8 @@ import com.coderxi.plugin.fakeplayer.api.event.FakePlayerQuitedEvent
 import com.coderxi.plugin.fakeplayer.api.event.FakePlayerSpawnedEvent
 import com.coderxi.plugin.fakeplayer.api.manager.FakePlayerManager
 import com.coderxi.plugin.fakeplayer.api.nms.NMSServerPlayer
-import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandException.SpawnDuplicateSpawningException
-import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandException.SpawnDisallowedException
-import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandException.SpawnNoAvailableSequenceNameException
-import com.coderxi.plugin.fakeplayer.command.permission.Permission
+import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandException.*
+import com.coderxi.plugin.fakeplayer.command.permission.Permission.ADMIN
 import com.coderxi.plugin.fakeplayer.config.PreventKickingType
 import com.coderxi.plugin.fakeplayer.entity.StandardFakePlayer
 import com.coderxi.plugin.fakeplayer.repository.FakePlayerRepository
@@ -117,6 +115,54 @@ class FakePlayerManagerImpl : FakePlayerManager, Listener {
         return fakePlayer
     }
 
+    override suspend fun rename(oldName: String, newName: String, operator: CommandSender, force: Boolean): FakePlayer {
+        val isAdmin = operator.hasPermission(ADMIN)
+        val fakePlayer = get(oldName) ?: throw NotExitsException(oldName)
+        if (fakePlayer.ownerUuids.isNotEmpty() && !fakePlayer.ownerUuids.contains(operator.uniqueId()) && !isAdmin) {
+            throw NotOwnerException(oldName)
+        }
+        if (oldName.equals(newName, ignoreCase = true)) return fakePlayer
+        if (!plugin.config.name.pattern.matches(newName)) throw SpawnNameInvalidException(newName)
+        //存在目标name的在线假人时
+        if (get(newName) != null) {
+            if (!isAdmin) throw RenameAlreadyExistsException(newName)
+            else if (!force) throw RenameAlreadyExistsException(newName, true)
+        }
+        //存在目标name的离线玩家时
+        if (isNameUsed(newName)) {
+            val fakePlayerInRepo = getFromRepository(newName) ?: throw SpawnNameAlreadyUsedException(newName)
+            if (fakePlayerInRepo.ownerUuids.isNotEmpty() && !fakePlayerInRepo.ownerUuids.contains(operator.uniqueId())) {
+                if (!isAdmin) throw RenameAlreadyExistsException(newName)
+                else if (!force) throw RenameAlreadyExistsException(newName, true)
+            }
+        }
+
+        val oldUuid = fakePlayer.uuid
+        val newUuid = uuid(newName)
+        val location = fakePlayer.player.location.clone()
+        val skin = fakePlayer.skin
+        val settings = fakePlayer.settings.copy()
+        val creatorUuid = fakePlayer.creatorUuid
+        val ownerUuids = fakePlayer.ownerUuids.toMutableSet()
+
+        withContext(fakePlayer.dispatcher) {
+            fakePlayer.player.saveData()
+            fakePlayer.quit("Renamed to $newName")
+        }
+        val newFakePlayer = StandardFakePlayer(newName, newUuid, creatorUuid, ownerUuids, skin, settings)
+        withContext(Dispatchers.IO) {
+            if (force) {
+                Bukkit.getPlayer(newUuid)?.kick()
+                repository.delete(newUuid)
+            }
+            repository.rename(oldUuid, newFakePlayer)
+            plugin.nmsServer.migratePlayerData(oldUuid,newUuid)
+        }
+
+        delay(200)
+        return spawn(newName, operator, location)
+    }
+
     private suspend fun NMSServerPlayer.setupDefaultSkin(spawner: CommandSender) {
         val defaultSkin = plugin.config.skin.default
         if (defaultSkin.isBlank() || defaultSkin == "NONE") {
@@ -141,7 +187,7 @@ class FakePlayerManagerImpl : FakePlayerManager, Listener {
             .mapNotNull { regex.matchEntire(it)?.groupValues?.get(1)?.toIntOrNull() }
             .toSet()
         var number = 1
-        val maxNumber = if (!spawner.hasPermission(Permission.ADMIN.value)) 10.0.pow(reservedSequenceLength.toDouble()).toInt() - 1 else plugin.config.limit.serverSpawn
+        val maxNumber = if (!spawner.hasPermission(ADMIN)) 10.0.pow(reservedSequenceLength.toDouble()).toInt() - 1 else plugin.config.limit.serverSpawn
         while (number < maxNumber) {
             if (number in existingSequences) {
                 number++
