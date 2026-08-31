@@ -37,6 +37,9 @@ open class NMSServerImpl(override val server: Server) : NMSServer {
             ClientInformation.createDefault()
         )
         playerHandle.bukkitEntity.loadData()
+        playerHandle.deathTime = 0
+        playerHandle.hurtTime = 0
+        playerHandle.hurtDuration = 0
         playerHandle.absSnapTo(location.x,location.y,location.z,location.yaw,location.pitch)
         return api.nms.fromPlayer(playerHandle.bukkitEntity)
     }
