@@ -112,6 +112,10 @@ open class NMSServerPlayerImpl(override val player: Player) : NMSServerPlayer {
 
     override fun resetLastActionTime() = handle.resetLastActionTime()
 
+    override fun resendPossiblyDesyncedEntityData(targets: Collection<Player>) {
+        targets.forEach { handle.resendPossiblyDesyncedEntityData((it as CraftPlayer).handle) }
+    }
+
     private val playerTeam by lazy { PlayerTeam(dummyScoreboard, "${plugin.name}_${player.uniqueId}").apply { players.add(player.name) } }
     private var playerTeamPacket: Packet<*>? = null
 
