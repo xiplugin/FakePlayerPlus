@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.10.1](https://github.com/xiplugin/FakePlayerPlus/compare/v1.10.0...v1.10.1) (2026-09-02)
+
+
+### Bug Fixes
+
+* add ground check before jumping in JumpProcessor ([4bab090](https://github.com/xiplugin/FakePlayerPlus/commit/4bab0902f700ae074bae53f22dbd06b5df3a6309)), closes [#47](https://github.com/xiplugin/FakePlayerPlus/issues/47)
+* prevent fake player model from twitching after respawn ([ffbf9f8](https://github.com/xiplugin/FakePlayerPlus/commit/ffbf9f8d843803c49953c8b63232ff2254462c7d)), closes [#46](https://github.com/xiplugin/FakePlayerPlus/issues/46)
+* prevent race condition causing already retired error ([7a988fe](https://github.com/xiplugin/FakePlayerPlus/commit/7a988fe8368f58b58d735166927acde3b4a3f7df)), closes [#49](https://github.com/xiplugin/FakePlayerPlus/issues/49)
+* resolve fakeplayer logic bugs and thread safety issues ([94e480e](https://github.com/xiplugin/FakePlayerPlus/commit/94e480e1758ec8428b919f7afa990dffe509e2a1))
+
 ## [1.10.0](https://github.com/xiplugin/FakePlayerPlus/compare/v1.9.1...v1.10.0) (2026-08-25)
 
 
