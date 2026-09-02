@@ -13,7 +13,9 @@ object JumpProcessor : ActionProcessor<JumpAction> {
         if (action.mode is Continuous) {
             fakePlayer.player.isJumping = true
         } else {
-            fakePlayer.nms.jumpFromGround()
+            if (fakePlayer.nms.onGround) {
+                fakePlayer.nms.jumpFromGround()
+            }
         }
     }
 
