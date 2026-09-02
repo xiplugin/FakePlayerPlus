@@ -46,6 +46,6 @@ interface FakePlayer {
     fun setPing(value: Int, flush: Boolean)
 
     // 快捷调用
-    fun quit(cause: String = "") = player.kick(Component.text(cause))
+    fun quit(cause: String = "")
 
 }

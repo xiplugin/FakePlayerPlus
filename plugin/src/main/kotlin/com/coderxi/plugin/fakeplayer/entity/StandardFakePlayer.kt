@@ -6,8 +6,10 @@ import com.coderxi.plugin.fakeplayer.api.config.FakePlayerSettings
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer.SkinInfo
 import com.coderxi.plugin.fakeplayer.api.nms.*
+import net.kyori.adventure.text.Component
 import org.bukkit.Bukkit
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicBoolean
 
 class StandardFakePlayer(
     override val name: String,
@@ -70,4 +72,12 @@ class StandardFakePlayer(
         set(value) {nmsConnection.latency(value)}
 
     override fun setPing(value: Int, flush: Boolean) = nmsConnection.latency(value, flush)
+
+    private val quitting = AtomicBoolean(false)
+    override fun quit(cause: String) {
+        if (!quitting.compareAndSet(false, true)) {
+            return
+        }
+        player.kick(Component.text(cause))
+    }
 }
