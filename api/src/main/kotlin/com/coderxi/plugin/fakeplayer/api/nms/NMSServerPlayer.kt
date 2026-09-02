@@ -1,6 +1,5 @@
 package com.coderxi.plugin.fakeplayer.api.nms
 
-import net.kyori.adventure.text.Component
 import org.bukkit.block.Block
 import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
@@ -79,6 +78,9 @@ interface NMSServerPlayer {
     fun copyTextures(target: Player)
     /** 重设最后活跃时间 */
     fun resetLastActionTime()
+
+    // 数据包相关操作
+    fun resendPossiblyDesyncedEntityData(targets: Collection<Player>)
 
     // 基于数据包的属性, 若修改基于数据包的属性,必须调用dummyNotify方法手动通知
     var dummyNametagVisibility : Boolean

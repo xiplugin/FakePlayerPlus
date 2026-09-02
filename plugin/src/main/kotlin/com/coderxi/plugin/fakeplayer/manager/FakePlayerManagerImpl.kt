@@ -103,6 +103,7 @@ class FakePlayerManagerImpl : FakePlayerManager, Listener {
         withContext(fakePlayer.dispatcher) {
             if (spawned) {
                 fakePlayer.ticking = true
+                fakePlayer.nms.resendPossiblyDesyncedEntityData(plugin.server.onlinePlayers)
                 FakePlayerSpawnedEvent(fakePlayer).callEvent()
                 delay(1000)
                 pendingSpawn.invalidate(fakePlayer.uuid)
