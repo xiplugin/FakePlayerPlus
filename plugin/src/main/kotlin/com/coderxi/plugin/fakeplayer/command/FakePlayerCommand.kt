@@ -279,12 +279,31 @@ class FakePlayerCommand {
     @Permission(SETTINGS,BASIC)
     @HelpLine("fakeplayer.help.cmd.settings", playerOnly = true)
     fun Player.settings(@Select fakePlayer: FakePlayer) {
-        showDialog(FakePlayerDialog.settingsDialog(fakePlayer) {
-            sendMessage(tlp("fakeplayer.gui.settings.submit.success", fakePlayer.name))
-            launch {
-                fpm.saveSettings(fakePlayer)
+        FormDialog(tl("fakeplayer.gui.settings.title",fakePlayer.name))
+            .boolSingleOption(fakePlayer.settings::collidable, tl("fakeplayer.gui.settings.collidable")) {
+                fakePlayer.player.isCollidable = it
+                fakePlayer.nms.dummyCollidable = it
+                fakePlayer.nms.dummyNotify(plugin.server.onlinePlayers)
             }
-        })
+            .boolSingleOption(fakePlayer.settings::pickupItems, tl("fakeplayer.gui.settings.pickup-items")) {
+                fakePlayer.player.canPickupItems = it
+            }
+            .boolSingleOption(fakePlayer.settings::invulnerable, tl("fakeplayer.gui.settings.invulnerable")) {
+                fakePlayer.player.isInvulnerable = it
+            }
+            .boolSingleOption(fakePlayer.settings::autoReplenish, tl("fakeplayer.gui.settings.auto-replenish"))
+            .boolSingleOption(fakePlayer.settings::autoFish, tl("fakeplayer.gui.settings.auto-fish"))
+            .numberRange(fakePlayer.settings::simulationDistance, tl("fakeplayer.gui.settings.simulation-distance"), "%s: %s"+tls("fakeplayer.gui.unit.chunk") ,
+                start = 1,
+                end = if (hasPermission(ADMIN)) 32 else server.simulationDistance
+            ) {
+                fakePlayer.player.simulationDistance = it
+            }
+            .submitButton {
+                sendMessage(tlp("fakeplayer.gui.settings.submit.success", fakePlayer.name))
+                launch { fpm.saveSettings(fakePlayer) }
+            }
+            .show(this)
     }
 
     @Subcommand("owner", "owner list")

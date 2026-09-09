@@ -34,40 +34,6 @@ object FakePlayerDialog {
     private val ACTION_OPTIONS by lazy { ClickCallback.Options.builder().uses(1).lifetime(Duration.ofMinutes(5)).build() }
     private val EMPTY_TEXT by lazy { DialogBody.plainMessage(Component.text(" ")) }
 
-    fun settingsDialog(fakePlayer: FakePlayer, onSubmit: () -> Unit = {}): DialogLike {
-        val settings = fakePlayer.settings
-        val inputs = listOf(
-            boolInput("collidable", tl("fakeplayer.gui.settings.collidable")).initial(settings.collidable).build(),
-            boolInput("pickupItems", tl("fakeplayer.gui.settings.pickup-items")).initial(settings.pickupItems).build(),
-            boolInput("invulnerable", tl("fakeplayer.gui.settings.invulnerable")).initial(settings.invulnerable).build(),
-            boolInput("autoReplenish", tl("fakeplayer.gui.settings.auto-replenish")).initial(settings.autoReplenish).build(),
-            boolInput("autoFish", tl("fakeplayer.gui.settings.auto-fish")).initial(settings.autoFish).build(),
-        )
-        val onSubmitClick = DialogAction.customClick(
-            { view, _ ->
-                fakePlayer.settings = FakePlayerSettings(
-                    view.getBoolean("collidable") ?: settings.collidable,
-                    view.getBoolean("pickupItems") ?: settings.pickupItems,
-                    view.getBoolean("invulnerable") ?: settings.invulnerable,
-                    view.getBoolean("autoReplenish") ?: settings.autoReplenish,
-                    view.getBoolean("autoFish") ?: settings.autoFish,
-                )
-                onSubmit.invoke()
-            },
-            ACTION_OPTIONS
-        )
-        return Dialog.create { builder -> builder.empty()
-            .base(DialogBase.builder(tl("fakeplayer.gui.settings.title",fakePlayer.name))
-                .canCloseWithEscape(true)
-                .inputs(inputs)
-                .build())
-            .type(DialogType.confirmation(
-                ActionButton.create(tl("fakeplayer.gui.submit"),null, 100, onSubmitClick),
-                CANCEL_BTN
-            ))
-        }
-    }
-
     fun actionExecuteDialog(fakePlayer: FakePlayer, actionType: ActionType): DialogLike {
         val actionButtons = mutableListOf<ActionButton>()
         var columns = 0

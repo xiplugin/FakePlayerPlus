@@ -17,7 +17,7 @@ class StandardFakePlayer(
     override var creatorUuid: UUID? = null,
     override var ownerUuids: MutableSet<UUID> = mutableSetOf(),
     private var _skin: SkinInfo? = null,
-    private var _settings: FakePlayerSettings
+    override var settings: FakePlayerSettings
 ) : FakePlayer {
 
     override var spawnTime: Long = -1
@@ -28,17 +28,6 @@ class StandardFakePlayer(
             if (skin == null || skin.textures == null || skin.signature == null) nmsPlayer.setTextures(null, null)
             else nmsPlayer.setTextures(skin.textures!!, skin.signature!!)
             _skin = skin
-        }
-
-    override var settings: FakePlayerSettings
-        get() = _settings
-        set(settings) {
-            player.isCollidable = settings.collidable
-            nmsPlayer.dummyCollidable = settings.collidable
-            nmsPlayer.dummyNotify(Bukkit.getOnlinePlayers())
-            player.canPickupItems = settings.pickupItems
-            player.isInvulnerable = settings.invulnerable
-            _settings = settings
         }
 
     override lateinit var spawnerName: String
@@ -60,6 +49,7 @@ class StandardFakePlayer(
             nmsPlayer.dummyNotify(Bukkit.getOnlinePlayers())
             canPickupItems = settings.pickupItems
             isInvulnerable = settings.invulnerable
+            simulationDistance = settings.simulationDistance
             health = 20.0
             foodLevel = 20
         }

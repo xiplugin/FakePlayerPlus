@@ -171,19 +171,25 @@ class FakePlayerPlusPluginConfig : OkaeriConfig() {
         @Comment("Whether to enable auto-fishing")
         var autoFish: Boolean = true
 
+        @Comment("假人渲染距离")
+        @Comment("Simulation Distance")
+        var simulationDistance: Int = 10
+
         fun clone() = FakePlayerSettings(
             collidable,
             pickupItems,
             invulnerable,
             autoReplenish,
-            autoFish
+            autoFish,
+            simulationDistance
         )
         fun equals2(that: FakePlayerSettings): Boolean =
             collidable==that.collidable &&
             pickupItems==that.pickupItems &&
             invulnerable==that.invulnerable &&
             autoReplenish==that.autoReplenish &&
-            autoFish==that.autoFish
+            autoFish==that.autoFish &&
+            simulationDistance==that.simulationDistance
     }
 
     @Comment(
