@@ -169,7 +169,7 @@ open class NMSServerPlayerImpl(override val player: Player) : NMSServerPlayer {
     }
 
     open fun slot2hand(type: EquipmentSlot) = when (type) {
-        EquipmentSlot.HAND -> InteractionHand.MAIN_HAND;
+        EquipmentSlot.HAND -> InteractionHand.MAIN_HAND
         EquipmentSlot.OFF_HAND -> InteractionHand.OFF_HAND
         else -> throw Exception("Invalid equipment slot (Only HAND/OFF_HAND).")
     }

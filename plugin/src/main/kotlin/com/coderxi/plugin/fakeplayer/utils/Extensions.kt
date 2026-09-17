@@ -35,8 +35,6 @@ val isFolia by lazy { runCatching { Class.forName("io.papermc.paper.threadedregi
 val ZERO_UUID = UUID(0L, 0L)
 fun CommandSender.uniqueId(): UUID =
     (this as? Player)?.uniqueId ?: ZERO_UUID
-fun CommandSender.hostAddress(): String =
-    (this as? Player)?.address?.address?.hostAddress ?: "127.0.0.1"
 fun CommandSender.hasPermission(permission: Permission, or: Permission = Permission.ADMIN) =
     hasPermission(permission.value) || hasPermission(or.value)
 fun Player.teleportAsync(location: Location, sound: Sound): CompletableFuture<Boolean> =

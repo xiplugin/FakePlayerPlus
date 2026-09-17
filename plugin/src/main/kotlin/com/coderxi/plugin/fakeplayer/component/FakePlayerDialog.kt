@@ -85,7 +85,7 @@ object FakePlayerDialog {
         val textAndAction = actionTypes
             .associateTo((mutableMapOf())) { type ->
                 tl("fakeplayer.action.${type.name.lowercase().replace("_","-")}") to
-                        { viewer.showDialog(FakePlayerDialog.actionExecuteDialog(fakePlayer, type)) }
+                        { viewer.showDialog(actionExecuteDialog(fakePlayer, type)) }
             }
         if (textAndAction.isNotEmpty()) textAndAction[tl("fakeplayer.gui.action.stop-all")] = {fakePlayer.actions.stopAll()}
         val actionButtons = textAndAction.map { (text, action) ->

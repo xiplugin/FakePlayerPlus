@@ -14,7 +14,6 @@ import com.coderxi.plugin.fakeplayer.utils.hasPermission
 import com.coderxi.plugin.fakeplayer.utils.launch
 import com.coderxi.plugin.fakeplayer.utils.plugin
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
 import org.bukkit.Bukkit
 import org.bukkit.Sound
 import org.bukkit.event.EventHandler

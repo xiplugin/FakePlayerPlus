@@ -5,8 +5,6 @@ import com.coderxi.plugin.fakeplayer.nms.v1_21_11.network.FakeConnection
 import net.minecraft.network.protocol.Packet
 import net.minecraft.network.protocol.common.ClientboundKeepAlivePacket
 import net.minecraft.network.protocol.common.ServerboundKeepAlivePacket
-import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket
-import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LATENCY
 import net.minecraft.network.protocol.game.ClientboundRespawnPacket
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket
 import net.minecraft.server.dedicated.DedicatedServer
@@ -14,7 +12,6 @@ import net.minecraft.server.level.ServerPlayer
 import net.minecraft.server.network.CommonListenerCookie
 import net.minecraft.server.network.ServerGamePacketListenerImpl
 import com.coderxi.plugin.fakeplayer.api.FakePlayerPlusPluginApi.Companion.javaPlugin as plugin
-import java.util.EnumSet
 
 open class NMSServerGamePacketListenerImpl(
     server: DedicatedServer,
@@ -22,8 +19,6 @@ open class NMSServerGamePacketListenerImpl(
     open val handle: ServerPlayer,
     cookie: CommonListenerCookie
 ) : ServerGamePacketListenerImpl(server, connection, handle, cookie), NMSServerGamePacketListener {
-
-    private val serverHandle get() = server.server.handle
 
     @Volatile private var latency = 0
     override fun latency() = latency
