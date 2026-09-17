@@ -1,5 +1,6 @@
 package com.coderxi.plugin.fakeplayer.api.nms
 
+import org.bukkit.Bukkit
 import org.bukkit.block.Block
 import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
@@ -85,7 +86,8 @@ interface NMSServerPlayer {
     // 基于数据包的属性, 若修改基于数据包的属性,必须调用dummyNotify方法手动通知
     var dummyNametagVisibility : Boolean
     var dummyCollidable : Boolean
-    fun dummyNotify(targets: Collection<Player>)
+    fun dummyNotify(targets: Collection<Player> = Bukkit.getOnlinePlayers())
+    fun updateLatency()
 
     // 协助完成动作的方法
     fun getDestroyProgress(target: Block): Float
@@ -94,4 +96,6 @@ interface NMSServerPlayer {
     fun useItem(type: EquipmentSlot): Boolean
     fun releaseUsingItem()
 
+    // 其他
+    fun saveData() { player.saveData() }
 }

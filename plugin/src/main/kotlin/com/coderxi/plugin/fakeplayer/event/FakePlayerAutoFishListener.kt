@@ -16,7 +16,7 @@ class FakePlayerAutoFishListener(private val fpm: FakePlayerManager) : Listener 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     fun onPlayerFish(event: PlayerFishEvent) {
         if (event.state != PlayerFishEvent.State.BITE) return
-        val fakePlayer = fpm.get(event.player.uniqueId)?.takeIf { it.settings.autoFish } ?: return
+        val fakePlayer = fpm.get(event.player.uniqueId)?.takeIf { it.autoFish } ?: return
         fakePlayer.dispatcher.launch {
             delay(50)
             fakePlayer.actions.dispatch(UseItemAction(Once))

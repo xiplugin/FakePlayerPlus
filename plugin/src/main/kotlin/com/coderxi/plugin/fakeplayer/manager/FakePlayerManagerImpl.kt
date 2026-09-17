@@ -6,7 +6,8 @@ import com.coderxi.plugin.fakeplayer.api.event.FakePlayerPreparingEvent
 import com.coderxi.plugin.fakeplayer.api.event.FakePlayerQuitedEvent
 import com.coderxi.plugin.fakeplayer.api.event.FakePlayerSpawnedEvent
 import com.coderxi.plugin.fakeplayer.api.manager.FakePlayerManager
-import com.coderxi.plugin.fakeplayer.api.nms.NMSServerPlayer
+import com.coderxi.plugin.fakeplayer.api.model.FakePlayerSettings
+import com.coderxi.plugin.fakeplayer.api.model.PlayerDetail
 import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandException.*
 import com.coderxi.plugin.fakeplayer.command.permission.Permission.ADMIN
 import com.coderxi.plugin.fakeplayer.config.PreventKickingType
@@ -57,14 +58,11 @@ class FakePlayerManagerImpl : FakePlayerManager, Listener {
     private val pendingSpawn = CacheBuilder.newBuilder().expireAfterWrite(15, TimeUnit.SECONDS).build<UUID, Boolean>()
 
     override suspend fun spawn(name: String, spawner: CommandSender, location: Location?) : FakePlayer {
-        val spawnerAsPlayer = spawner as? Player
-        val spawnerName = spawner.name
         val spawnerUuid = spawner.uniqueId()
-        val spawnerIp = spawnerAsPlayer?.address?.address?.hostAddress ?: "127.0.0.1"
-        val spawnLocation = location ?: spawnerAsPlayer?.location ?: plugin.server.worlds.first().spawnLocation
+        val spawnLocation = location ?: if (spawner is Player) spawner.location else plugin.server.worlds.first().spawnLocation
         val fakePlayer = withContext(Dispatchers.IO) {
             repository.findByName(name)
-        } ?: StandardFakePlayer(name, uuid(name),spawnerUuid, mutableSetOf(spawnerUuid),null, plugin.config.defaultSettings.clone()).also {
+        } ?: StandardFakePlayer(name, uuid(name), spawnerUuid, mutableSetOf(spawnerUuid),null, plugin.config.defaultSettings.copy()).also {
             withContext(Dispatchers.IO) { repository.save(it, true) }
         }
         if (pendingSpawn.getIfPresent(fakePlayer.uuid) == true) {
@@ -80,29 +78,29 @@ class FakePlayerManagerImpl : FakePlayerManager, Listener {
             }
         }
         withContext(spawnLocation.dispatcher) {
-            fakePlayer.spawnerName = spawnerName
-            fakePlayer.spawnerUuid = spawnerUuid
-            fakePlayer.spawnerIp = spawnerIp
+            fakePlayer.spawner = PlayerDetail.of(spawnerUuid)
             fakePlayer.spawnTime = System.currentTimeMillis()
             FakePlayerPreparingEvent(fakePlayer).callEvent()
-            val nmsPlayer = plugin.nmsServer.newPlayer(fakePlayer.uuid, fakePlayer.name, spawnLocation).apply {
+            fakePlayer.nms = plugin.nmsServer.newPlayer(fakePlayer.uuid, fakePlayer.name, spawnLocation).apply {
                 disableAdvancements()
                 setupClientOptions()
-                fakePlayer.skin?.let {
-                    setTextures(it.textures, it.signature)
-                } ?: run {
-                    setupDefaultSkin(spawner)
-                }
             }
-            val nmsConnection = plugin.nmsServer.placeNewPlayer(nmsPlayer.player, address)
+            fakePlayer.loadTextures()
+            fakePlayer.nmsConnection = plugin.nmsServer.placeNewPlayer(fakePlayer.player, address)
+            fakePlayer.player.apply {
+                isPersistent = true
+                isSleepingIgnored = true
+                health = 20.0
+                foodLevel = 20
+            }
             registry.register(fakePlayer)
-            fakePlayer.onConnected(nmsPlayer, nmsConnection)
             FakePlayerConnectedEvent(fakePlayer).callEvent()
         }
         val spawned = fakePlayer.player.teleportAsync(spawnLocation).await()
         withContext(fakePlayer.dispatcher) {
             if (spawned) {
                 fakePlayer.ticking = true
+                fakePlayer.applySettings(fakePlayer.settings)
                 fakePlayer.nms.resendPossiblyDesyncedEntityData(plugin.server.onlinePlayers)
                 FakePlayerSpawnedEvent(fakePlayer).callEvent()
                 delay(1000)
@@ -118,8 +116,9 @@ class FakePlayerManagerImpl : FakePlayerManager, Listener {
 
     override suspend fun rename(oldName: String, newName: String, operator: CommandSender, force: Boolean): FakePlayer {
         val isAdmin = operator.hasPermission(ADMIN)
+        val operatorUuid = operator.uniqueId()
         val fakePlayer = get(oldName) ?: throw NotExitsException(oldName)
-        if (fakePlayer.ownerUuids.isNotEmpty() && !fakePlayer.ownerUuids.contains(operator.uniqueId()) && !isAdmin) {
+        if (fakePlayer.hasOwner && !fakePlayer.isOwnedBy(operatorUuid) && !isAdmin) {
             throw NotOwnerException(oldName)
         }
         if (oldName.equals(newName, ignoreCase = true)) return fakePlayer
@@ -132,7 +131,7 @@ class FakePlayerManagerImpl : FakePlayerManager, Listener {
         //存在目标name的离线玩家时
         if (isNameUsed(newName)) {
             val fakePlayerInRepo = getFromRepository(newName) ?: throw SpawnNameAlreadyUsedException(newName)
-            if (fakePlayerInRepo.ownerUuids.isNotEmpty() && !fakePlayerInRepo.ownerUuids.contains(operator.uniqueId())) {
+            if (fakePlayerInRepo.hasOwner && !fakePlayerInRepo.isOwnedBy(operatorUuid)) {
                 if (!isAdmin) throw RenameAlreadyExistsException(newName)
                 else if (!force) throw RenameAlreadyExistsException(newName, true)
             }
@@ -140,17 +139,17 @@ class FakePlayerManagerImpl : FakePlayerManager, Listener {
 
         val oldUuid = fakePlayer.uuid
         val newUuid = uuid(newName)
+        val creatorUuid = fakePlayer.creator?.uuid
+        val ownerUuids = fakePlayer.owners.map { it.uuid }.toMutableSet()
+        val textures = fakePlayer.textures
+        val settings = FakePlayerSettings.from(fakePlayer)
         val location = fakePlayer.player.location.clone()
-        val skin = fakePlayer.skin
-        val settings = fakePlayer.settings.copy()
-        val creatorUuid = fakePlayer.creatorUuid
-        val ownerUuids = fakePlayer.ownerUuids.toMutableSet()
 
         withContext(fakePlayer.dispatcher) {
-            fakePlayer.player.saveData()
+            fakePlayer.nms.saveData()
             fakePlayer.quit("Renamed to $newName")
         }
-        val newFakePlayer = StandardFakePlayer(newName, newUuid, creatorUuid, ownerUuids, skin, settings)
+        val newFakePlayer = StandardFakePlayer(newName, newUuid, creatorUuid, ownerUuids, textures, settings)
         withContext(Dispatchers.IO) {
             if (force) {
                 Bukkit.getPlayer(newUuid)?.kick()
@@ -162,19 +161,6 @@ class FakePlayerManagerImpl : FakePlayerManager, Listener {
 
         delay(200)
         return spawn(newName, operator, location)
-    }
-
-    private suspend fun NMSServerPlayer.setupDefaultSkin(spawner: CommandSender) {
-        val defaultSkin = plugin.config.skin.default
-        if (defaultSkin.isBlank() || defaultSkin == "NONE") {
-            return
-        } else if (defaultSkin == "SPAWNER") {
-            if (spawner is Player) copyTextures(spawner)
-        } else {
-            SkinFetcher.getPlayerSkinInfoByName(defaultSkin.split(',').random(), true)?.let { randomSkin ->
-                setTextures(randomSkin.textures, randomSkin.signature)
-            }
-        }
     }
 
     override suspend fun sequenceName(spawner: Player, reservedSequenceLength: Int): String {
@@ -198,12 +184,12 @@ class FakePlayerManagerImpl : FakePlayerManager, Listener {
             val fakePlayer = withContext(Dispatchers.IO) {
                 repository.findByName(checkName)
             }
-            if (fakePlayer == null || fakePlayer.ownerUuids.contains(spawner.uniqueId)) {
+            if (fakePlayer == null || fakePlayer.isOwnedBy(spawner.uniqueId)) {
                 return checkName
-            } else if (fakePlayer.creatorUuid == null || fakePlayer.ownerUuids.isEmpty()) {
+            } else if (fakePlayer.creator == null || !fakePlayer.hasOwner) {
                 //方便老数据迁移,如果通过序号召唤出来的假人有数据但无所有者,将第一个召唤者变为所有者
-                fakePlayer.creatorUuid = spawner.uniqueId
-                fakePlayer.ownerUuids.add(spawner.uniqueId)
+                fakePlayer.creator = PlayerDetail.of(spawner)
+                fakePlayer.addOwner(spawner.uniqueId)
                 withContext(Dispatchers.IO) {
                     repository.save(fakePlayer, true)
                 }
@@ -253,13 +239,13 @@ class FakePlayerManagerImpl : FakePlayerManager, Listener {
     }
 
     override suspend fun addOwner(fakePlayer: FakePlayer, ownerUuid: UUID) {
-        fakePlayer.ownerUuids.add(ownerUuid)
+        fakePlayer.addOwner(ownerUuid)
         registry.register(fakePlayer)
         withContext(Dispatchers.IO) {repository.save(fakePlayer, true)}
     }
 
     override suspend fun removeOwner(fakePlayer: FakePlayer, ownerUuid: UUID) {
-        fakePlayer.ownerUuids.remove(ownerUuid)
+        fakePlayer.removeOwner(ownerUuid)
         registry.register(fakePlayer)
         withContext(Dispatchers.IO) {repository.save(fakePlayer, true)}
     }

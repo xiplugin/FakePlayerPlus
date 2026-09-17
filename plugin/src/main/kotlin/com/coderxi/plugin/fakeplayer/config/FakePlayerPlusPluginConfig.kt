@@ -1,6 +1,6 @@
 package com.coderxi.plugin.fakeplayer.config
 
-import com.coderxi.plugin.fakeplayer.api.config.FakePlayerSettings
+import com.coderxi.plugin.fakeplayer.api.model.FakePlayerSettings
 import eu.okaeri.configs.OkaeriConfig
 import eu.okaeri.configs.annotation.*
 
@@ -175,7 +175,7 @@ class FakePlayerPlusPluginConfig : OkaeriConfig() {
         @Comment("Simulation Distance")
         var simulationDistance: Int = 10
 
-        fun clone() = FakePlayerSettings(
+        fun copy() = FakePlayerSettings(
             collidable,
             pickupItems,
             invulnerable,
@@ -183,13 +183,6 @@ class FakePlayerPlusPluginConfig : OkaeriConfig() {
             autoFish,
             simulationDistance
         )
-        fun equals2(that: FakePlayerSettings): Boolean =
-            collidable==that.collidable &&
-            pickupItems==that.pickupItems &&
-            invulnerable==that.invulnerable &&
-            autoReplenish==that.autoReplenish &&
-            autoFish==that.autoFish &&
-            simulationDistance==that.simulationDistance
     }
 
     @Comment(

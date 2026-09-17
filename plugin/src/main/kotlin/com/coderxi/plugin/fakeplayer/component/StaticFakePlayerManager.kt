@@ -73,8 +73,8 @@ class StaticFakePlayerManager(private val fpm: FakePlayerManager, private val co
 
     suspend fun setupMeta(fakePlayer: FakePlayer, meta: Meta) = withContext(fakePlayer.dispatcher) {
         fakePlayer.ticking = meta.ticking ?: false
-        if (fakePlayer.skin == null) fakePlayer.skin = SkinFetcher.getPlayerSkinInfoByName(meta.skin, true)
-        fakePlayer.settings = meta.settings?.clone() ?: plugin.config.defaultSettings.clone()
+        if (fakePlayer.textures == null) fakePlayer.textures = SkinFetcher.getPlayerTexturesByName(meta.skin, true)
+        fakePlayer.applySettings(meta.settings?.copy() ?: plugin.config.defaultSettings.copy())
     }
 
 }

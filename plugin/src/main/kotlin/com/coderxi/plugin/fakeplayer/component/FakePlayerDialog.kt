@@ -4,7 +4,6 @@ import com.coderxi.plugin.fakeplayer.api.action.Action
 import com.coderxi.plugin.fakeplayer.api.action.ActionMode
 import com.coderxi.plugin.fakeplayer.api.action.ActionMode.*
 import com.coderxi.plugin.fakeplayer.api.action.ActionType
-import com.coderxi.plugin.fakeplayer.api.config.FakePlayerSettings
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
 import com.coderxi.plugin.fakeplayer.api.utils.ParamName
 import com.coderxi.plugin.fakeplayer.utils.tl
@@ -15,7 +14,6 @@ import io.papermc.paper.registry.data.dialog.action.DialogAction
 import io.papermc.paper.registry.data.dialog.body.DialogBody
 import io.papermc.paper.registry.data.dialog.input.DialogInput
 import io.papermc.paper.registry.data.dialog.input.DialogInput.numberRange
-import io.papermc.paper.registry.data.dialog.input.DialogInput.bool as boolInput
 import io.papermc.paper.registry.data.dialog.type.DialogType
 import net.kyori.adventure.dialog.DialogLike
 import net.kyori.adventure.text.Component

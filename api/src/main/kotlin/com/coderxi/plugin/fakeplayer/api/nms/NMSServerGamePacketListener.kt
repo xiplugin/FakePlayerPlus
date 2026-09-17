@@ -4,6 +4,6 @@ interface NMSServerGamePacketListener {
 
     fun latency(): Int
 
-    fun latency(value: Int, flush: Boolean = false)
+    fun latency(value: Int)
 
 }

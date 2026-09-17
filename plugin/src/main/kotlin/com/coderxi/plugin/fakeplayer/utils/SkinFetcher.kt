@@ -1,6 +1,6 @@
 package com.coderxi.plugin.fakeplayer.utils
 
-import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer.SkinInfo
+import com.coderxi.plugin.fakeplayer.api.model.PlayerTextures
 import com.google.common.cache.Cache
 import com.google.common.cache.CacheBuilder
 import com.google.gson.JsonParser
@@ -28,7 +28,7 @@ object SkinFetcher {
         return uuid.asString
     }
 
-    private fun getOnlinePlayerSkinInfoById(id: String): SkinInfo? {
+    private fun getOnlinePlayerTexturesById(id: String): PlayerTextures? {
         val request = HttpRequest.newBuilder().GET().uri(URI.create("https://sessionserver.mojang.com/session/minecraft/profile/$id?unsigned=false")).build()
         val response = httpClient.send(request, HttpResponse.BodyHandlers.ofString())
         if (response.statusCode() != 200) return null
@@ -38,22 +38,22 @@ object SkinFetcher {
         val textures = (properties.asJsonArray.find{ property -> property.asJsonObject.get("name").asString == "textures" } ?: return null)
         val value = textures.asJsonObject.get("value").asString
         val signature = textures.asJsonObject.get("signature").asString
-        return SkinInfo(value, signature)
+        return PlayerTextures(value, signature)
     }
 
-    private val skinInfoCache: Cache<String, SkinInfo> = CacheBuilder.newBuilder()
+    private val texturesCache: Cache<String, PlayerTextures> = CacheBuilder.newBuilder()
         .maximumSize(1000)
         .expireAfterAccess(1, TimeUnit.HOURS)
         .build()
-    suspend fun getPlayerSkinInfoByName(name: String?, cache: Boolean = false): SkinInfo? {
+    suspend fun getPlayerTexturesByName(name: String?, cache: Boolean = false): PlayerTextures? {
         if (name == null) return null
-        val cachedSkin = skinInfoCache.getIfPresent(name)
+        val cachedSkin = texturesCache.getIfPresent(name)
         if (cachedSkin != null) return cachedSkin
         val skin = withContext(Dispatchers.IO) {
-            getOnlinePlayerIdByName(name)?.let { getOnlinePlayerSkinInfoById(it) }
+            getOnlinePlayerIdByName(name)?.let { getOnlinePlayerTexturesById(it) }
         }
         if (cache && skin != null) {
-            skinInfoCache.put(name, skin)
+            texturesCache.put(name, skin)
         }
         return skin
     }

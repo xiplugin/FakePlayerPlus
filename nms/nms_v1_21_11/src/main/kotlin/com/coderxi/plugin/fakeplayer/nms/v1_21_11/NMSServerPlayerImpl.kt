@@ -40,6 +40,7 @@ import org.bukkit.inventory.ItemStack
 import org.bukkit.util.Vector
 import java.lang.reflect.Field
 import java.nio.file.Paths
+import java.util.EnumSet
 import kotlin.math.ceil
 import com.coderxi.plugin.fakeplayer.api.FakePlayerPlusPluginApi.Companion.javaPlugin as plugin
 
@@ -136,6 +137,13 @@ open class NMSServerPlayerImpl(override val player: Player) : NMSServerPlayer {
 
     override fun dummyNotify(targets: Collection<Player>) {
         if (playerTeamPacket!=null) targets.forEach { target ->  target.sendPacket(playerTeamPacket!!) }
+    }
+
+    override fun updateLatency() {
+        server.server.handle.broadcastAll(ClientboundPlayerInfoUpdatePacket(
+            EnumSet.of(
+            ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LATENCY
+        ),listOf(handle)))
     }
 
     override fun getDestroyProgress(target: Block): Float {

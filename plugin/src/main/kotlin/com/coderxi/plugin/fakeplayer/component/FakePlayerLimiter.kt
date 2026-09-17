@@ -63,12 +63,12 @@ class FakePlayerLimiter(private val fpm: FakePlayerManager) : Listener {
 
     @EventHandler
     private fun ip2CoundIncrement(event: FakePlayerConnectedEvent) {
-        ip2Count.merge(event.fakePlayer.spawnerIp, 1) { old, new -> old + new }
+        ip2Count.merge(event.fakePlayer.spawner.loginIp, 1) { old, new -> old + new }
     }
 
     @EventHandler
     private fun ip2CoundDecrement(event: FakePlayerQuitedEvent) {
-        val ip = event.fakePlayer.spawnerIp
+        val ip = event.fakePlayer.spawner.loginIp
         ip2Count.computeIfPresent(ip) { _, count -> if (count <= 1) null else count - 1}
     }
 

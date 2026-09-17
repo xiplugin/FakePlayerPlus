@@ -32,8 +32,9 @@ val plugin by lazy { JavaPlugin.getPlugin(FakePlayerPlusPlugin::class.java) }
 val isFolia by lazy { runCatching { Class.forName("io.papermc.paper.threadedregions.RegionizedServer") }.isSuccess }
 
 // Bukkit扩展
+val ZERO_UUID = UUID(0L, 0L)
 fun CommandSender.uniqueId(): UUID =
-    (this as? Player)?.uniqueId ?: UUID(0L, 0L)
+    (this as? Player)?.uniqueId ?: ZERO_UUID
 fun CommandSender.hostAddress(): String =
     (this as? Player)?.address?.address?.hostAddress ?: "127.0.0.1"
 fun CommandSender.hasPermission(permission: Permission, or: Permission = Permission.ADMIN) =

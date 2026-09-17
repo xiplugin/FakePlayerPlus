@@ -29,7 +29,7 @@ class FakePlayerBehaviorImplementListener(private val fpm: FakePlayerManager): L
     @EventHandler
     fun implementInteractedInvsee(event: FakePlayerInteractedEvent) {
         if (event.hand != EquipmentSlot.HAND) return
-        if (!event.fakePlayer.ownerUuids.contains(event.player.uniqueId) && !event.player.hasPermission(ADMIN)) return
+        if (!event.fakePlayer.isOwnedBy(event.player.uniqueId) && !event.player.hasPermission(ADMIN)) return
         if (!event.player.isSneaking) {
             if (!event.player.hasPermission(INVSEE,BASIC)) return
             InvseeProvider.current.openInventory(event.player, event.fakePlayer.player)
@@ -67,14 +67,14 @@ class FakePlayerBehaviorImplementListener(private val fpm: FakePlayerManager): L
         if (!config.behavior.followQuiting) return
         val uuid = event.player.uniqueId
         val targets = if (event.player.hasPermission(ADMIN)) {
-            fpm.fakeplayers().filter { it.spawnerUuid == uuid }
+            fpm.fakeplayers().filter { it.spawner.uuid == uuid }
         } else {
             fpm.fakeplayersByOwnerUuid(uuid)
         }
         event.player.location.dispatcher.launch {
             delay(config.behavior.followQuitingDelay*1000L)
             targets.forEach { fakePlayer ->
-                if (fakePlayer.ownerUuids.any { Bukkit.getPlayer(it) != null }) return@forEach
+                if (fakePlayer.owners.any { Bukkit.getPlayer(it.uuid) != null }) return@forEach
                 fakePlayer.quit("Follow Quiting")
             }
         }

@@ -27,10 +27,7 @@ open class NMSServerGamePacketListenerImpl(
 
     @Volatile private var latency = 0
     override fun latency() = latency
-    override fun latency(value: Int, flush: Boolean) {
-        latency = value
-        if (flush) serverHandle.broadcastAll(ClientboundPlayerInfoUpdatePacket(EnumSet.of(UPDATE_LATENCY),listOf(handle)))
-    }
+    override fun latency(value: Int) { latency = value }
 
     override fun send(packet: Packet<*>) = when (packet) {
         is ClientboundSetEntityMotionPacket -> handleClientboundSetEntityMotionPacket(packet)

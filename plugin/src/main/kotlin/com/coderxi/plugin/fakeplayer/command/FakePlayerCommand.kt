@@ -102,7 +102,7 @@ class FakePlayerCommand {
             if (fpm.get(name) != null) throw SpawnAlreadyExistsException(name)
             if (player != null && fpm.isNameUsed(name)) {
                 val fakePlayer = fpm.getFromRepository(name)
-                if (fakePlayer != null && fakePlayer.ownerUuids.isNotEmpty() && !fakePlayer.ownerUuids.contains(player.uniqueId) && !player.hasPermission(ADMIN)) {
+                if (fakePlayer != null && fakePlayer.hasOwner && !fakePlayer.isOwnedBy(player.uniqueId) && !player.hasPermission(ADMIN)) {
                     throw SpawnNameAlreadyUsedException(name)
                 }
             }
@@ -159,7 +159,7 @@ class FakePlayerCommand {
         fpm.get(fakePlayer.name)?.quit("Removed by $name")
         sendMessage(tlp("fakeplayer.remove.success", fakePlayer.name))
         fakePlayer.owners.forEach {
-            if (it.uniqueId!=uniqueId()) it.sendMessage(tlp("fakeplayer.remove.success.with-operator", name, fakePlayer.name))
+            if (it.uuid!=uniqueId()) Bukkit.getPlayer(it.uuid)?.sendMessage(tlp("fakeplayer.remove.success.with-operator", name, fakePlayer.name))
         }
     }
 
@@ -252,9 +252,9 @@ class FakePlayerCommand {
     @HelpLine("fakeplayer.help.cmd.skin")
     fun CommandSender.skin(@Named("name") targetName: String, @Select fakePlayer: FakePlayer) {
         launch {
-            val skin = SkinFetcher.getPlayerSkinInfoByName(targetName)
+            val skin = SkinFetcher.getPlayerTexturesByName(targetName)
             withContext(fakePlayer.dispatcher) {
-                fakePlayer.skin = skin
+                fakePlayer.textures = skin
                 fakePlayer.player.world.playSound(fakePlayer.player.location, Sound.ITEM_ARMOR_EQUIP_GENERIC, 1f, 1f)
             }
             fpm.saveSkin(fakePlayer)
@@ -280,25 +280,15 @@ class FakePlayerCommand {
     @HelpLine("fakeplayer.help.cmd.settings", playerOnly = true)
     fun Player.settings(@Select fakePlayer: FakePlayer) {
         FormDialog(tl("fakeplayer.gui.settings.title",fakePlayer.name))
-            .boolSingleOption(fakePlayer.settings::collidable, tl("fakeplayer.gui.settings.collidable")) {
-                fakePlayer.player.isCollidable = it
-                fakePlayer.nms.dummyCollidable = it
-                fakePlayer.nms.dummyNotify(plugin.server.onlinePlayers)
-            }
-            .boolSingleOption(fakePlayer.settings::pickupItems, tl("fakeplayer.gui.settings.pickup-items")) {
-                fakePlayer.player.canPickupItems = it
-            }
-            .boolSingleOption(fakePlayer.settings::invulnerable, tl("fakeplayer.gui.settings.invulnerable")) {
-                fakePlayer.player.isInvulnerable = it
-            }
-            .boolSingleOption(fakePlayer.settings::autoReplenish, tl("fakeplayer.gui.settings.auto-replenish"))
-            .boolSingleOption(fakePlayer.settings::autoFish, tl("fakeplayer.gui.settings.auto-fish"))
-            .numberRange(fakePlayer.settings::simulationDistance, tl("fakeplayer.gui.settings.simulation-distance"), "%s: %s"+tls("fakeplayer.gui.unit.chunk") ,
+            .boolSingleOption(fakePlayer::collidable, tl("fakeplayer.gui.settings.collidable"))
+            .boolSingleOption(fakePlayer::pickupItems, tl("fakeplayer.gui.settings.pickup-items"))
+            .boolSingleOption(fakePlayer::invulnerable, tl("fakeplayer.gui.settings.invulnerable"))
+            .boolSingleOption(fakePlayer::autoReplenish, tl("fakeplayer.gui.settings.auto-replenish"))
+            .boolSingleOption(fakePlayer::autoFish, tl("fakeplayer.gui.settings.auto-fish"))
+            .numberRange(fakePlayer::simulationDistance, tl("fakeplayer.gui.settings.simulation-distance"), "%s: %s"+tls("fakeplayer.gui.unit.chunk") ,
                 start = 1,
                 end = if (hasPermission(ADMIN)) 32 else server.simulationDistance
-            ) {
-                fakePlayer.player.simulationDistance = it
-            }
+            )
             .submitButton {
                 sendMessage(tlp("fakeplayer.gui.settings.submit.success", fakePlayer.name))
                 launch { fpm.saveSettings(fakePlayer) }
@@ -314,21 +304,19 @@ class FakePlayerCommand {
         HelpLine("fakeplayer.help.cmd.owner-remove", "fp owner remove [name]", playerOnly = true)
     ])
     fun Player.ownerList(@Select fakePlayer: FakePlayer) {
-        if (fakePlayer.ownerUuids.size == 1 && fakePlayer.ownerUuids.contains(uniqueId)) {
+        if (fakePlayer.owners.size == 1 && fakePlayer.isOwnedBy(uniqueId)) {
             sendMessage(tlp("fakeplayer.owner.list",fakePlayer.name,name))
             return
         }
-        launch {
-            val names = withContext(Dispatchers.IO) { fakePlayer.ownerUuids.mapNotNull { Bukkit.getOfflinePlayer(it).name } }
-            sendMessage(tlp("fakeplayer.owner.list",fakePlayer.name,names.joinToString(", ")))
-        }
+        val names = fakePlayer.owners.map { it.name }
+        sendMessage(tlp("fakeplayer.owner.list",fakePlayer.name,names.joinToString(", ")))
     }
 
     @Subcommand("owner add")
     @Permission(OWNER_ADD,BASIC)
     fun Player.addOwner(@Named("player") owner: Player, @Select fakePlayer: FakePlayer) {
         if (fpm.get(owner.uniqueId)!= null) throw OwnerMustBeHumanException(owner.name, fakePlayer.name)
-        if (fakePlayer.ownerUuids.contains(owner.uniqueId)) throw OwnerAlreadyBoundException(owner.name ,fakePlayer.name)
+        if (fakePlayer.isOwnedBy(owner.uniqueId)) throw OwnerAlreadyBoundException(owner.name ,fakePlayer.name)
         launch {
             fpm.addOwner(fakePlayer,owner.uniqueId)
             sendMessage(tlp("fakeplayer.owner.add.success", owner.name,fakePlayer.name))
@@ -338,8 +326,8 @@ class FakePlayerCommand {
     @Subcommand("owner remove")
     @Permission(OWNER_REMOVE,BASIC)
     fun Player.removeOwner(@Named("player") owner: Player, @Select fakePlayer: FakePlayer) {
-        if (owner.uniqueId == fakePlayer.creatorUuid) throw OwnerIsCreatorCannotBeRemovedException(owner.name ,fakePlayer.name)
-        if (!fakePlayer.ownerUuids.contains(owner.uniqueId)) throw OwnerNotBoundCannotBeRemovedException(owner.name ,fakePlayer.name)
+        if (owner.uniqueId == fakePlayer.creator?.uuid) throw OwnerIsCreatorCannotBeRemovedException(owner.name ,fakePlayer.name)
+        if (!fakePlayer.isOwnedBy(owner.uniqueId)) throw OwnerNotBoundCannotBeRemovedException(owner.name ,fakePlayer.name)
         launch {
             fpm.removeOwner(fakePlayer,owner.uniqueId)
             sendMessage(tlp("fakeplayer.owner.remove.success", owner.name,fakePlayer.name))

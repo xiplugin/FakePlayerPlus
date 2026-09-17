@@ -1,7 +1,8 @@
 package com.coderxi.plugin.fakeplayer.repository
 
-import com.coderxi.plugin.fakeplayer.api.config.FakePlayerSettings
+import com.coderxi.plugin.fakeplayer.api.model.FakePlayerSettings
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
+import com.coderxi.plugin.fakeplayer.api.model.PlayerTextures
 import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandException
 import com.coderxi.plugin.fakeplayer.entity.StandardFakePlayer
 import com.coderxi.plugin.fakeplayer.repository.po.FakePlayerPO
@@ -21,7 +22,7 @@ class FakePlayerRepository {
 
     private val gson = Gson()
 
-    fun findByUuid(uuid: UUID): FakePlayer? = open().use { conn ->
+    fun findByUuid(uuid: UUID): StandardFakePlayer? = open().use { conn ->
         val po = conn.createQuery("SELECT id, name, uuid, creator_uuid AS creatorUuid, skin, settings FROM fakeplayer WHERE uuid = :uuid LIMIT 1")
             .addParameter("uuid", uuid.toString())
             .executeAndFetch(FakePlayerPO::class.java)
@@ -29,7 +30,7 @@ class FakePlayerRepository {
         mapToEntity(po, findOwnerUuidsByUuid(conn, po.uuid))
     }
 
-    fun findByName(name: String): FakePlayer? = open().use { conn ->
+    fun findByName(name: String): StandardFakePlayer? = open().use { conn ->
         val po = conn.createQuery("SELECT id, name, uuid, creator_uuid AS creatorUuid, skin, settings FROM fakeplayer WHERE LOWER(name) = LOWER(:name) LIMIT 1")
             .addParameter("name", name)
             .executeAndFetch(FakePlayerPO::class.java)
@@ -46,12 +47,14 @@ class FakePlayerRepository {
             .toMutableSet()
     }
 
-    private fun mapToEntity(po: FakePlayerPO, owners: MutableSet<UUID>): FakePlayer {
-        val skinSplit = po.skin?.split("|")
-        val skin = if (skinSplit != null && skinSplit .size > 1) { FakePlayer.SkinInfo(skinSplit[0],skinSplit[1]) } else null
-        val settings = if (po.settings != null) gson.fromJson(po.settings, FakePlayerSettings::class.java) else plugin.config.defaultSettings.clone()
-        return StandardFakePlayer(po.name, UUID.fromString(po.uuid), runCatching { UUID.fromString(po.creatorUuid) }.getOrNull() ,owners, skin, settings)
-    }
+    private fun mapToEntity(po: FakePlayerPO, owners: MutableSet<UUID>) = StandardFakePlayer(
+        po.name,
+        UUID.fromString(po.uuid),
+        runCatching { UUID.fromString(po.creatorUuid) }.getOrNull(),
+        owners,
+        po.skin?.split("|")?.takeIf { it.size > 1 }?.let { PlayerTextures(it[0],it[1]) },
+        if (po.settings != null) gson.fromJson(po.settings, FakePlayerSettings::class.java) else plugin.config.defaultSettings.copy()
+    )
 
     fun save(fakePlayer: FakePlayer, saveOwners: Boolean) {
         val sql = "INSERT INTO fakeplayer (name, uuid, creator_uuid, skin, settings) VALUES (:name, :uuid, :creatorUuid, :skin, :settings)" +
@@ -61,9 +64,9 @@ class FakePlayerRepository {
                 conn.createQuery(sql, false)
                     .addParameter("name", fakePlayer.name)
                     .addParameter("uuid", fakePlayer.uuid.toString())
-                    .addParameter("creatorUuid", fakePlayer.creatorUuid?.toString())
-                    .addParameter("skin", if (fakePlayer.skin == null) null else "${fakePlayer.skin!!.textures}|${fakePlayer.skin!!.signature}")
-                    .addParameter("settings", if (plugin.config.defaultSettings.equals2(fakePlayer.settings)) null else gson.toJson(fakePlayer.settings))
+                    .addParameter("creatorUuid", fakePlayer.creator?.uuid.toString())
+                    .addParameter("skin", if (fakePlayer.textures == null) null else "${fakePlayer.textures!!.value}|${fakePlayer.textures!!.signature}")
+                    .addParameter("settings", gson.toJson(FakePlayerSettings.from(fakePlayer)))
                     .executeUpdate()
             }
             return
@@ -73,20 +76,20 @@ class FakePlayerRepository {
                 conn.createQuery(sql)
                     .addParameter("name", fakePlayer.name)
                     .addParameter("uuid", fakePlayer.uuid.toString())
-                    .addParameter("creatorUuid", fakePlayer.creatorUuid?.toString())
-                    .addParameter("skin", if (fakePlayer.skin == null) null else "${fakePlayer.skin!!.textures}|${fakePlayer.skin!!.signature}")
-                    .addParameter("settings", if (plugin.config.defaultSettings.equals2(fakePlayer.settings)) null else gson.toJson(fakePlayer.settings))
+                    .addParameter("creatorUuid", fakePlayer.creator?.uuid.toString())
+                    .addParameter("skin", if (fakePlayer.textures == null) null else "${fakePlayer.textures!!.value}|${fakePlayer.textures!!.signature}")
+                    .addParameter("settings", gson.toJson(FakePlayerSettings.from(fakePlayer)))
                     .executeUpdate()
 
                 conn.createQuery("DELETE FROM ref_fakeplayer_owner WHERE fakeplayer_uuid = :fakePlayerUuid")
                     .addParameter("fakePlayerUuid", fakePlayer.uuid.toString())
                     .executeUpdate()
 
-                if (fakePlayer.ownerUuids.isNotEmpty()) {
+                if (fakePlayer.hasOwner) {
                     val batchQuery = conn.createQuery("INSERT INTO ref_fakeplayer_owner (fakeplayer_uuid, owner_uuid) VALUES (:fakePlayerUuid, :ownerUuid)")
-                    for (ownerUuid in fakePlayer.ownerUuids) {
+                    for (owner in fakePlayer.owners) {
                         batchQuery.addParameter("fakePlayerUuid", fakePlayer.uuid.toString())
-                            .addParameter("ownerUuid", ownerUuid.toString())
+                            .addParameter("ownerUuid", owner.uuid.toString())
                             .addToBatch()
                     }
                     batchQuery.executeBatch()
@@ -105,7 +108,7 @@ class FakePlayerRepository {
         open().use { conn ->
             conn.createQuery(sql)
                 .addParameter("uuid", fakePlayer.uuid.toString())
-                .addParameter("skin", if (fakePlayer.skin == null) null else "${fakePlayer.skin!!.textures}|${fakePlayer.skin!!.signature}")
+                .addParameter("skin", if (fakePlayer.textures == null) null else "${fakePlayer.textures!!.value}|${fakePlayer.textures!!.signature}")
                 .executeUpdate()
         }
     }
@@ -115,7 +118,7 @@ class FakePlayerRepository {
         open().use { conn ->
             conn.createQuery(sql)
                 .addParameter("uuid", fakePlayer.uuid.toString())
-                .addParameter("settings", if (plugin.config.defaultSettings.equals2(fakePlayer.settings)) null else gson.toJson(fakePlayer.settings))
+                .addParameter("settings", gson.toJson(FakePlayerSettings.from(fakePlayer)))
                 .executeUpdate()
         }
     }
@@ -135,16 +138,16 @@ class FakePlayerRepository {
                 conn.createQuery(sql)
                     .addParameter("name", newFakePlayer.name)
                     .addParameter("uuid", newFakePlayer.uuid.toString())
-                    .addParameter("creatorUuid", newFakePlayer.creatorUuid?.toString())
-                    .addParameter("skin", if (newFakePlayer.skin == null) null else "${newFakePlayer.skin!!.textures}|${newFakePlayer.skin!!.signature}")
-                    .addParameter("settings", if (plugin.config.defaultSettings.equals2(newFakePlayer.settings)) null else gson.toJson(newFakePlayer.settings))
+                    .addParameter("creatorUuid", newFakePlayer.creator?.uuid.toString())
+                    .addParameter("skin", if (newFakePlayer.textures == null) null else "${newFakePlayer.textures!!.value}|${newFakePlayer.textures!!.signature}")
+                    .addParameter("settings", gson.toJson(FakePlayerSettings.from(newFakePlayer)))
                     .executeUpdate()
 
-                if (newFakePlayer.ownerUuids.isNotEmpty()) {
+                if (newFakePlayer.hasOwner) {
                     val batchQuery = conn.createQuery("INSERT INTO ref_fakeplayer_owner (fakeplayer_uuid, owner_uuid) VALUES (:fakePlayerUuid, :ownerUuid)")
-                    for (ownerUuid in newFakePlayer.ownerUuids) {
+                    for (owner in newFakePlayer.owners) {
                         batchQuery.addParameter("fakePlayerUuid", newFakePlayer.uuid.toString())
-                            .addParameter("ownerUuid", ownerUuid.toString())
+                            .addParameter("ownerUuid", owner.uuid.toString())
                             .addToBatch()
                     }
                     batchQuery.executeBatch()

@@ -1,49 +1,50 @@
 package com.coderxi.plugin.fakeplayer.api.entity
 
 import com.coderxi.plugin.fakeplayer.api.action.ActionHandler
-import com.coderxi.plugin.fakeplayer.api.config.FakePlayerSettings
-import com.coderxi.plugin.fakeplayer.api.nms.NMSServerGamePacketListener
+import com.coderxi.plugin.fakeplayer.api.model.FakePlayerSettings
+import com.coderxi.plugin.fakeplayer.api.model.PlayerDetail
+import com.coderxi.plugin.fakeplayer.api.model.PlayerTextures
 import com.coderxi.plugin.fakeplayer.api.nms.NMSServerPlayer
-import net.kyori.adventure.text.Component
-import org.bukkit.Bukkit
+import org.bukkit.entity.Player
 import java.util.UUID
 
 interface FakePlayer {
 
-    // 基础信息
+    // 基础设施
+    val nms: NMSServerPlayer
+    val player: Player get() = nms.player
+    val actions: ActionHandler
+
+    // 基本信息
     val name: String
     val uuid: UUID
-    var skin: SkinInfo?
-    data class SkinInfo (
-        val textures: String?,
-        val signature: String?
-    )
-    var settings: FakePlayerSettings
+
     // 关联信息
-    var creatorUuid: UUID?
-    var ownerUuids: MutableSet<UUID>
-    val owners get() = ownerUuids.mapNotNull(Bukkit::getPlayer)
-    var spawnerName: String
-    var spawnerUuid: UUID
-    var spawnerIp: String
-    var spawnTime: Long
+    val spawner: PlayerDetail
+    var creator: PlayerDetail?
+    val owners: Collection<PlayerDetail>
+    val hasOwner: Boolean
+    fun isOwnedBy(uuid: UUID): Boolean
+    fun addOwner(uuid: UUID)
+    fun removeOwner(uuid: UUID)
+    val spawnTime: Long
 
     // 是否执行doTick和actions.doTick
     var ticking: Boolean
 
-    // 动作控制器
-    var actions: ActionHandler
+    // 假人设置(持久化)
+    var collidable: Boolean
+    var pickupItems: Boolean
+    var invulnerable: Boolean
+    var autoReplenish: Boolean
+    var autoFish: Boolean
+    var simulationDistance: Int
 
-    // 完成网络连接时进行的操作
-    fun onConnected(nmsPlayer: NMSServerPlayer ,nmsConnection: NMSServerGamePacketListener)
-
-    // 调用桥接
-    val nms: NMSServerPlayer
-    val player get() = nms.player
+    fun applySettings(settings: FakePlayerSettings)
 
     // nms属性
     var ping: Int
-    fun setPing(value: Int, flush: Boolean)
+    var textures: PlayerTextures?
 
     // 快捷调用
     fun quit(cause: String = "")

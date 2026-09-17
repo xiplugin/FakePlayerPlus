@@ -58,7 +58,8 @@ class FakePlayerPingUpdater(private val fpm: FakePlayerManager) : Listener {
             ThreadLocalRandom.current().nextInt(pingInitMin, pingInitMax+1)
         }
         firstPingMap[fakePlayer.uuid] = firstPing
-        fakePlayer.setPing(firstPing, true)
+        fakePlayer.ping = firstPing
+        fakePlayer.nms.updateLatency()
     }
 
     fun FakePlayer.pingJitter() {

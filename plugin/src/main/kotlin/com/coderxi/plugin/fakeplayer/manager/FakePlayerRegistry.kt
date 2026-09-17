@@ -15,8 +15,8 @@ class FakePlayerRegistry {
 
     fun register(fp: FakePlayer) = synchronized(writeLock) {
         fakeplayers[fp.uuid]?.let { oldFp ->
-            oldFp.ownerUuids.forEach { oldOwnerId ->
-                fakeplayersByOwnerUuids.computeIfPresent(oldOwnerId) { _, fpUuids ->
+            oldFp.owners.forEach { oldOwner ->
+                fakeplayersByOwnerUuids.computeIfPresent(oldOwner.uuid) { _, fpUuids ->
                     fpUuids.remove(fp.uuid)
                     if (fpUuids.isEmpty()) null else fpUuids
                 }
@@ -24,8 +24,8 @@ class FakePlayerRegistry {
         }
         fakeplayers[fp.uuid] = fp
         fakeplayersByName[fp.name.lowercase()] = fp
-        fp.ownerUuids.forEach { ownerId ->
-            fakeplayersByOwnerUuids.computeIfAbsent(ownerId) { ConcurrentHashMap.newKeySet() }.add(fp.uuid)
+        fp.owners.forEach { owner ->
+            fakeplayersByOwnerUuids.computeIfAbsent(owner.uuid) { ConcurrentHashMap.newKeySet() }.add(fp.uuid)
         }
         sortedFakeplayers = fakeplayers.values.sortedBy { it.spawnTime }
     }
@@ -33,8 +33,8 @@ class FakePlayerRegistry {
     fun unregister(uuid: UUID) = synchronized(writeLock) {
         fakeplayers.remove(uuid)?.let { fp ->
             fakeplayersByName.remove(fp.name.lowercase())
-            fp.ownerUuids.forEach { ownerId ->
-                fakeplayersByOwnerUuids.computeIfPresent(ownerId) { _, fpUuids ->
+            fp.owners.forEach { owner ->
+                fakeplayersByOwnerUuids.computeIfPresent(owner.uuid) { _, fpUuids ->
                     fpUuids.remove(fp.uuid)
                     if (fpUuids.isEmpty()) null else fpUuids
                 }

@@ -32,8 +32,8 @@ class FakePlayerLifecycleCommandListener: Listener {
     private fun executeCommands(fakePlayer: FakePlayer, commands: List<String>, offlineExecute: Boolean) {
         val name = fakePlayer.name
         val uuid = fakePlayer.uuid.toString()
-        val spawnerName = fakePlayer.spawnerName
-        val spawnerUuid = fakePlayer.spawnerUuid
+        val spawnerName = fakePlayer.spawner.name
+        val spawnerUuid = fakePlayer.spawner.uuid
         val spawner = Bukkit.getPlayer(spawnerUuid)
         val console = Bukkit.getConsoleSender()
         commands.forEach {
@@ -45,7 +45,7 @@ class FakePlayerLifecycleCommandListener: Listener {
             when {
                 it.startsWith("[CONSOLE]") -> listOf(console to command.removePrefix("[CONSOLE]").trimStart())
                 it.startsWith("[SPAWNER]") -> listOf(spawner to command.removePrefix("[SPAWNER]").trimStart())
-                it.startsWith("[OWNERS]") -> fakePlayer.owners.map { owner -> owner to command
+                it.startsWith("[OWNERS]") -> fakePlayer.owners.mapNotNull { owner -> Bukkit.getPlayer(owner.uuid) }.map { owner -> owner to command
                     .removePrefix("[OWNERS]").trimStart()
                     .replace("{owner_uuid}", owner.uniqueId.toString())
                     .replace("{owner_name}", owner.name)

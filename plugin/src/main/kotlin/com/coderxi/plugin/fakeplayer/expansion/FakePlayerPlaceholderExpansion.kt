@@ -62,7 +62,7 @@ class FakePlayerPlaceholderExpansion(private val fpm: FakePlayerManager) : Place
             return fakePlayer.uuid.toString()
         }
         if (params == "spawner") {
-            return fakePlayer.spawnerName
+            return fakePlayer.spawner.name
         }
         if (params == "spawntime") {
             return timeformatter.format(Instant.ofEpochMilli(fakePlayer.spawnTime))
