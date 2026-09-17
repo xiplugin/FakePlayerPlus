@@ -27,6 +27,8 @@ interface NMSServerPlayer {
     var yya: Float
     var zza: Float
 
+    var takeXpDelay: Int
+
     /** 获取时刻计数, 尽管假人会退出游戏, 但服务器重启前这个值不会重置 */
     val tickCount: Int
     /** 判断是否在地面 */

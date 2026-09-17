@@ -289,6 +289,7 @@ class FakePlayerCommand {
                 start = 1,
                 end = if (hasPermission(ADMIN)) 32 else server.simulationDistance
             )
+            .boolSingleOption(fakePlayer::xpNoCooldown, tl("fakeplayer.gui.settings.xp-no-cooldown"))
             .submitButton {
                 sendMessage(tlp("fakeplayer.gui.settings.submit.success", fakePlayer.name))
                 launch { fpm.saveSettings(fakePlayer) }

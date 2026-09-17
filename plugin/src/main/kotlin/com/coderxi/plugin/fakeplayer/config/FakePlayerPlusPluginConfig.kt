@@ -175,13 +175,18 @@ class FakePlayerPlusPluginConfig : OkaeriConfig() {
         @Comment("Simulation Distance")
         var simulationDistance: Int = 10
 
+        @Comment("是否开启经验吸收无冷却")
+        @Comment("Whether to disable the XP pickup cooldown")
+        var xpNoCooldown: Boolean = true
+
         fun copy() = FakePlayerSettings(
             collidable,
             pickupItems,
             invulnerable,
             autoReplenish,
             autoFish,
-            simulationDistance
+            simulationDistance,
+            xpNoCooldown
         )
     }
 

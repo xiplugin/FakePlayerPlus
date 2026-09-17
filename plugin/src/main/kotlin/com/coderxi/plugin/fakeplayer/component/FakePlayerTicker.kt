@@ -21,8 +21,7 @@ class FakePlayerTicker(private val fpm: FakePlayerManager): Listener {
         fakePlayer.player.scheduler.runAtFixedRate(plugin, { task ->
             if (fakePlayer.ticking) {
                 try {
-                    fakePlayer.nms.doTick()
-                    fakePlayer.actions.doTick()
+                    fakePlayer.doTick()
                 } catch (_: Exception) {
                 }
             } else {
@@ -52,8 +51,7 @@ class FakePlayerTicker(private val fpm: FakePlayerManager): Listener {
             fpm.fakeplayers().forEach { fakePlayer ->
                 if (fakePlayer.ticking) {
                     try {
-                        fakePlayer.nms.doTick()
-                        fakePlayer.actions.doTick()
+                        fakePlayer.doTick()
                     } catch (_: Exception) {
                     }
                 }

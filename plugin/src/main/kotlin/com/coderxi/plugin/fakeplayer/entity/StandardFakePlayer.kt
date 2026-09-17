@@ -41,6 +41,14 @@ class StandardFakePlayer(
 
     override var spawnTime by Delegates.notNull<Long>()
 
+    override fun doTick() {
+        nms.doTick()
+        actions.doTick()
+        if (xpNoCooldown) {
+            nms.takeXpDelay = 0
+        }
+    }
+
     override var ticking: Boolean = false
 
     override var collidable: Boolean
@@ -79,6 +87,11 @@ class StandardFakePlayer(
             player.simulationDistance = value
             settings.simulationDistance = value
         }
+    override var xpNoCooldown: Boolean
+        get() = settings.xpNoCooldown
+        set(value) {
+            settings.xpNoCooldown = value
+        }
 
     override fun applySettings(settings: FakePlayerSettings) {
         collidable = settings.collidable
@@ -87,6 +100,7 @@ class StandardFakePlayer(
         autoReplenish = settings.autoReplenish
         autoFish = settings.autoFish
         simulationDistance = settings.simulationDistance
+        xpNoCooldown = settings.xpNoCooldown
     }
 
     override var ping: Int

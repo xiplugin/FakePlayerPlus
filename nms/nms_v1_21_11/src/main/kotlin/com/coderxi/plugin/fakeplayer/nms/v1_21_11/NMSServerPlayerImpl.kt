@@ -62,6 +62,7 @@ open class NMSServerPlayerImpl(override val player: Player) : NMSServerPlayer {
     override var yya: Float get() = handle.yya; set(v) {handle.yya=v}
     override var zza: Float get() = handle.zza; set(v) {handle.zza=v}
 
+    override var takeXpDelay: Int get() = handle.takeXpDelay; set(value) {handle.takeXpDelay=value}
     override val tickCount: Int get() = handle.tickCount
     override val onGround: Boolean get() = handle.onGround
     override val isUsingItem: Boolean get() = handle.isUsingItem

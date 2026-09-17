@@ -29,7 +29,9 @@ interface FakePlayer {
     fun removeOwner(uuid: UUID)
     val spawnTime: Long
 
-    // 是否执行doTick和actions.doTick
+    // 执行nms.doTick和actions.doTick
+    fun doTick()
+    // 控制是否执行刻运算
     var ticking: Boolean
 
     // 假人设置(持久化)
@@ -39,6 +41,7 @@ interface FakePlayer {
     var autoReplenish: Boolean
     var autoFish: Boolean
     var simulationDistance: Int
+    var xpNoCooldown: Boolean
 
     fun applySettings(settings: FakePlayerSettings)
 
