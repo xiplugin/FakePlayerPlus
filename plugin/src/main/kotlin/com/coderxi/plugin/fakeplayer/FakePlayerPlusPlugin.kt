@@ -90,6 +90,7 @@ class FakePlayerPlusPlugin: FakePlayerPlusPluginApi, JavaPlugin() {
             FakePlayerReplenishListener(fpm),
             FakePlayerDummyVarsNotifyListener(fpm),
             FakePlayerAutoFishListener(fpm),
+            FakePlayerAutoEquipToolListener(fpm),
             StaticFakePlayerManager(fpm, ConfigManager.create(StaticFakePlayersConfig::class.java).apply {
                 configure { opt ->
                     opt.configurer(YamlBukkitConfigurer().apply {

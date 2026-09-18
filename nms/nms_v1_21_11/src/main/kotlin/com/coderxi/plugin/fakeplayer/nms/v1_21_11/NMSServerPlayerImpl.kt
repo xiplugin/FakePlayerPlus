@@ -231,6 +231,14 @@ open class NMSServerPlayerImpl(override val player: Player) : NMSServerPlayer {
         handle.releaseUsingItem()
     }
 
+    override fun findBestToolSlot(target: Block): Int? {
+        val inventory = handle.inventory
+        val block = (target as CraftBlock).nms
+        return (0 until inventory.containerSize).maxByOrNull { slot ->
+            inventory.getItem(slot).getDestroySpeed(block)
+        }
+    }
+
     var advancements: PlayerAdvancements?
         get() = advancementsField?.get(handle) as? PlayerAdvancements
         set(value) { advancementsField?.set(handle, value) }

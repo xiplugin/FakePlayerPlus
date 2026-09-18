@@ -92,6 +92,11 @@ class StandardFakePlayer(
         set(value) {
             settings.xpNoCooldown = value
         }
+    override var autoEquipTool: Boolean
+        get() = settings.autoEquipTool
+        set(value) {
+            settings.autoEquipTool = value
+        }
 
     override fun applySettings(settings: FakePlayerSettings) {
         collidable = settings.collidable

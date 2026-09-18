@@ -179,6 +179,10 @@ class FakePlayerPlusPluginConfig : OkaeriConfig() {
         @Comment("Whether to disable the XP pickup cooldown")
         var xpNoCooldown: Boolean = true
 
+        @Comment("是否开启自动切换工具")
+        @Comment("Whether to automatically equip the best tool")
+        var autoEquipTool: Boolean = false
+
         fun copy() = FakePlayerSettings(
             collidable,
             pickupItems,
@@ -186,7 +190,8 @@ class FakePlayerPlusPluginConfig : OkaeriConfig() {
             autoReplenish,
             autoFish,
             simulationDistance,
-            xpNoCooldown
+            xpNoCooldown,
+            autoEquipTool,
         )
     }
 

@@ -42,6 +42,7 @@ interface FakePlayer {
     var autoFish: Boolean
     var simulationDistance: Int
     var xpNoCooldown: Boolean
+    var autoEquipTool: Boolean
 
     fun applySettings(settings: FakePlayerSettings)
 

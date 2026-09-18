@@ -10,6 +10,7 @@ data class FakePlayerSettings(
     var autoFish: Boolean,
     var simulationDistance: Int,
     var xpNoCooldown: Boolean,
+    var autoEquipTool: Boolean,
 ) {
     companion object {
         fun from(fakePlayer: FakePlayer) = FakePlayerSettings(
@@ -19,7 +20,8 @@ data class FakePlayerSettings(
             fakePlayer.autoReplenish,
             fakePlayer.autoFish,
             fakePlayer.simulationDistance,
-            fakePlayer.xpNoCooldown
+            fakePlayer.xpNoCooldown,
+            fakePlayer.autoEquipTool,
         )
     }
 }

@@ -98,6 +98,9 @@ interface NMSServerPlayer {
     fun useItem(type: EquipmentSlot): Boolean
     fun releaseUsingItem()
 
+    /** 寻找背包中的合适工具 */
+    fun findBestToolSlot(target: Block): Int?
+
     // 其他
     fun saveData() { player.saveData() }
 }
