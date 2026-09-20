@@ -41,14 +41,12 @@ class FakePlayerParameterType(private val fpm : FakePlayerManager) : ParameterTy
     }
 
 
-    val defaultSuggestions = DefaultSuggestions()
+    override fun defaultSuggestions() = DefaultSuggestions
 
-    override fun defaultSuggestions() = defaultSuggestions
-
-    class DefaultSuggestions : SuggestionProvider<BukkitCommandActor> {
+    object DefaultSuggestions : SuggestionProvider<BukkitCommandActor> {
 
         val fpm get() = plugin.fakePlayerManager
-        private val emptySuggestions = listOf<String>()
+        private val emptySuggestions = emptyList<String>()
 
         override fun getSuggestions(context: ExecutionContext<BukkitCommandActor?>): Collection<String?> {
             val sender = context.actor().sender()

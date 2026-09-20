@@ -1,7 +1,7 @@
 package com.coderxi.plugin.fakeplayer.entity
 
-import com.coderxi.plugin.fakeplayer.action.ActionHandlerImpl
-import com.coderxi.plugin.fakeplayer.api.action.ActionHandler
+import com.coderxi.plugin.fakeplayer.action.ActionControllerImpl
+import com.coderxi.plugin.fakeplayer.action.handler.*
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
 import com.coderxi.plugin.fakeplayer.api.model.FakePlayerSettings
 import com.coderxi.plugin.fakeplayer.api.model.PlayerDetail
@@ -26,7 +26,7 @@ class StandardFakePlayer(
 ) : FakePlayer {
 
     override lateinit var nms: NMSServerPlayer
-    override val actions: ActionHandler = ActionHandlerImpl(this)
+    override val actions = ActionControllerImpl(this)
     lateinit var nmsConnection: NMSServerGamePacketListener
 
     override lateinit var spawner: PlayerDetail

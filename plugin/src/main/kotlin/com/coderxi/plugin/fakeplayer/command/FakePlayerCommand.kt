@@ -1,8 +1,6 @@
 package com.coderxi.plugin.fakeplayer.command
 
 import com.coderxi.plugin.fakeplayer.api.action.Action
-import com.coderxi.plugin.fakeplayer.api.action.ActionMode
-import com.coderxi.plugin.fakeplayer.api.action.ActionType
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
 import com.coderxi.plugin.fakeplayer.api.manager.FakePlayerManager
 import com.coderxi.plugin.fakeplayer.command.annotaion.HelpLine
@@ -10,11 +8,14 @@ import com.coderxi.plugin.fakeplayer.command.annotaion.Select
 import com.coderxi.plugin.fakeplayer.command.annotaion.SuggestCommands
 import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandException.*
 import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandExceptionHandler.CommandContext
+import com.coderxi.plugin.fakeplayer.command.parameter.ActionModeAndParameters
 import com.coderxi.plugin.fakeplayer.command.parameter.FakePlayerParameterType.DefaultSuggestions as SuggestOwnedFakePlayers
 import com.coderxi.plugin.fakeplayer.command.permission.Permission.*
-import com.coderxi.plugin.fakeplayer.component.FakePlayerDialog
 import com.coderxi.plugin.fakeplayer.component.FakePlayerLimiter
 import com.coderxi.plugin.fakeplayer.component.FakePlayerSelector.selected
+import com.coderxi.plugin.fakeplayer.dialog.FakePlayerActionExecuteDialog
+import com.coderxi.plugin.fakeplayer.dialog.FakePlayerActionListDialog
+import com.coderxi.plugin.fakeplayer.dialog.FakePlayerSettingsDialog
 import com.coderxi.plugin.fakeplayer.provider.invsee.InvseeProvider
 import com.coderxi.plugin.fakeplayer.utils.*
 import kotlinx.coroutines.withContext
@@ -278,23 +279,7 @@ class FakePlayerCommand {
     @Permission(SETTINGS,BASIC)
     @HelpLine("fakeplayer.help.cmd.settings", playerOnly = true)
     fun Player.settings(@Select fakePlayer: FakePlayer) {
-        FormDialog(tl("fakeplayer.gui.settings.title",fakePlayer.name))
-            .boolSingleOption(fakePlayer::collidable, tl("fakeplayer.gui.settings.collidable"))
-            .boolSingleOption(fakePlayer::pickupItems, tl("fakeplayer.gui.settings.pickup-items"))
-            .boolSingleOption(fakePlayer::invulnerable, tl("fakeplayer.gui.settings.invulnerable"))
-            .boolSingleOption(fakePlayer::autoReplenish, tl("fakeplayer.gui.settings.auto-replenish"))
-            .boolSingleOption(fakePlayer::autoFish, tl("fakeplayer.gui.settings.auto-fish"))
-            .numberRange(fakePlayer::simulationDistance, tl("fakeplayer.gui.settings.simulation-distance"), "%s: %s"+tls("fakeplayer.gui.unit.chunk") ,
-                start = 1,
-                end = if (hasPermission(ADMIN)) 32 else server.simulationDistance
-            )
-            .boolSingleOption(fakePlayer::xpNoCooldown, tl("fakeplayer.gui.settings.xp-no-cooldown"))
-            .boolSingleOption(fakePlayer::autoEquipTool, tl("fakeplayer.gui.settings.auto-equip-tool"))
-            .submitButton {
-                sendMessage(tlp("fakeplayer.gui.settings.submit.success", fakePlayer.name))
-                launch { fpm.saveSettings(fakePlayer) }
-            }
-            .show(this)
+        FakePlayerSettingsDialog(fakePlayer, this).show(this)
     }
 
     @Subcommand("owner", "owner list")
@@ -356,21 +341,21 @@ class FakePlayerCommand {
         HelpLine("fakeplayer.help.cmd.action-stop", "fp action stop <action> [name]", playerOnly = true),
     ])
     fun Player.actionListUI(@Select fakePlayer: FakePlayer) {
-        showDialog(FakePlayerDialog.actionListDialog(this,fakePlayer))
+        FakePlayerActionListDialog(fakePlayer, this).show(this)
     }
 
     @Subcommand("action start")
     @Permission(ACTION, BASIC)
-    fun Player.actionUI(type: ActionType, @Select fakePlayer: FakePlayer) {
-        assertPermission("${ACTION.value}.${type.name.lowercase()}", BASIC)
-        showDialog(FakePlayerDialog.actionExecuteDialog(fakePlayer, type))
+    fun Player.actionUI(@Named("action") action: Action, @Select fakePlayer: FakePlayer) {
+        assertPermission("${ACTION.value}.$name", BASIC)
+        FakePlayerActionExecuteDialog(fakePlayer, action, this).show(this)
     }
 
     @Subcommand("action execute")
     @Permission(ACTION, BASIC)
-    fun CommandSender.executeAction(type: ActionType, mode: ActionMode, @Select fakePlayer: FakePlayer) {
-        assertPermission("${ACTION.value}.${type.name.lowercase()}", BASIC)
-        fakePlayer.actions.dispatch(Action.toClass(type).getConstructor(mode.javaClass).newInstance(mode))
+    fun CommandSender.executeAction(@Named("action") action: Action, modeAndParams: ActionModeAndParameters, @Select fakePlayer: FakePlayer) {
+        assertPermission("${ACTION.value}.$name", BASIC)
+        fakePlayer.actions.execute(action, modeAndParams.mode, modeAndParams.parameters)
     }
 
     @Subcommand("action stopall")
@@ -381,8 +366,8 @@ class FakePlayerCommand {
 
     @Subcommand("action stop")
     @Permission(ACTION, BASIC)
-    fun stopAction(type: ActionType, @Select fakePlayer: FakePlayer) {
-        fakePlayer.actions.stop(type)
+    fun stopAction(@Named("action") action: Action, @Select fakePlayer: FakePlayer) {
+        fakePlayer.actions.stop(action)
     }
 
 }

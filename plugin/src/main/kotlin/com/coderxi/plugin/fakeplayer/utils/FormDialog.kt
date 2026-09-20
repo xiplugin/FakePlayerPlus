@@ -15,7 +15,7 @@ import java.time.Duration
 import kotlin.reflect.KMutableProperty0
 
 @Suppress("UnstableApiUsage")
-class FormDialog(val title: Component) {
+open class FormDialog(val title: Component) {
 
     private class FormEntry(
         val permission: String?,
@@ -162,6 +162,37 @@ class FormDialog(val title: Component) {
         ))
     }
 
+    fun numberRange(
+        key: String,
+        initial: Int,
+        label: Component = Component.text(key),
+        labelFormat: String? = null,
+        start: Int,
+        end: Int,
+        step: Int = 1,
+        width: Int = 100,
+        permission: String? = null,
+        onChange: ((newValue: Int) -> Unit)? = null
+    ): FormDialog = apply {
+        entries.add(FormEntry(
+            permission = permission,
+            build = {
+                DialogInput.numberRange(key, label, start.toFloat(), end.toFloat())
+                    .step(step.toFloat())
+                    .initial(initial.toFloat())
+                    .width(width)
+                    .apply { if(labelFormat != null) labelFormat(labelFormat) }
+                    .build()
+            },
+            onSubmit = { view ->
+                val newValue = view.getFloat(key)?.toInt()
+                if (newValue != null && newValue != initial) {
+                    onChange?.invoke(newValue)
+                }
+            }
+        ))
+    }
+
     fun text(
         property: KMutableProperty0<String>,
         label: Component = Component.text(property.name),
@@ -183,6 +214,33 @@ class FormDialog(val title: Component) {
                 val newValue = view.getText(property.name)
                 if (newValue != null && newValue != property.get()) {
                     property.set(newValue)
+                    onChange?.invoke(newValue)
+                }
+            }
+        ))
+    }
+
+    fun text(
+        key: String,
+        initial: String,
+        label: Component = Component.text(key),
+        width: Int = 100,
+        maxLength: Int = 16,
+        permission: String? = null,
+        onChange: ((newValue: String) -> Unit)? = null
+    ): FormDialog = apply {
+        entries.add(FormEntry(
+            permission = permission,
+            build = {
+                DialogInput.text(key, label)
+                    .initial(initial)
+                    .width(width)
+                    .maxLength(maxLength)
+                    .build()
+            },
+            onSubmit = { view ->
+                val newValue = view.getText(key)
+                if (newValue != null && newValue != initial) {
                     onChange?.invoke(newValue)
                 }
             }
@@ -251,7 +309,7 @@ class FormDialog(val title: Component) {
         player.showDialog(dialog)
     }
 
-    private val defaultActionOptions: ClickCallback.Options by lazy {
+    protected val defaultActionOptions: ClickCallback.Options by lazy {
         ClickCallback.Options.builder().uses(1).lifetime(Duration.ofMinutes(5)).build()
     }
 

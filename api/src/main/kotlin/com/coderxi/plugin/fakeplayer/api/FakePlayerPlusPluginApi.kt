@@ -1,5 +1,6 @@
 package com.coderxi.plugin.fakeplayer.api
 
+import com.coderxi.plugin.fakeplayer.api.action.ActionRegistry
 import com.coderxi.plugin.fakeplayer.api.manager.FakePlayerManager
 import com.coderxi.plugin.fakeplayer.api.nms.NMSBridge
 import com.coderxi.plugin.fakeplayer.api.nms.NMSServer
@@ -13,6 +14,8 @@ interface FakePlayerPlusPluginApi {
     val nmsServer: NMSServer
 
     val fakePlayerManager: FakePlayerManager
+
+    val globalActionRegistry: ActionRegistry
 
     companion object {
         val api by lazy { Bukkit.getPluginManager().getPlugin("FakePlayerPlus")!! as FakePlayerPlusPluginApi }

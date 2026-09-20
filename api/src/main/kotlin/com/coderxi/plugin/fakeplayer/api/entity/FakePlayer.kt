@@ -1,6 +1,6 @@
 package com.coderxi.plugin.fakeplayer.api.entity
 
-import com.coderxi.plugin.fakeplayer.api.action.ActionHandler
+import com.coderxi.plugin.fakeplayer.api.action.ActionController
 import com.coderxi.plugin.fakeplayer.api.model.FakePlayerSettings
 import com.coderxi.plugin.fakeplayer.api.model.PlayerDetail
 import com.coderxi.plugin.fakeplayer.api.model.PlayerTextures
@@ -13,7 +13,7 @@ interface FakePlayer {
     // 基础设施
     val nms: NMSServerPlayer
     val player: Player get() = nms.player
-    val actions: ActionHandler
+    val actions: ActionController
 
     // 基本信息
     val name: String

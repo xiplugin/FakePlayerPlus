@@ -1,7 +1,16 @@
 package com.coderxi.plugin.fakeplayer
 
+import com.coderxi.plugin.fakeplayer.action.ActionRegistryImpl
+import com.coderxi.plugin.fakeplayer.action.base.CommonActionMode
+import com.coderxi.plugin.fakeplayer.action.handler.AttackHandler
+import com.coderxi.plugin.fakeplayer.action.handler.DropItemHandler
+import com.coderxi.plugin.fakeplayer.action.handler.JumpHandler
+import com.coderxi.plugin.fakeplayer.action.handler.MineHandler
+import com.coderxi.plugin.fakeplayer.action.handler.SneakHandler
+import com.coderxi.plugin.fakeplayer.action.handler.UseItemHandler
 import com.coderxi.plugin.fakeplayer.api.FakePlayerPlusPluginApi
-import com.coderxi.plugin.fakeplayer.api.action.ActionMode
+import com.coderxi.plugin.fakeplayer.api.action.Action
+import com.coderxi.plugin.fakeplayer.api.action.ActionRegistry
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
 import com.coderxi.plugin.fakeplayer.api.nms.NMSBridge
 import com.coderxi.plugin.fakeplayer.api.nms.NMSServer
@@ -17,7 +26,9 @@ import com.coderxi.plugin.fakeplayer.command.annotaion.Select
 import com.coderxi.plugin.fakeplayer.command.annotaion.SelectReplacer
 import com.coderxi.plugin.fakeplayer.command.annotaion.SuggestCommands
 import com.coderxi.plugin.fakeplayer.command.annotaion.SuggestCommandsProvider
-import com.coderxi.plugin.fakeplayer.command.parameter.ActionModeParameterType
+import com.coderxi.plugin.fakeplayer.command.parameter.ActionModeAndParameters
+import com.coderxi.plugin.fakeplayer.command.parameter.ActionModeAndParametersParameterType
+import com.coderxi.plugin.fakeplayer.command.parameter.ActionParameterType
 import com.coderxi.plugin.fakeplayer.config.StaticFakePlayersConfig
 import com.coderxi.plugin.fakeplayer.expansion.FakePlayerPlaceholderExpansion
 import com.coderxi.plugin.fakeplayer.manager.FakePlayerManagerImpl
@@ -51,6 +62,8 @@ class FakePlayerPlusPlugin: FakePlayerPlusPluginApi, JavaPlugin() {
     lateinit var lamp: Lamp<BukkitCommandActor> private set
 
     override lateinit var fakePlayerManager: FakePlayerManager
+
+    override lateinit var globalActionRegistry: ActionRegistry
 
     override fun onEnable() {
         nms = NMSBridgeLoader.load(server.minecraftVersion)
@@ -93,9 +106,7 @@ class FakePlayerPlusPlugin: FakePlayerPlusPluginApi, JavaPlugin() {
             FakePlayerAutoEquipToolListener(fpm),
             StaticFakePlayerManager(fpm, ConfigManager.create(StaticFakePlayersConfig::class.java).apply {
                 configure { opt ->
-                    opt.configurer(YamlBukkitConfigurer().apply {
-                        null
-                    })
+                    opt.configurer(YamlBukkitConfigurer())
                     opt.bindFile(File(dataFolder, "static-fakeplayers.yml"))
                     opt.removeOrphans(true)
                 }
@@ -109,6 +120,19 @@ class FakePlayerPlusPlugin: FakePlayerPlusPluginApi, JavaPlugin() {
                 FakePlayerPlaceholderExpansion(fpm).register()
             }
         }
+        globalActionRegistry = ActionRegistryImpl().apply {
+            registerCommonHandlers(
+                AttackHandler,
+                DropItemHandler,
+                JumpHandler,
+                MineHandler,
+                SneakHandler,
+                UseItemHandler
+            )
+            CommonActionMode.entries.forEach { mode ->
+                setModeSuggestParameters(mode.key, mode.suggestParameters)
+            }
+        }
         lamp = BukkitLamp.builder(this)
             .permissionFactory(PluginCommandPermissionFactory())
             .annotationReplacer(Select::class.java, SelectReplacer())
@@ -116,7 +140,8 @@ class FakePlayerPlusPlugin: FakePlayerPlusPluginApi, JavaPlugin() {
             .dependency(FakePlayerLimiter::class.java,fakePlayerLimiter)
             .parameterTypes { parameters ->
                 parameters.addParameterType(FakePlayer::class.java, FakePlayerParameterType(fakePlayerManager))
-                parameters.addParameterType(ActionMode::class.java, ActionModeParameterType())
+                parameters.addParameterType(Action::class.java, ActionParameterType())
+                parameters.addParameterType(ActionModeAndParameters::class.java, ActionModeAndParametersParameterType())
             }
             .suggestionProviders { providers -> providers.addProviderForAnnotation(SuggestCommands::class.java, SuggestCommandsProvider()) }
             .exceptionHandler(FakePlayerCommandExceptionHandler())

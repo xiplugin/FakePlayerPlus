@@ -68,9 +68,8 @@ class FakePlayerPlaceholderExpansion(private val fpm: FakePlayerManager) : Place
             return timeformatter.format(Instant.ofEpochMilli(fakePlayer.spawnTime))
         }
         if (params == "actions") {
-            val actions = fakePlayer.actions.getActiveActions().values
-            val actionsTexts = actions.map { tls("fakeplayer.action."+it.type.name.replace("_","-").lowercase()) }
-            return actionsTexts.joinToString(tls("fakeplayer.var.action.separator")).trim()
+            return fakePlayer.actions.activeActions.map(plugin.globalActionRegistry::getName)
+                .joinToString(tls("fakeplayer.var.action.separator")) { name -> tls("fakeplayer.action.$name") }
         }
         return null
     }

@@ -1,20 +1,36 @@
-package com.coderxi.plugin.fakeplayer.action.processor
+package com.coderxi.plugin.fakeplayer.action.handler
 
-import com.coderxi.plugin.fakeplayer.api.action.ActionHandler
-import com.coderxi.plugin.fakeplayer.api.action.MineAction
+import com.coderxi.plugin.fakeplayer.action.base.CommonActionHandler
+import com.coderxi.plugin.fakeplayer.action.base.CommonActionMode
+import com.coderxi.plugin.fakeplayer.action.type.MineAction
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
 import com.coderxi.plugin.fakeplayer.api.nms.NMSServerPlayer.BlockBreakActionType.*
 
-object MineProcessor : ActionProcessor<MineAction> {
+object MineHandler : CommonActionHandler<MineAction>(
+    type = MineAction::class.java,
+    name = "mine",
+    modes = setOf(CommonActionMode.CONTINUOUS)
+) {
 
-    override val actionType get() = MineAction::class.java
+    override fun runOnce(fakePlayer: FakePlayer, action: MineAction) {
+        throw UnsupportedOperationException()
+    }
+    override fun runIntervalTick(fakePlayer: FakePlayer, action: MineAction) {
+        throw UnsupportedOperationException()
+    }
 
-    override fun process(fakePlayer: FakePlayer, action: MineAction, handler: ActionHandler) {
-        if (action.freezeTick > 0) { action.freezeTick--; return }
+    override fun runContinuousTick(fakePlayer: FakePlayer, action: MineAction ) {
+        if (action.freezeTick > 0) {
+            action.freezeTick--
+            return
+        }
         val player = fakePlayer.player
         val maxDistance = fakePlayer.nms.blockReachDistance
         val target = player.rayTraceBlocks(maxDistance)?.hitBlock
-        if (target == null || target.type.isAir) { resetMining(fakePlayer, action); return }
+        if (target == null || target.type.isAir) {
+            resetMining(fakePlayer, action)
+            return
+        }
         player.swingMainHand()
         if (action.target == null || action.target != target) {
             if (action.target != null) resetMining(fakePlayer, action)
@@ -31,15 +47,15 @@ object MineProcessor : ActionProcessor<MineAction> {
         }
     }
 
+    override fun stopContinuous(fakePlayer: FakePlayer, action: MineAction) {
+        resetMining(fakePlayer, action)
+    }
+
     private fun resetMining(fakePlayer: FakePlayer, action: MineAction) {
         val target = action.target ?: return
         fakePlayer.nms.doBlockBreakAction(target, ABORT)
         action.target = null
         action.progress = 0f
-    }
-
-    override fun onStop(fakePlayer: FakePlayer, action: MineAction) {
-        resetMining(fakePlayer, action)
     }
 
 }
