@@ -163,6 +163,10 @@ class FakePlayerPlusPluginConfig : OkaeriConfig() {
         @Comment("Whether to enable invulnerability status")
         var invulnerable: Boolean = false
 
+        @Comment("是否开启无限饱食度")
+        @Comment("Whether to enable infinite food level")
+        var infiniteFoodLevel: Boolean = false
+
         @Comment("是否开启自动补货")
         @Comment("Whether to enable auto-replenish")
         var autoReplenish: Boolean = true
@@ -187,6 +191,7 @@ class FakePlayerPlusPluginConfig : OkaeriConfig() {
             collidable,
             pickupItems,
             invulnerable,
+            infiniteFoodLevel,
             autoReplenish,
             autoFish,
             simulationDistance,

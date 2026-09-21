@@ -19,6 +19,7 @@ class FakePlayerSettingsDialog(fakePlayer: FakePlayer, val viewer: Player): Form
         boolSingleOption(fakePlayer::collidable, tl("fakeplayer.gui.settings.collidable"))
         boolSingleOption(fakePlayer::pickupItems, tl("fakeplayer.gui.settings.pickup-items"))
         boolSingleOption(fakePlayer::invulnerable, tl("fakeplayer.gui.settings.invulnerable"))
+        boolSingleOption(fakePlayer::infiniteFoodLevel, tl("fakeplayer.gui.settings.infinite-food-level"))
         boolSingleOption(fakePlayer::autoReplenish, tl("fakeplayer.gui.settings.auto-replenish"))
         boolSingleOption(fakePlayer::autoFish, tl("fakeplayer.gui.settings.auto-fish"))
         numberRange(fakePlayer::simulationDistance, tl("fakeplayer.gui.settings.simulation-distance"), "%s: %s"+tls("fakeplayer.gui.unit.chunk") ,

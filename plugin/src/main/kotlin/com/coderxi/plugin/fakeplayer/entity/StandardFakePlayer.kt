@@ -47,6 +47,10 @@ class StandardFakePlayer(
         if (xpNoCooldown) {
             nms.takeXpDelay = 0
         }
+        if (infiniteFoodLevel) {
+            player.foodLevel = 20
+            player.saturation = 20f
+        }
     }
 
     override var ticking: Boolean = false
@@ -71,6 +75,13 @@ class StandardFakePlayer(
             player.isInvulnerable = value
             settings.invulnerable = value
         }
+
+    override var infiniteFoodLevel: Boolean
+        get() = settings.infiniteFoodLevel
+        set(value) {
+            settings.infiniteFoodLevel = value
+        }
+
     override var autoReplenish: Boolean
         get() = settings.autoReplenish
         set(value) {
@@ -102,10 +113,12 @@ class StandardFakePlayer(
         collidable = settings.collidable
         pickupItems = settings.pickupItems
         invulnerable = settings.invulnerable
+        infiniteFoodLevel = settings.infiniteFoodLevel
         autoReplenish = settings.autoReplenish
         autoFish = settings.autoFish
         simulationDistance = settings.simulationDistance
         xpNoCooldown = settings.xpNoCooldown
+        autoEquipTool = settings.autoEquipTool
     }
 
     override var ping: Int

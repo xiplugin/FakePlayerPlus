@@ -38,6 +38,7 @@ interface FakePlayer {
     var collidable: Boolean
     var pickupItems: Boolean
     var invulnerable: Boolean
+    var infiniteFoodLevel: Boolean
     var autoReplenish: Boolean
     var autoFish: Boolean
     var simulationDistance: Int

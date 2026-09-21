@@ -79,8 +79,8 @@ open class FormDialog(val title: Component) {
     fun boolSingleOption(
         property: KMutableProperty0<Boolean>,
         label: Component = Component.text(property.name),
-        trueLabel: Component = Component.text("true"),
-        falseLabel: Component = Component.text("false"),
+        trueLabel: Component = tl("fakeplayer.gui.var.true"),
+        falseLabel: Component = tl("fakeplayer.gui.var.false"),
         width: Int = 100,
         permission: String? = null,
         onChange: ((newValue: Boolean) -> Unit)? = null
