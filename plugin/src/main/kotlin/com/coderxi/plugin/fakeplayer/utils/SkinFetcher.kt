@@ -5,6 +5,7 @@ import com.google.common.cache.Cache
 import com.google.common.cache.CacheBuilder
 import com.google.gson.JsonParser
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.future.await
 import kotlinx.coroutines.withContext
 import java.net.URI
 import java.net.http.HttpClient
@@ -19,18 +20,18 @@ object SkinFetcher {
         .connectTimeout(Duration.ofSeconds(10))
         .build()
 
-    private fun getOnlinePlayerIdByName(name: String): String? {
+    private suspend fun getOnlinePlayerIdByName(name: String): String? {
         val request = HttpRequest.newBuilder().GET().uri(URI.create("https://api.mojang.com/users/profiles/minecraft/$name")).build()
-        val response = httpClient.send(request, HttpResponse.BodyHandlers.ofString())
+        val response = runCatching { httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString()).await() }.getOrNull() ?: return null
         if (response.statusCode() != 200) return null
         val uuid = JsonParser.parseString(response.body()).asJsonObject.get("id")
         if (uuid.isJsonNull) return null
         return uuid.asString
     }
 
-    private fun getOnlinePlayerTexturesById(id: String): PlayerTextures? {
+    private suspend fun getOnlinePlayerTexturesById(id: String): PlayerTextures? {
         val request = HttpRequest.newBuilder().GET().uri(URI.create("https://sessionserver.mojang.com/session/minecraft/profile/$id?unsigned=false")).build()
-        val response = httpClient.send(request, HttpResponse.BodyHandlers.ofString())
+        val response = runCatching { httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString()).await() }.getOrNull() ?: return null
         if (response.statusCode() != 200) return null
         val profile = JsonParser.parseString(response.body()).asJsonObject
         val properties = profile.get("properties")
