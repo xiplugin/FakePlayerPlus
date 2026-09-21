@@ -277,6 +277,7 @@ class FakePlayerCommand {
 
     @Subcommand("swap")
     @Permission(SWAP, BASIC)
+    @HelpLine("fakeplayer.help.cmd.swap")
     fun swapHandItem(@Select fakePlayer: FakePlayer) {
         fakePlayer.nms.swapHandItem()
     }
