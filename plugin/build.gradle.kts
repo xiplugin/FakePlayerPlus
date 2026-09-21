@@ -3,6 +3,7 @@ import org.gradle.internal.logging.progress.ProgressLoggerFactory
 import xyz.jpenilla.runtask.service.DownloadsAPIService.Build.Latest
 import xyz.jpenilla.runtask.service.DownloadsAPIService.Build.Specific
 import xyz.jpenilla.runtask.service.DownloadsAPIService.Companion.folia
+import xyz.jpenilla.runtask.service.DownloadsAPIService.Companion.paper
 
 val progressLoggerFactory = project.serviceOf<ProgressLoggerFactory>()
 
@@ -39,6 +40,7 @@ val supportVersions = listOf(
     "folia-1.21.11",
     "folia-26.1.2",
     "folia-26.2-5",
+    "paper-26.3-31",
 )
 
 tasks {
@@ -49,6 +51,9 @@ tasks {
             group = "run"
             runDirectory(layout.projectDirectory.file("run/$supportVersion").asFile)
             minecraftVersion(version)
+            if (platform == "paper" && build!= Latest) {
+                serverJar(paper(project).get().resolveBuild(progressLoggerFactory,version,build).toFile())
+            }
             if (platform == "folia") {
                 serverJar(folia(project).get().resolveBuild(progressLoggerFactory,version,build).toFile())
             }

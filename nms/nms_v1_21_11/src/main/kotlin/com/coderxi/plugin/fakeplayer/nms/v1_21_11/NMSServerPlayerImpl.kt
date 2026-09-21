@@ -190,7 +190,7 @@ open class NMSServerPlayerImpl(override val player: Player) : NMSServerPlayer {
         val isTooHigh = blockHitResult.blockPos.y >= level.maxY - (if (blockHitResult.direction == Direction.UP) 1 else 0)
         if (isTooHigh || !level.mayInteract(handle, blockHitResult.blockPos)) return false
         if (handle.gameMode.useItemOn(handle,level,stack, hand ,blockHitResult).consumesAction()) {
-            handle.swing(hand)
+            swingHand(hand)
             return true
         }
         return false
@@ -200,11 +200,11 @@ open class NMSServerPlayerImpl(override val player: Player) : NMSServerPlayer {
         val entity = entityHitResult.entity
         val relativePos = entityHitResult.location.subtract(entity.x, entity.y, entity.z)
         if (entity.interactAt(handle, relativePos, hand).consumesAction()) {
-            handle.swing(hand)
+            swingHand(hand)
             return true
         }
         if (handle.interactOn(entity, hand).consumesAction()) {
-            handle.swing(hand)
+            swingHand(hand)
             return true
         }
         return false
@@ -221,10 +221,14 @@ open class NMSServerPlayerImpl(override val player: Player) : NMSServerPlayer {
             HitResult.Type.ENTITY -> useItemOnEntity(level,stack, hand, hitResult as EntityHitResult)
         }
         if (handle.gameMode.useItem(handle,level,stack, hand).consumesAction()) {
-            handle.swing(hand)
+            swingHand(hand)
             return true
         }
         return useResult
+    }
+
+    open fun swingHand(hand: InteractionHand) {
+        handle.swing(hand)
     }
 
     override fun releaseUsingItem() {
