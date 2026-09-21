@@ -48,7 +48,7 @@ interface NMSServerPlayer {
     /** 移动玩家 */
     fun absMoveTo(x: Double, y: Double, z: Double, yRot: Float, xRot: Float)
     /** 设置相对移动 */
-    fun setDeltaMovement(vector: Vector)
+    var deltaMovement: Vector
 
     /** 发送消息 */
     fun chat(msg: String)

@@ -6,7 +6,7 @@ import com.coderxi.plugin.fakeplayer.command.annotaion.PluginCommandPermission a
 import com.coderxi.plugin.fakeplayer.command.permission.Permission.*
 
 @Permission(ACTION_MINE, BASIC)
-class MineAction: Action {
+open class MineAction: Action {
     var target: Block? = null
     var progress = 0f
     var freezeTick = 0

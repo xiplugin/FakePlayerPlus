@@ -73,7 +73,7 @@ open class NMSServerPlayerImpl(override val player: Player) : NMSServerPlayer {
 
     override fun doTick() = handle.doTick()
     override fun absMoveTo(x: Double, y: Double, z: Double, yRot: Float, xRot: Float) = handle.absSnapTo(x, y, z, yRot, xRot)
-    override fun setDeltaMovement(vector: Vector) { handle.deltaMovement = Vec3(vector.x, vector.y, vector.z) }
+    override var deltaMovement: Vector get() = handle.deltaMovement.asVector(); set(v){handle.deltaMovement = Vec3(v.x, v.y, v.z)}
     override fun startRiding(entity: Entity, force: Boolean, triggerEvents: Boolean): Boolean = handle.startRiding((entity as CraftEntity).handle,force,triggerEvents)
     override fun stopRiding() = handle.stopRiding()
     override fun dropInventory() = handle.inventory.dropAll()
@@ -277,5 +277,6 @@ open class NMSServerPlayerImpl(override val player: Player) : NMSServerPlayer {
             (this as CraftPlayer).handle.connection.send(packet)
         }
         private val dummyScoreboard  = Scoreboard()
+        private fun Vec3.asVector() = Vector(x, y, z)
     }
 }
