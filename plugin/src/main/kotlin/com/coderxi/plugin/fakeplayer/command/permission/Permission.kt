@@ -24,6 +24,7 @@ enum class Permission(val value: String) {
     SKIN("fakeplayer.skin"),
     CMD("fakeplayer.command"),
     CHAT("fakeplayer.chat"),
+    SWAP("fakeplayer.swap"),
 
     SETTINGS("fakeplayer.settings"),
 

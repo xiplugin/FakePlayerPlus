@@ -97,6 +97,7 @@ interface NMSServerPlayer {
     enum class BlockBreakActionType { START, ABORT, STOP }
     fun useItem(type: EquipmentSlot): Boolean
     fun releaseUsingItem()
+    fun swapHandItem()
 
     /** 寻找背包中的合适工具 */
     fun findBestToolSlot(target: Block): Int?

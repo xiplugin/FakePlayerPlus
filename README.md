@@ -56,6 +56,7 @@ Please refer to the `config.yml` configuration file in the plugin directory
 | /fp tppos | Teleport fake player to specific position | fakeplayer.tp | |
 | /fp skin \<name\> | Set a premium account skin for the fake player | fakeplayer.skin | This command has a 60-second cooldown |
 | /fp cmd | Force fake player to execute a command | fakeplayer.cmd | If the command contains spaces or requires a `/` prefix, wrap it in `"`, e.g., `/fp cmd "kill @p"` |
+| /fp swap | Swap main and off-hand items. | fakeplayer.swap |  |
 | /fp chat | Force fake player to send a chat message | fakeplayer.chat | Wrap the text in `"` if the message contains spaces |
 | **/fp settings** | Open the Settings GUI | fakeplayer.settings | |
 | **/fp action** | Open the Action List GUI | fakeplayer.action | The action buttons will only display if the player has the corresponding permission (see below) |

@@ -275,6 +275,12 @@ class FakePlayerCommand {
         fakePlayer.nms.chat(message)
     }
 
+    @Subcommand("swap")
+    @Permission(SWAP, BASIC)
+    fun swapHandItem(@Select fakePlayer: FakePlayer) {
+        fakePlayer.nms.swapHandItem()
+    }
+
     @Subcommand("settings")
     @Permission(SETTINGS,BASIC)
     @HelpLine("fakeplayer.help.cmd.settings", playerOnly = true)

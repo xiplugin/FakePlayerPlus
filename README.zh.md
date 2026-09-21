@@ -58,6 +58,7 @@
 | /fp skin \<name\> | 给假人设置正版玩家皮肤 | fakeplayer.skin | 此指令有 60 秒冷却 |
 | /fp cmd | 让假人执行命令 | fakeplayer.cmd | 命令有空格时或需要 `/` 前缀时需将命令文本使用 `"` 包裹，例如 `/fp cmd "kill @p"` |
 | /fp chat | 让假人发送聊天消息 | fakeplayer.chat | 消息有空格时需将消息文本使用 `"` 包裹 |
+| /fp swap | 交换假人主副手物品 | fakeplayer.swap |  |
 | **/fp settings** | 打开假人设置 GUI | fakeplayer.settings | |
 | **/fp action** | 打开假人动作列表 GUI | fakeplayer.action | 有对应的动作权限（如下）才能显示动作按钮 |
 | **/fp action start \<action\>** | 打开假人动作执行 GUI | fakeplayer.action.\<action\> | |

@@ -231,6 +231,14 @@ open class NMSServerPlayerImpl(override val player: Player) : NMSServerPlayer {
         handle.releaseUsingItem()
     }
 
+    override fun swapHandItem() {
+         handle.connection.handlePlayerAction(ServerboundPlayerActionPacket(
+                ServerboundPlayerActionPacket.Action.SWAP_ITEM_WITH_OFFHAND,
+                BlockPos(0, 0, 0),
+                Direction.DOWN
+        ))
+    }
+
     override fun findBestToolSlot(target: Block): Int? {
         val inventory = handle.inventory
         val block = (target as CraftBlock).nms
