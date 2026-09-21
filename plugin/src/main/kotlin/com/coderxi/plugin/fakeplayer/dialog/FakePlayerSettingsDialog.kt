@@ -30,8 +30,8 @@ class FakePlayerSettingsDialog(fakePlayer: FakePlayer, val viewer: Player): Form
         )
         boolSingleOption(fakePlayer::xpNoCooldown, tl("fakeplayer.gui.settings.xp-no-cooldown"), permissions = listOf(SETTINGS_XP_NO_COOLDOWN.value, BASIC.value))
         boolSingleOption(fakePlayer::autoEquipTool, tl("fakeplayer.gui.settings.auto-equip-tool"), permissions = listOf(SETTINGS_AUTO_EQUIP_TOOL.value, BASIC.value))
-        enumSingleOption(InteractedAction::class.java,fakePlayer::interactedAction, tl("fakeplayer.gui.settings.interacted-action"), optionLabelProvider = {tl("fakeplayer.gui.var.interacted-action.${it.name}")})
-        enumSingleOption(InteractedAction::class.java,fakePlayer::shiftInteractedAction, tl("fakeplayer.gui.settings.shift-interacted-action"), optionLabelProvider = {tl("fakeplayer.gui.var.interacted-action.${it.name}")})
+        enumSingleOption(InteractedAction::class.java,fakePlayer::interactedAction, tl("fakeplayer.gui.settings.interacted-action"), optionLabelProvider = {tl("fakeplayer.gui.var.interacted-action.${it.name}")}, permissions = listOf(SETTINGS_INTERACTED_ACTION.value, ADMIN.value))
+        enumSingleOption(InteractedAction::class.java,fakePlayer::shiftInteractedAction, tl("fakeplayer.gui.settings.shift-interacted-action"), optionLabelProvider = {tl("fakeplayer.gui.var.interacted-action.${it.name}")}, permissions = listOf(SETTINGS_SHIFT_INTERACTED_ACTION.value, ADMIN.value))
         submitButton(width = 100) {
             viewer.sendMessage(tlp("fakeplayer.gui.settings.submit.success", fakePlayer.name))
             launch { plugin.fakePlayerManager.saveSettings(viewer, fakePlayer) }

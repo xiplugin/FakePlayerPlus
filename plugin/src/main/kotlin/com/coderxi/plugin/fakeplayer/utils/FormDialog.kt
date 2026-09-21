@@ -120,7 +120,7 @@ open class FormDialog(val title: Component) {
             build = {
                 DialogInput.numberRange(property.name, label, start, end)
                     .step(step)
-                    .initial(property.get())
+                    .initial(property.get().coerceAtMost(end))
                     .width(width)
                     .build()
             },
@@ -150,7 +150,7 @@ open class FormDialog(val title: Component) {
             build = {
                 DialogInput.numberRange(property.name, label, start.toFloat(), end.toFloat())
                     .step(step.toFloat())
-                    .initial(property.get().toFloat())
+                    .initial(property.get().toFloat().coerceAtMost(end.toFloat()))
                     .width(width)
                     .apply { if(labelFormat != null) labelFormat(labelFormat) }
                     .build()
