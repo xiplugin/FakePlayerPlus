@@ -8,6 +8,8 @@ import com.coderxi.plugin.fakeplayer.utils.plugin
 import com.coderxi.plugin.fakeplayer.utils.tl
 import io.papermc.paper.registry.data.dialog.ActionButton
 import io.papermc.paper.registry.data.dialog.action.DialogAction
+import net.kyori.adventure.text.Component
+import net.kyori.adventure.text.format.NamedTextColor
 import org.bukkit.entity.Player
 
 @Suppress("UnstableApiUsage")
@@ -15,13 +17,16 @@ class FakePlayerActionListDialog(fakePlayer: FakePlayer, val viewer: Player) : F
     tl("fakeplayer.gui.action.title", fakePlayer.name)
 ) {
     init {
-        plugin.globalActionRegistry.actions.filter { actionType ->
+        plugin.globalActionRegistry.actions.forEach { actionType ->
             val permissions = actionType.getAnnotation(PluginCommandPermission::class.java)
-            permissions == null || viewer.hasPermission(permissions.node, permissions.or)
-        }.mapNotNull(plugin.globalActionRegistry::getName).forEach { actionName ->
+            if (permissions != null && !viewer.hasPermission(permissions.node, permissions.or)) {
+                return@forEach
+            }
+            val actionName = plugin.globalActionRegistry.getName(actionType) ?: return@forEach
+            val statusColor = Component.text("",if (fakePlayer.actions.activeActions.contains(actionType)) NamedTextColor.GREEN else NamedTextColor.WHITE)
             actionButton(
                 ActionButton.create(
-                    tl("fakeplayer.action.${actionName.lowercase().replace("_", "-")}"),
+                    statusColor.append(tl("fakeplayer.action.${actionName.replace("_","-")}")),
                     null,
                     100,
                     DialogAction.customClick({ _, _ ->

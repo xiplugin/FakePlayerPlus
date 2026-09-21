@@ -14,8 +14,8 @@ class FakePlayerActionExecuteDialog (fakePlayer: FakePlayer, action: Action, val
     tl("fakeplayer.gui.action.title",fakePlayer.name)
 ) {
     init {
-
-        plugin.globalActionRegistry.getModes(action.javaClass)?.forEach { mode ->
+        val modes = plugin.globalActionRegistry.getModes(action.javaClass)
+        modes?.forEach { mode ->
             val suggestParameters = plugin.globalActionRegistry.getModeSuggestParameters(mode)
             suggestParameters.entries.forEach { (key, value) ->
                 if (value is Int) {
@@ -56,14 +56,17 @@ class FakePlayerActionExecuteDialog (fakePlayer: FakePlayer, action: Action, val
             )
         }
 
-        actionButton(
-            ActionButton.create(
-                tl("fakeplayer.gui.action.stop"),
-                null,
-                100,
-                DialogAction.customClick({ _, _ -> fakePlayer.actions.stop(action) }, defaultActionOptions)
+        if (fakePlayer.actions.activeActions.contains(action.javaClass)) {
+            actionButton(
+                ActionButton.create(
+                    tl("fakeplayer.gui.action.stop"),
+                    null,
+                    100,
+                    DialogAction.customClick({ _, _ -> fakePlayer.actions.stop(action) }, defaultActionOptions)
+                )
             )
-        )
-        actionButtonColumns(1)
+        }
+
+        actionButtonColumns(modes?.size?.coerceAtLeast(1) ?: 1)
     }
 }
