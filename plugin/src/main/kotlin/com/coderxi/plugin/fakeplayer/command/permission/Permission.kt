@@ -36,6 +36,8 @@ enum class Permission(val value: String) {
     SETTINGS_SIMULATION_DISTANCE("fakeplayer.settings.simulationDistance"),
     SETTINGS_XP_NO_COOLDOWN("fakeplayer.settings.xpNoCooldown"),
     SETTINGS_AUTO_EQUIP_TOOL("fakeplayer.settings.autoEquipTool"),
+    SETTINGS_INTERACTED_ACTION("fakeplayer.settings.interactedAction"),
+    SETTINGS_SHIFT_INTERACTED_ACTION("fakeplayer.settings.shiftInteractedAction"),
 
     ACTION("fakeplayer.action"),
     ACTION_ATTACK("fakeplayer.action.attack"),

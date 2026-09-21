@@ -32,7 +32,7 @@ class FakePlayerActionListDialog(fakePlayer: FakePlayer, val viewer: Player) : F
                     DialogAction.customClick({ _, _ ->
                         plugin.globalActionRegistry.getType(actionName)?.getConstructor()?.newInstance()
                             ?.let { action ->
-                                FakePlayerActionExecuteDialog(fakePlayer, action, viewer).show(viewer)
+                                FakePlayerActionExecuteDialog(fakePlayer, action, viewer).show(viewer, false)
                             }
                     }, defaultActionOptions)
                 )

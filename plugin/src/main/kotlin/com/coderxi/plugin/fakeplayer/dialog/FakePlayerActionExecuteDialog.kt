@@ -26,12 +26,14 @@ class FakePlayerActionExecuteDialog (fakePlayer: FakePlayer, action: Action, val
                         null,
                         1,
                         200,
+                        width = 100
                     )
                 } else {
                     text(
                         key,
                         value.toString(),
-                        tl("fakeplayer.gui.action.params.$key")
+                        tl("fakeplayer.gui.action.params.$key"),
+                        width = 100
                     )
                 }
             }
@@ -49,7 +51,6 @@ class FakePlayerActionExecuteDialog (fakePlayer: FakePlayer, action: Action, val
                                 key to (view.getText(key) ?: value.toString())
                             }
                         }
-                        println(params)
                         fakePlayer.actions.execute(action, mode, params)
                     }, defaultActionOptions)
                 )

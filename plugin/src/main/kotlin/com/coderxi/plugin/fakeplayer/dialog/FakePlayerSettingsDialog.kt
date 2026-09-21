@@ -1,6 +1,7 @@
 package com.coderxi.plugin.fakeplayer.dialog
 
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
+import com.coderxi.plugin.fakeplayer.api.model.FakePlayerSettings.InteractedAction
 import com.coderxi.plugin.fakeplayer.command.permission.Permission.*
 import com.coderxi.plugin.fakeplayer.utils.FormDialog
 import com.coderxi.plugin.fakeplayer.utils.hasPermission
@@ -29,9 +30,11 @@ class FakePlayerSettingsDialog(fakePlayer: FakePlayer, val viewer: Player): Form
         )
         boolSingleOption(fakePlayer::xpNoCooldown, tl("fakeplayer.gui.settings.xp-no-cooldown"), permissions = listOf(SETTINGS_XP_NO_COOLDOWN.value, BASIC.value))
         boolSingleOption(fakePlayer::autoEquipTool, tl("fakeplayer.gui.settings.auto-equip-tool"), permissions = listOf(SETTINGS_AUTO_EQUIP_TOOL.value, BASIC.value))
-        submitButton {
+        enumSingleOption(InteractedAction::class.java,fakePlayer::interactedAction, tl("fakeplayer.gui.settings.interacted-action"), optionLabelProvider = {tl("fakeplayer.gui.var.interacted-action.${it.name}")})
+        enumSingleOption(InteractedAction::class.java,fakePlayer::shiftInteractedAction, tl("fakeplayer.gui.settings.shift-interacted-action"), optionLabelProvider = {tl("fakeplayer.gui.var.interacted-action.${it.name}")})
+        submitButton(width = 100) {
             viewer.sendMessage(tlp("fakeplayer.gui.settings.submit.success", fakePlayer.name))
-            launch { plugin.fakePlayerManager.saveSettings(fakePlayer) }
+            launch { plugin.fakePlayerManager.saveSettings(viewer, fakePlayer) }
         }
     }
 

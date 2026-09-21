@@ -1,6 +1,7 @@
 package com.coderxi.plugin.fakeplayer.config
 
 import com.coderxi.plugin.fakeplayer.api.model.FakePlayerSettings
+import com.coderxi.plugin.fakeplayer.api.model.FakePlayerSettings.InteractedAction
 import eu.okaeri.configs.OkaeriConfig
 import eu.okaeri.configs.annotation.*
 
@@ -187,6 +188,16 @@ class FakePlayerPlusPluginConfig : OkaeriConfig() {
         @Comment("Whether to automatically equip the best tool")
         var autoEquipTool: Boolean = false
 
+        @Comment("被交互时执行的操作, 允许玩家修改请赋予玩家fakeplayer.settings.interactedAction权限")
+        @Comment("Action to perform when interacted with, Requires the fakeplayer.settings.interactedAction permission to modify")
+        @Comment("NONE, OPEN_INVENTORY, OPEN_ENDER_CHEST, OPEN_SETTINGS_UI")
+        var interactedAction = InteractedAction.OPEN_INVENTORY
+
+        @Comment("被Shift交互时执行的操作, 允许玩家修改请赋予玩家fakeplayer.settings.shiftInteractedAction权限")
+        @Comment("Action to perform when interacted with while sneaking, Requires the fakeplayer.settings.shiftInteractedAction permission to modify")
+        @Comment("NONE, OPEN_INVENTORY, OPEN_ENDER_CHEST, OPEN_SETTINGS_UI")
+        var shiftInteractedAction = InteractedAction.OPEN_ENDER_CHEST
+
         fun copy() = FakePlayerSettings(
             collidable,
             pickupItems,
@@ -197,6 +208,8 @@ class FakePlayerPlusPluginConfig : OkaeriConfig() {
             simulationDistance,
             xpNoCooldown,
             autoEquipTool,
+            interactedAction,
+            shiftInteractedAction,
         )
     }
 

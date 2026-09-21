@@ -10,12 +10,15 @@ import io.papermc.paper.registry.data.dialog.input.SingleOptionDialogInput
 import io.papermc.paper.registry.data.dialog.type.DialogType
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.event.ClickCallback
+import org.bukkit.Sound
 import org.bukkit.entity.Player
 import java.time.Duration
 import kotlin.reflect.KMutableProperty0
 
 @Suppress("UnstableApiUsage")
 open class FormDialog(val title: Component) {
+
+    private val defaultButtonWidth = 120
 
     private class FormEntry(
         val permissions: Collection<String>?,
@@ -48,7 +51,7 @@ open class FormDialog(val title: Component) {
         property: KMutableProperty0<T>,
         label: Component = Component.text(property.name),
         options: List<Pair<T, Component>>,
-        width: Int = 100,
+        width: Int = defaultButtonWidth,
         permissions: Collection<String>? = null,
         onChange: ((newValue: T) -> Unit)? = null
     ): FormDialog = apply {
@@ -81,7 +84,7 @@ open class FormDialog(val title: Component) {
         label: Component = Component.text(property.name),
         trueLabel: Component = tl("fakeplayer.gui.var.true"),
         falseLabel: Component = tl("fakeplayer.gui.var.false"),
-        width: Int = 100,
+        width: Int = defaultButtonWidth,
         permissions: Collection<String>? = null,
         onChange: ((newValue: Boolean) -> Unit)? = null
     ): FormDialog {
@@ -93,7 +96,7 @@ open class FormDialog(val title: Component) {
         enumClass: Class<E>,
         property: KMutableProperty0<E>,
         label: Component = Component.text(property.name),
-        width: Int = 100,
+        width: Int = defaultButtonWidth,
         permissions: Collection<String>? = null,
         optionLabelProvider: (E) -> Component = { Component.text(it.name) },
         onChange: ((newValue: E) -> Unit)? = null
@@ -108,7 +111,7 @@ open class FormDialog(val title: Component) {
         start: Float,
         end: Float,
         step: Float = 0.5f,
-        width: Int = 100,
+        width: Int = defaultButtonWidth,
         permissions: Collection<String>? = null,
         onChange: ((newValue: Float) -> Unit)? = null
     ): FormDialog = apply {
@@ -138,7 +141,7 @@ open class FormDialog(val title: Component) {
         start: Int,
         end: Int,
         step: Int = 1,
-        width: Int = 100,
+        width: Int = defaultButtonWidth,
         permissions: Collection<String>? = null,
         onChange: ((newValue: Int) -> Unit)? = null
     ): FormDialog = apply {
@@ -170,7 +173,7 @@ open class FormDialog(val title: Component) {
         start: Int,
         end: Int,
         step: Int = 1,
-        width: Int = 100,
+        width: Int = defaultButtonWidth,
         permissions: Collection<String>? = null,
         onChange: ((newValue: Int) -> Unit)? = null
     ): FormDialog = apply {
@@ -196,7 +199,7 @@ open class FormDialog(val title: Component) {
     fun text(
         property: KMutableProperty0<String>,
         label: Component = Component.text(property.name),
-        width: Int = 100,
+        width: Int = defaultButtonWidth,
         maxLength: Int = 16,
         permissions: Collection<String>? = null,
         onChange: ((newValue: String) -> Unit)? = null
@@ -224,7 +227,7 @@ open class FormDialog(val title: Component) {
         key: String,
         initial: String,
         label: Component = Component.text(key),
-        width: Int = 100,
+        width: Int = defaultButtonWidth,
         maxLength: Int = 16,
         permissions: Collection<String>? = null,
         onChange: ((newValue: String) -> Unit)? = null
@@ -263,7 +266,7 @@ open class FormDialog(val title: Component) {
     private var submitButton : ActionButton? = null
     fun submitButton(
         label: Component = tl("fakeplayer.gui.submit"),
-        width: Int = 100,
+        width: Int = defaultButtonWidth,
         options: ClickCallback.Options = defaultActionOptions,
         onClick: (() -> Unit)? = null
     ): FormDialog {
@@ -276,7 +279,7 @@ open class FormDialog(val title: Component) {
     private var cancelButton : ActionButton? = null
     fun cancelButton(
         label: Component = tl("fakeplayer.gui.cancel"),
-        width: Int = 100,
+        width: Int = defaultButtonWidth,
         options: ClickCallback.Options = defaultActionOptions,
         onClick: (() -> Unit)? = null
     ): FormDialog {
@@ -286,7 +289,7 @@ open class FormDialog(val title: Component) {
         return this
     }
 
-    fun show(player: Player) {
+    fun show(player: Player, playSound: Boolean = true) {
         val formButtons = listOfNotNull(submitButton, cancelButton)
         val allButtons = actionButtons + formButtons
         val dialog = Dialog.create { builder -> builder.empty()
@@ -307,6 +310,7 @@ open class FormDialog(val title: Component) {
                 )
         }
         player.showDialog(dialog)
+        if (playSound) player.playSound(player.location, Sound.UI_BUTTON_CLICK, 0.3f, 1f)
     }
 
     protected val defaultActionOptions: ClickCallback.Options by lazy {

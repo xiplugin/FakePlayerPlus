@@ -234,8 +234,8 @@ class FakePlayerManagerImpl : FakePlayerManager, Listener {
         withContext(Dispatchers.IO) {repository.saveSkin(fakePlayer)}
     }
 
-    override suspend fun saveSettings(fakePlayer: FakePlayer) {
-        withContext(Dispatchers.IO) {repository.saveSettings(fakePlayer)}
+    override suspend fun saveSettings(operator: CommandSender, fakePlayer: FakePlayer) {
+        withContext(Dispatchers.IO) {repository.saveSettings(operator, fakePlayer)}
     }
 
     override suspend fun addOwner(fakePlayer: FakePlayer, ownerUuid: UUID) {

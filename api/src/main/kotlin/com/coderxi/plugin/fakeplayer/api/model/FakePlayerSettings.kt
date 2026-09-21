@@ -12,7 +12,15 @@ data class FakePlayerSettings(
     var simulationDistance: Int,
     var xpNoCooldown: Boolean,
     var autoEquipTool: Boolean,
+    var interactedAction: InteractedAction?,
+    var shiftInteractedAction: InteractedAction?,
 ) {
+    enum class InteractedAction {
+        NONE,
+        OPEN_INVENTORY,
+        OPEN_ENDER_CHEST,
+        OPEN_SETTINGS_UI
+    }
     companion object {
         fun from(fakePlayer: FakePlayer) = FakePlayerSettings(
             fakePlayer.collidable,
@@ -24,6 +32,8 @@ data class FakePlayerSettings(
             fakePlayer.simulationDistance,
             fakePlayer.xpNoCooldown,
             fakePlayer.autoEquipTool,
+            fakePlayer.interactedAction,
+            fakePlayer.shiftInteractedAction,
         )
     }
 }

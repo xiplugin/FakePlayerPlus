@@ -96,6 +96,7 @@ class FakePlayerPlusPlugin: FakePlayerPlusPluginApi, JavaPlugin() {
             FakePlayerTicker(fpm),
             FakePlayerEventDispatcher(fpm),
             FakePlayerBehaviorImplementListener(fpm),
+            FakePlayerInteractedListener(),
             FakePlayerLifecycleCommandListener(),
             FakePlayerLimiter(fpm).also { fakePlayerLimiter = it },
             FakePlayerPingUpdater(fpm),

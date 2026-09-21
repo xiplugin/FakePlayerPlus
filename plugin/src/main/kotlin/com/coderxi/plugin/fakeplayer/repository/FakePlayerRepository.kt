@@ -4,12 +4,15 @@ import com.coderxi.plugin.fakeplayer.api.model.FakePlayerSettings
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
 import com.coderxi.plugin.fakeplayer.api.model.PlayerTextures
 import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandException
+import com.coderxi.plugin.fakeplayer.command.permission.Permission
 import com.coderxi.plugin.fakeplayer.entity.StandardFakePlayer
 import com.coderxi.plugin.fakeplayer.repository.po.FakePlayerPO
+import com.coderxi.plugin.fakeplayer.utils.hasPermission
 import com.coderxi.plugin.fakeplayer.utils.plugin
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.bukkit.command.CommandSender
 import org.sql2o.Connection
 import org.sql2o.Sql2o
 import java.io.File
@@ -113,12 +116,16 @@ class FakePlayerRepository {
         }
     }
 
-    fun saveSettings(fakePlayer: FakePlayer) {
+    fun saveSettings(operator: CommandSender, fakePlayer: FakePlayer) {
         val sql = "UPDATE fakeplayer SET settings = :settings WHERE uuid = :uuid"
         open().use { conn ->
             conn.createQuery(sql)
                 .addParameter("uuid", fakePlayer.uuid.toString())
-                .addParameter("settings", gson.toJson(FakePlayerSettings.from(fakePlayer)))
+                .addParameter("settings", gson.toJson(FakePlayerSettings.from(fakePlayer).apply {
+                    val defaultSettings = plugin.config.defaultSettings
+                    if (!operator.hasPermission(Permission.SETTINGS_INTERACTED_ACTION)) interactedAction = defaultSettings.interactedAction
+                    if (!operator.hasPermission(Permission.SETTINGS_SHIFT_INTERACTED_ACTION)) shiftInteractedAction = defaultSettings.shiftInteractedAction
+                }))
                 .executeUpdate()
         }
     }

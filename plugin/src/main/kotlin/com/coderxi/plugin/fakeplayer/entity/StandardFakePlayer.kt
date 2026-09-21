@@ -1,9 +1,9 @@
 package com.coderxi.plugin.fakeplayer.entity
 
 import com.coderxi.plugin.fakeplayer.action.ActionControllerImpl
-import com.coderxi.plugin.fakeplayer.action.handler.*
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
 import com.coderxi.plugin.fakeplayer.api.model.FakePlayerSettings
+import com.coderxi.plugin.fakeplayer.api.model.FakePlayerSettings.*
 import com.coderxi.plugin.fakeplayer.api.model.PlayerDetail
 import com.coderxi.plugin.fakeplayer.api.model.PlayerTextures
 import com.coderxi.plugin.fakeplayer.api.nms.NMSServerGamePacketListener
@@ -54,6 +54,8 @@ class StandardFakePlayer(
     }
 
     override var ticking: Boolean = false
+
+    private val defaultSettings get() = plugin.config.defaultSettings
 
     override var collidable: Boolean
         get() = settings.collidable
@@ -108,6 +110,16 @@ class StandardFakePlayer(
         set(value) {
             settings.autoEquipTool = value
         }
+    override var interactedAction: InteractedAction
+        get() = settings.interactedAction ?: defaultSettings.interactedAction
+        set(value) {
+            settings.interactedAction = value
+        }
+    override var shiftInteractedAction: InteractedAction
+        get() = settings.shiftInteractedAction ?: defaultSettings.shiftInteractedAction
+        set(value) {
+            settings.shiftInteractedAction = value
+        }
 
     override fun applySettings(settings: FakePlayerSettings) {
         collidable = settings.collidable
@@ -119,6 +131,8 @@ class StandardFakePlayer(
         simulationDistance = settings.simulationDistance
         xpNoCooldown = settings.xpNoCooldown
         autoEquipTool = settings.autoEquipTool
+        interactedAction = settings.interactedAction ?: defaultSettings.interactedAction
+        shiftInteractedAction = settings.shiftInteractedAction ?: defaultSettings.shiftInteractedAction
     }
 
     override var ping: Int

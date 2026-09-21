@@ -2,6 +2,7 @@ package com.coderxi.plugin.fakeplayer.api.entity
 
 import com.coderxi.plugin.fakeplayer.api.action.ActionController
 import com.coderxi.plugin.fakeplayer.api.model.FakePlayerSettings
+import com.coderxi.plugin.fakeplayer.api.model.FakePlayerSettings.InteractedAction
 import com.coderxi.plugin.fakeplayer.api.model.PlayerDetail
 import com.coderxi.plugin.fakeplayer.api.model.PlayerTextures
 import com.coderxi.plugin.fakeplayer.api.nms.NMSServerPlayer
@@ -44,6 +45,8 @@ interface FakePlayer {
     var simulationDistance: Int
     var xpNoCooldown: Boolean
     var autoEquipTool: Boolean
+    var interactedAction: InteractedAction
+    var shiftInteractedAction: InteractedAction
 
     fun applySettings(settings: FakePlayerSettings)
 
