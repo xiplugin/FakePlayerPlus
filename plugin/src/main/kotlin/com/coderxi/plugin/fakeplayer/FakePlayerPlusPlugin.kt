@@ -123,11 +123,11 @@ class FakePlayerPlusPlugin: FakePlayerPlusPluginApi, JavaPlugin() {
         globalActionRegistry = ActionRegistryImpl().apply {
             registerCommonHandlers(
                 AttackHandler,
+                MineHandler,
+                UseItemHandler,
                 DropItemHandler,
                 JumpHandler,
-                MineHandler,
                 SneakHandler,
-                UseItemHandler
             )
             CommonActionMode.entries.forEach { mode ->
                 setModeSuggestParameters(mode.key, mode.suggestParameters)

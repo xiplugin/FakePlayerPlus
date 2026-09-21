@@ -5,13 +5,15 @@ import com.coderxi.plugin.fakeplayer.api.action.Action
 import com.coderxi.plugin.fakeplayer.api.action.ActionHandler
 import com.coderxi.plugin.fakeplayer.api.action.ActionRegistry
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArraySet
 
 class ActionRegistryImpl : ActionRegistry {
 
     private val type2name = ConcurrentHashMap<Class<out Action>, String>()
     private val name2type = ConcurrentHashMap<String, Class<out Action>>()
 
-    override val actions get() = type2name
+    override val actions = CopyOnWriteArraySet<Class<out Action>>()
+
     private val type2modes = ConcurrentHashMap<Class<out Action>, MutableList<String>>()
 
     private val mode2params = ConcurrentHashMap<String, Map<String, Any>>()
@@ -48,6 +50,7 @@ class ActionRegistryImpl : ActionRegistry {
         mode: String,
         handler: ActionHandler<out Action>
     ) {
+        actions.add(type)
         type2name[type] = name
         name2type[name] = type
         type2modes.computeIfAbsent(type) { mutableListOf() }.add(mode)

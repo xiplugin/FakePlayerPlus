@@ -15,10 +15,10 @@ class FakePlayerActionListDialog(fakePlayer: FakePlayer, val viewer: Player) : F
     tl("fakeplayer.gui.action.title", fakePlayer.name)
 ) {
     init {
-        plugin.globalActionRegistry.actions.entries.filter { (actionType, _) ->
+        plugin.globalActionRegistry.actions.filter { actionType ->
             val permissions = actionType.getAnnotation(PluginCommandPermission::class.java)
             permissions == null || viewer.hasPermission(permissions.node, permissions.or)
-        }.forEach { (_, actionName) ->
+        }.mapNotNull(plugin.globalActionRegistry::getName).forEach { actionName ->
             actionButton(
                 ActionButton.create(
                     tl("fakeplayer.action.${actionName.lowercase().replace("_", "-")}"),

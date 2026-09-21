@@ -31,13 +31,13 @@ class ActionParameterType: ParameterType<BukkitCommandActor, Action> {
 
     object DefaultSuggestions: SuggestionProvider<BukkitCommandActor> {
         override fun getSuggestions(context: ExecutionContext<BukkitCommandActor?>): Collection<String?> {
-            return plugin.globalActionRegistry.actions.entries.mapNotNull { (actionType, actionName) ->
+            return plugin.globalActionRegistry.actions.mapNotNull { actionType ->
                 val sender = context.actor().sender()
                 val permissions = actionType.getAnnotation(Permission::class.java)
                 if (permissions != null && !sender.hasPermission(permissions.node, permissions.or)) {
                     null
                 } else {
-                    actionName
+                    plugin.globalActionRegistry.getName(actionType)
                 }
             }
         }

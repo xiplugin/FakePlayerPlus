@@ -2,7 +2,7 @@ package com.coderxi.plugin.fakeplayer.api.action
 
 interface ActionRegistry {
 
-    val actions: Map<Class<out Action>, String>
+    val actions: Collection<Class<out Action>>
 
     fun <T : Action> register(
         type: Class<T>,
