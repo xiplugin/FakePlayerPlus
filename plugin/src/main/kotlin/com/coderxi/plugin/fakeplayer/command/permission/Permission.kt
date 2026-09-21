@@ -27,6 +27,15 @@ enum class Permission(val value: String) {
     SWAP("fakeplayer.swap"),
 
     SETTINGS("fakeplayer.settings"),
+    SETTINGS_COLLIDABLE("fakeplayer.settings.collidable"),
+    SETTINGS_PICKUP_ITEMS("fakeplayer.settings.pickupItems"),
+    SETTINGS_INVULNERABLE("fakeplayer.settings.invulnerable"),
+    SETTINGS_INFINITE_FOOD_LEVEL("fakeplayer.settings.infiniteFoodLevel"),
+    SETTINGS_AUTO_REPLENISH("fakeplayer.settings.autoReplenish"),
+    SETTINGS_AUTO_FISH("fakeplayer.settings.autoFish"),
+    SETTINGS_SIMULATION_DISTANCE("fakeplayer.settings.simulationDistance"),
+    SETTINGS_XP_NO_COOLDOWN("fakeplayer.settings.xpNoCooldown"),
+    SETTINGS_AUTO_EQUIP_TOOL("fakeplayer.settings.autoEquipTool"),
 
     ACTION("fakeplayer.action"),
     ACTION_ATTACK("fakeplayer.action.attack"),

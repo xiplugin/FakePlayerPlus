@@ -18,7 +18,7 @@ import kotlin.reflect.KMutableProperty0
 open class FormDialog(val title: Component) {
 
     private class FormEntry(
-        val permission: String?,
+        val permissions: Collection<String>?,
         val build: () -> DialogInput,
         val onSubmit: (DialogResponseView) -> Unit
     )
@@ -28,11 +28,11 @@ open class FormDialog(val title: Component) {
     fun bool(
         property: KMutableProperty0<Boolean>,
         label: Component = Component.text(property.name),
-        permission: String? = null,
+        permissions: Collection<String>? = null,
         onChange: ((newValue: Boolean) -> Unit)? = null
     ): FormDialog = apply {
         entries.add(FormEntry(
-            permission = permission,
+            permissions = permissions,
             build = { DialogInput.bool(property.name, label).initial(property.get()).build() },
             onSubmit = { view ->
                 val newValue = view.getBoolean(property.name)
@@ -49,11 +49,11 @@ open class FormDialog(val title: Component) {
         label: Component = Component.text(property.name),
         options: List<Pair<T, Component>>,
         width: Int = 100,
-        permission: String? = null,
+        permissions: Collection<String>? = null,
         onChange: ((newValue: T) -> Unit)? = null
     ): FormDialog = apply {
         entries.add(FormEntry(
-            permission = permission,
+            permissions = permissions,
             build = {
                 val currentValue = property.get()
                 val optionEntries = options.mapIndexed { index, (value, optionLabel) ->
@@ -82,11 +82,11 @@ open class FormDialog(val title: Component) {
         trueLabel: Component = tl("fakeplayer.gui.var.true"),
         falseLabel: Component = tl("fakeplayer.gui.var.false"),
         width: Int = 100,
-        permission: String? = null,
+        permissions: Collection<String>? = null,
         onChange: ((newValue: Boolean) -> Unit)? = null
     ): FormDialog {
         val options = listOf(true to trueLabel, false to falseLabel)
-        return singleOption(property, label, options, width, permission, onChange)
+        return singleOption(property, label, options, width, permissions, onChange)
     }
 
     fun <E : Enum<E>> enumSingleOption(
@@ -94,12 +94,12 @@ open class FormDialog(val title: Component) {
         property: KMutableProperty0<E>,
         label: Component = Component.text(property.name),
         width: Int = 100,
-        permission: String? = null,
+        permissions: Collection<String>? = null,
         optionLabelProvider: (E) -> Component = { Component.text(it.name) },
         onChange: ((newValue: E) -> Unit)? = null
     ): FormDialog {
         val options = enumClass.enumConstants.map { it to optionLabelProvider(it) }
-        return singleOption(property, label, options, width, permission, onChange)
+        return singleOption(property, label, options, width, permissions, onChange)
     }
 
     fun numberRange(
@@ -109,11 +109,11 @@ open class FormDialog(val title: Component) {
         end: Float,
         step: Float = 0.5f,
         width: Int = 100,
-        permission: String? = null,
+        permissions: Collection<String>? = null,
         onChange: ((newValue: Float) -> Unit)? = null
     ): FormDialog = apply {
         entries.add(FormEntry(
-            permission = permission,
+            permissions = permissions,
             build = {
                 DialogInput.numberRange(property.name, label, start, end)
                     .step(step)
@@ -139,11 +139,11 @@ open class FormDialog(val title: Component) {
         end: Int,
         step: Int = 1,
         width: Int = 100,
-        permission: String? = null,
+        permissions: Collection<String>? = null,
         onChange: ((newValue: Int) -> Unit)? = null
     ): FormDialog = apply {
         entries.add(FormEntry(
-            permission = permission,
+            permissions = permissions,
             build = {
                 DialogInput.numberRange(property.name, label, start.toFloat(), end.toFloat())
                     .step(step.toFloat())
@@ -171,11 +171,11 @@ open class FormDialog(val title: Component) {
         end: Int,
         step: Int = 1,
         width: Int = 100,
-        permission: String? = null,
+        permissions: Collection<String>? = null,
         onChange: ((newValue: Int) -> Unit)? = null
     ): FormDialog = apply {
         entries.add(FormEntry(
-            permission = permission,
+            permissions = permissions,
             build = {
                 DialogInput.numberRange(key, label, start.toFloat(), end.toFloat())
                     .step(step.toFloat())
@@ -198,11 +198,11 @@ open class FormDialog(val title: Component) {
         label: Component = Component.text(property.name),
         width: Int = 100,
         maxLength: Int = 16,
-        permission: String? = null,
+        permissions: Collection<String>? = null,
         onChange: ((newValue: String) -> Unit)? = null
     ): FormDialog = apply {
         entries.add(FormEntry(
-            permission = permission,
+            permissions = permissions,
             build = {
                 DialogInput.text(property.name, label)
                     .initial(property.get())
@@ -226,11 +226,11 @@ open class FormDialog(val title: Component) {
         label: Component = Component.text(key),
         width: Int = 100,
         maxLength: Int = 16,
-        permission: String? = null,
+        permissions: Collection<String>? = null,
         onChange: ((newValue: String) -> Unit)? = null
     ): FormDialog = apply {
         entries.add(FormEntry(
-            permission = permission,
+            permissions = permissions,
             build = {
                 DialogInput.text(key, label)
                     .initial(initial)
@@ -293,7 +293,7 @@ open class FormDialog(val title: Component) {
                 .base(
                     DialogBase.builder(title)
                         .canCloseWithEscape(true)
-                        .inputs(entries.filter { it.permission == null || player.hasPermission(it.permission)}.map { it.build() })
+                        .inputs(entries.filter { it.permissions == null || it.permissions.any(player::hasPermission)}.map { it.build() })
                         .build()
                 )
                 .type(
