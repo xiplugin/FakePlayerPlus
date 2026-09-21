@@ -5,6 +5,7 @@ import com.coderxi.plugin.fakeplayer.action.base.CommonActionMode
 import com.coderxi.plugin.fakeplayer.action.handler.AttackHandler
 import com.coderxi.plugin.fakeplayer.action.handler.DropItemHandler
 import com.coderxi.plugin.fakeplayer.action.handler.JumpHandler
+import com.coderxi.plugin.fakeplayer.action.handler.LookAtEntityHandler
 import com.coderxi.plugin.fakeplayer.action.handler.MineHandler
 import com.coderxi.plugin.fakeplayer.action.handler.SneakHandler
 import com.coderxi.plugin.fakeplayer.action.handler.UseItemHandler
@@ -129,6 +130,7 @@ class FakePlayerPlusPlugin: FakePlayerPlusPluginApi, JavaPlugin() {
                 DropItemHandler,
                 JumpHandler,
                 SneakHandler,
+                LookAtEntityHandler
             )
             CommonActionMode.entries.forEach { mode ->
                 setModeSuggestParameters(mode.key, mode.suggestParameters)
