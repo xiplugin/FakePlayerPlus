@@ -58,7 +58,7 @@ class StandardFakePlayer(
     private val defaultSettings get() = plugin.config.defaultSettings
 
     override var collidable: Boolean
-        get() = settings.collidable
+        get() = settings.collidable ?: defaultSettings.collidable
         set(value) {
             player.isCollidable = value
             nms.dummyCollidable = value
@@ -66,47 +66,47 @@ class StandardFakePlayer(
             settings.collidable = value
         }
     override var pickupItems: Boolean
-        get() = settings.pickupItems
+        get() = settings.pickupItems ?: defaultSettings.pickupItems
         set(value) {
             player.canPickupItems = value
             settings.pickupItems = value
         }
     override var invulnerable: Boolean
-        get() = settings.invulnerable
+        get() = settings.invulnerable?: defaultSettings.invulnerable
         set(value) {
             player.isInvulnerable = value
             settings.invulnerable = value
         }
 
     override var infiniteFoodLevel: Boolean
-        get() = settings.infiniteFoodLevel
+        get() = settings.infiniteFoodLevel?: defaultSettings.infiniteFoodLevel
         set(value) {
             settings.infiniteFoodLevel = value
         }
 
     override var autoReplenish: Boolean
-        get() = settings.autoReplenish
+        get() = settings.autoReplenish?: defaultSettings.autoReplenish
         set(value) {
             settings.autoReplenish = value
         }
     override var autoFish: Boolean
-        get() = settings.autoFish
+        get() = settings.autoFish?: defaultSettings.autoFish
         set(value) {
             settings.autoFish = value
         }
     override var simulationDistance: Int
-        get() = settings.simulationDistance
+        get() = settings.simulationDistance ?: defaultSettings.simulationDistance
         set(value) {
             player.simulationDistance = value
             settings.simulationDistance = value
         }
     override var xpNoCooldown: Boolean
-        get() = settings.xpNoCooldown
+        get() = settings.xpNoCooldown?: defaultSettings.xpNoCooldown
         set(value) {
             settings.xpNoCooldown = value
         }
     override var autoEquipTool: Boolean
-        get() = settings.autoEquipTool
+        get() = settings.autoEquipTool ?: defaultSettings.autoEquipTool
         set(value) {
             settings.autoEquipTool = value
         }
@@ -122,15 +122,15 @@ class StandardFakePlayer(
         }
 
     override fun applySettings(settings: FakePlayerSettings) {
-        collidable = settings.collidable
-        pickupItems = settings.pickupItems
-        invulnerable = settings.invulnerable
-        infiniteFoodLevel = settings.infiniteFoodLevel
-        autoReplenish = settings.autoReplenish
-        autoFish = settings.autoFish
-        simulationDistance = settings.simulationDistance
-        xpNoCooldown = settings.xpNoCooldown
-        autoEquipTool = settings.autoEquipTool
+        collidable = settings.collidable?: defaultSettings.collidable
+        pickupItems = settings.pickupItems?: defaultSettings.pickupItems
+        invulnerable = settings.invulnerable?: defaultSettings.invulnerable
+        infiniteFoodLevel = settings.infiniteFoodLevel?: defaultSettings.infiniteFoodLevel
+        autoReplenish = settings.autoReplenish?: defaultSettings.autoReplenish
+        autoFish = settings.autoFish?: defaultSettings.autoFish
+        simulationDistance = settings.simulationDistance ?: defaultSettings.simulationDistance
+        xpNoCooldown = settings.xpNoCooldown?: defaultSettings.xpNoCooldown
+        autoEquipTool = settings.autoEquipTool?: defaultSettings.autoEquipTool
         interactedAction = settings.interactedAction ?: defaultSettings.interactedAction
         shiftInteractedAction = settings.shiftInteractedAction ?: defaultSettings.shiftInteractedAction
     }

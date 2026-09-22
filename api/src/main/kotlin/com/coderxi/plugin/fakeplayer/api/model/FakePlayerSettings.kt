@@ -3,15 +3,15 @@ package com.coderxi.plugin.fakeplayer.api.model
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
 
 data class FakePlayerSettings(
-    var collidable: Boolean,
-    var pickupItems: Boolean,
-    var invulnerable: Boolean,
-    var infiniteFoodLevel: Boolean,
-    var autoReplenish: Boolean,
-    var autoFish: Boolean,
-    var simulationDistance: Int,
-    var xpNoCooldown: Boolean,
-    var autoEquipTool: Boolean,
+    var collidable: Boolean?,
+    var pickupItems: Boolean?,
+    var invulnerable: Boolean?,
+    var infiniteFoodLevel: Boolean?,
+    var autoReplenish: Boolean?,
+    var autoFish: Boolean?,
+    var simulationDistance: Int?,
+    var xpNoCooldown: Boolean?,
+    var autoEquipTool: Boolean?,
     var interactedAction: InteractedAction?,
     var shiftInteractedAction: InteractedAction?,
 ) {
