@@ -3,6 +3,7 @@ package com.coderxi.plugin.fakeplayer.api.nms
 import org.bukkit.Bukkit
 import org.bukkit.block.Block
 import org.bukkit.entity.Entity
+import org.bukkit.entity.ExperienceOrb
 import org.bukkit.entity.Player
 import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.inventory.ItemStack
@@ -104,4 +105,6 @@ interface NMSServerPlayer {
 
     // 其他
     fun saveData() { player.saveData() }
+
+    fun takeOrbs(orbs: MutableCollection<ExperienceOrb>)
 }

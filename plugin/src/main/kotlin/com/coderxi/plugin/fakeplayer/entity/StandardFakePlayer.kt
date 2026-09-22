@@ -12,6 +12,7 @@ import com.coderxi.plugin.fakeplayer.utils.SkinFetcher
 import com.coderxi.plugin.fakeplayer.utils.plugin
 import net.kyori.adventure.text.Component
 import org.bukkit.Bukkit
+import org.bukkit.entity.ExperienceOrb
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.properties.Delegates
@@ -46,6 +47,9 @@ class StandardFakePlayer(
         actions.doTick()
         if (xpNoCooldown) {
             nms.takeXpDelay = 0
+            if (plugin.server.currentTick % 20 == 0) {
+                nms.takeOrbs(player.location.getNearbyEntitiesByType(ExperienceOrb::class.java,2.0))
+            }
         }
         if (infiniteFoodLevel) {
             player.foodLevel = 20

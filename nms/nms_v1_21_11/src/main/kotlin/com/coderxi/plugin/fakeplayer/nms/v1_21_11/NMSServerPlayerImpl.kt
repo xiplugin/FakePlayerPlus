@@ -34,6 +34,7 @@ import org.bukkit.craftbukkit.block.CraftBlock
 import org.bukkit.craftbukkit.entity.CraftEntity
 import org.bukkit.craftbukkit.entity.CraftPlayer
 import org.bukkit.entity.Entity
+import org.bukkit.entity.ExperienceOrb
 import org.bukkit.entity.Player
 import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.inventory.ItemStack
@@ -273,6 +274,29 @@ open class NMSServerPlayerImpl(override val player: Player) : NMSServerPlayer {
                 }
             }
         }
+    }
+
+    override fun takeOrbs(orbs: MutableCollection<ExperienceOrb>) {
+        if (orbs.isEmpty()) return
+        var sum = 0
+        val location = orbs.first().location
+        val iterator = orbs.iterator()
+        while (iterator.hasNext()) {
+            val orb = iterator.next()
+            sum += orb.experience
+            orb.remove()
+        }
+        val sumOrb = net.minecraft.world.entity.ExperienceOrb(
+            handle.level(),
+            location.x,
+            location.y,
+            location.z,
+            sum,
+            null,
+            null,
+            null
+        )
+        sumOrb.playerTouch(handle)
     }
 
     companion object {
