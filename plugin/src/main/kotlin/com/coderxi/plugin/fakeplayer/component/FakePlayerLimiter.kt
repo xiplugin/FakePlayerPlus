@@ -2,20 +2,17 @@ package com.coderxi.plugin.fakeplayer.component
 
 import com.coderxi.plugin.fakeplayer.api.event.FakePlayerConnectedEvent
 import com.coderxi.plugin.fakeplayer.api.event.FakePlayerQuitedEvent
-import com.coderxi.plugin.fakeplayer.api.manager.FakePlayerManager
 import com.coderxi.plugin.fakeplayer.command.permission.Permission
-import com.coderxi.plugin.fakeplayer.utils.onPluginDisable
-import com.coderxi.plugin.fakeplayer.utils.onPluginReload
-import com.coderxi.plugin.fakeplayer.utils.plugin
-import com.coderxi.plugin.fakeplayer.utils.tlp
+import com.coderxi.plugin.fakeplayer.utils.messages.sendLocalizedMessage
+import com.coderxi.plugin.fakeplayer.utils.messages.tlp
+import com.coderxi.plugin.fakeplayer.utils.plugin.PluginComponent
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
-import org.bukkit.event.Listener
 import java.util.concurrent.ConcurrentHashMap
 
-class FakePlayerLimiter(private val fpm: FakePlayerManager) : Listener {
+object FakePlayerLimiter : PluginComponent {
 
     private val ip2Count = ConcurrentHashMap<String, Int>()
 
@@ -29,12 +26,10 @@ class FakePlayerLimiter(private val fpm: FakePlayerManager) : Listener {
     private var tpsLimitReduction = 0
 
     init {
-        onload()
-        onPluginReload(::onload)
-        onPluginDisable(::dispose)
+        onReload()
     }
 
-    fun onload() {
+    override fun onReload() {
         val tpsLimit = limit.tpsAdaptive
         tpsLimitThreshold = tpsLimit.threshold
         tpsLimitMinCount = tpsLimit.minCount
@@ -45,6 +40,11 @@ class FakePlayerLimiter(private val fpm: FakePlayerManager) : Listener {
         }
         val ticks = tpsLimit.interval.toLong() * 20
         tpsLimitTask = plugin.server.globalRegionScheduler.runAtFixedRate(plugin, {run()}, ticks, ticks)
+    }
+
+    override fun onDisable() {
+        tpsLimitTask?.cancel()
+        tpsLimitTask = null
     }
 
     fun isServerLimited(): Boolean {
@@ -87,7 +87,7 @@ class FakePlayerLimiter(private val fpm: FakePlayerManager) : Listener {
             if (tpsLimitReduction <= 0) return
             tpsLimitReduction--
             Bukkit.getOnlinePlayers().forEach { player ->
-                player.sendMessage(tlp("fakeplayer.tps-adaptive.limit-recovered", tps, getPlayerSpawnLimit(player) - tpsLimitReduction))
+                player.sendLocalizedMessage("fakeplayer.tps-adaptive.limit-recovered", tps, getPlayerSpawnLimit(player) - tpsLimitReduction)
             }
             return
         }
@@ -95,7 +95,7 @@ class FakePlayerLimiter(private val fpm: FakePlayerManager) : Listener {
         tpsLimitReduction++
         Bukkit.getOnlinePlayers().forEach { player ->
             val playerMaxLimit = getPlayerSpawnLimit(player) - tpsLimitReduction
-            player.sendMessage(tlp("fakeplayer.tps-adaptive.limit-decreased", tps, playerMaxLimit))
+            player.sendLocalizedMessage("fakeplayer.tps-adaptive.limit-decreased", tps, playerMaxLimit)
             val activeFakePlayers = fpm.fakeplayersByOwnerUuid(player.uniqueId)
             val overflowCount = activeFakePlayers.size - playerMaxLimit
             if (overflowCount > 0) {
@@ -104,11 +104,6 @@ class FakePlayerLimiter(private val fpm: FakePlayerManager) : Listener {
                 }
             }
         }
-    }
-
-    fun dispose() {
-        tpsLimitTask?.cancel()
-        tpsLimitTask = null
     }
 
 }

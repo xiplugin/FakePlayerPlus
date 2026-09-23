@@ -1,9 +1,7 @@
 package com.coderxi.plugin.fakeplayer.event
 
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
-import com.coderxi.plugin.fakeplayer.api.manager.FakePlayerManager
-import com.coderxi.plugin.fakeplayer.utils.onPluginDisable
-import com.coderxi.plugin.fakeplayer.utils.plugin
+import com.coderxi.plugin.fakeplayer.utils.plugin.PluginComponent
 import com.destroystokyo.paper.event.player.PlayerLaunchProjectileEvent
 import org.bukkit.Bukkit
 import org.bukkit.Material
@@ -20,20 +18,21 @@ import org.bukkit.inventory.ItemStack
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
-class FakePlayerReplenishListener(private val fpm: FakePlayerManager) : Listener {
+class FakePlayerAutoReplenishListener : PluginComponent, Listener {
 
     private val tasks = ConcurrentHashMap.newKeySet<ReplenishTaskMeta>()
 
-    data class ReplenishTaskMeta(
+    private val tasksConsumer = plugin.server.globalRegionScheduler.runAtFixedRate(plugin, { consume() }, 1L, 1L)
+
+    override fun onDisable() {
+        tasksConsumer.cancel()
+    }
+
+    private data class ReplenishTaskMeta(
         val playerUuid: UUID,
         val hand: EquipmentSlot,
         val itemType: Material
     )
-
-    init {
-        val tasksConsumer = Bukkit.getServer().globalRegionScheduler.runAtFixedRate(plugin, { consume() }, 1L, 1L)
-        onPluginDisable(tasksConsumer::cancel)
-    }
 
     fun consume() {
         if (tasks.isEmpty()) return
@@ -56,32 +55,32 @@ class FakePlayerReplenishListener(private val fpm: FakePlayerManager) : Listener
 
     @EventHandler
     fun onItemConsume(event: PlayerItemConsumeEvent) {
-        val fakePlayer = fpm.get(event.player.uniqueId)?.takeIf { it.autoReplenish } ?: return
+        val fakePlayer = fpm.get(event.player.uniqueId)?.takeIf { it.settings.autoReplenish } ?: return
         tasks.add(ReplenishTaskMeta(fakePlayer.uuid, event.hand, event.item.type))
     }
 
     @EventHandler
     fun onItemBreak(event: PlayerItemBreakEvent) {
-        val fakePlayer = fpm.get(event.player.uniqueId)?.takeIf { it.autoReplenish } ?: return
+        val fakePlayer = fpm.get(event.player.uniqueId)?.takeIf { it.settings.autoReplenish } ?: return
         val hand = fakePlayer.getConsumingHand(event.brokenItem.type) ?: return
         tasks.add(ReplenishTaskMeta(fakePlayer.uuid, hand, event.brokenItem.type))
     }
 
     @EventHandler
     fun onItemDrop(event: PlayerDropItemEvent) {
-        val fakePlayer = fpm.get(event.player.uniqueId)?.takeIf { it.autoReplenish } ?: return
+        val fakePlayer = fpm.get(event.player.uniqueId)?.takeIf { it.settings.autoReplenish } ?: return
         tasks.add(ReplenishTaskMeta(fakePlayer.uuid, EquipmentSlot.HAND, event.itemDrop.itemStack.type))
     }
 
     @EventHandler
     fun onBlockPlace(event: BlockPlaceEvent) {
-        val fakePlayer = fpm.get(event.player.uniqueId)?.takeIf { it.autoReplenish } ?: return
+        val fakePlayer = fpm.get(event.player.uniqueId)?.takeIf { it.settings.autoReplenish } ?: return
         tasks.add(ReplenishTaskMeta(fakePlayer.uuid, event.hand, event.block.type))
     }
 
     @EventHandler
     fun onProjectileLaunch(event: PlayerLaunchProjectileEvent) {
-        val fakePlayer = fpm.get(event.player.uniqueId)?.takeIf { it.autoReplenish } ?: return
+        val fakePlayer = fpm.get(event.player.uniqueId)?.takeIf { it.settings.autoReplenish } ?: return
         val hand = fakePlayer.getConsumingHand(event.itemStack.type) ?: return
         tasks.add(ReplenishTaskMeta(fakePlayer.uuid, hand, event.itemStack.type))
     }
@@ -89,7 +88,7 @@ class FakePlayerReplenishListener(private val fpm: FakePlayerManager) : Listener
     @EventHandler
     fun onBlockFertilize(event: BlockFertilizeEvent) {
         val player = event.player ?: return
-        val fakePlayer = fpm.get(player.uniqueId)?.takeIf { it.autoReplenish } ?: return
+        val fakePlayer = fpm.get(player.uniqueId)?.takeIf { it.settings.autoReplenish } ?: return
         val hand = fakePlayer.getConsumingHand(Material.BONE_MEAL) ?: return
         tasks.add(ReplenishTaskMeta(fakePlayer.uuid, hand, Material.BONE_MEAL))
     }

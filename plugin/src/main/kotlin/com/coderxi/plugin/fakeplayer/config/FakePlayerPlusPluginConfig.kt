@@ -1,15 +1,12 @@
 package com.coderxi.plugin.fakeplayer.config
 
-import com.coderxi.plugin.fakeplayer.api.model.FakePlayerSettings
-import com.coderxi.plugin.fakeplayer.api.model.FakePlayerSettings.InteractedAction
+import com.coderxi.plugin.fakeplayer.provider.invsee.InvseeProvider
+import com.coderxi.plugin.fakeplayer.provider.invsee.OpenInvInvseeProvider
+import com.coderxi.plugin.fakeplayer.provider.invsee.VanillaInvseeProvider
 import eu.okaeri.configs.OkaeriConfig
 import eu.okaeri.configs.annotation.*
 
 class FakePlayerPlusPluginConfig : OkaeriConfig() {
-
-    @Comment("插件语言设置")
-    @Comment("Plugin language settings")
-    var language: String = "en"
 
     @Comment("插件限制设置")
     @Comment("Plugin limit settings")
@@ -91,127 +88,10 @@ class FakePlayerPlusPluginConfig : OkaeriConfig() {
 
     }
 
-    @Comment("假人行为设置")
-    @Comment("FakePlayer behavior settings")
-    var behavior = BehaviorConfig()
-    class BehaviorConfig : OkaeriConfig() {
-
-        @Comment("假人背包查看器", "VANILLA:原版(不支持查看装备栏)", "OPENINV:需单独安装 https://github.com/Jikoo/OpenInv/releases")
-        @Comment("Fake player inventory viewer", "VANILLA: Vanilla (Does not support viewing equipment/armor slots)", "OPENINV: Requires separate installation: https://github.com/Jikoo/OpenInv/releases")
-        @CustomKey("invsee-type")
-        var invseeType =  InvseeProviderType.VANILLA
-
-        @Comment("假人死亡时动作","NONE:无操作 QUIT:退出 RESPAWN:重生 RESPAWN_BACK:重生并返回上一次死亡地点")
-        @Comment("Action on fake player death", "NONE: No action QUIT: Quit RESPAWN: Respawn RESPAWN_BACK: Respawn and return to last death location")
-        @CustomKey("death-action")
-        var deathAction = DeathEventAction.RESPAWN_BACK
-
-        @Comment("死亡不掉落")
-        @Comment("Keep inventory")
-        @CustomKey("keep-inventory")
-        var keepInventory = true
-
-        @Comment("防止假人被其他插件踢掉, 这个选项用来兼容一些插件因为某些问题而踢掉假人", "NEVER:不进行任何处理 SPAWNING:创建时防止被踢出")
-        @Comment("Prevent some plugins kick our fake players, enabling this option may resolve some compatibility issues with login plugins.", "NEVER / SPAWNING")
-        @CustomKey("prevent-kicking")
-        var preventKicking = PreventKickingType.SPAWNING
-
-        @Comment("跟随玩家退出")
-        @Comment("Follow player to quit")
-        @CustomKey("follow-quiting")
-        var followQuiting = true
-
-        @Comment("延迟x秒再跟随退出(若玩家在x秒内重新上线则假人不会被删除)")
-        @Comment("Delay x seconds before following to quit (If player logs back in within x seconds, the fake player will not be removed)")
-        @CustomKey("follow-quiting-delay")
-        var followQuitingDelay = 30
-
-        @Comment("假人ping初始值","可以设置固定值 或者用20,50表示在20-50范围内的随机值")
-        @Comment("Initial ping value for fake players", "Can be a fixed value or '20,50' for a random value between 20-50")
-        @CustomKey("ping-init")
-        var pingInit = "20,50"
-
-        @Comment("模拟真实ping抖动")
-        @Comment("Simulate realistic ping jitter")
-        @CustomKey("ping-jitter")
-        var pingJitter = true
-
-        @Comment("ping值抖动间隔 (单位:秒)")
-        @Comment("Ping jitter interval (in seconds)")
-        @CustomKey("ping-jitter-interval")
-        var pingJitterInterval = 3
-
-    }
-
     @Comment("假人默认设置")
     @Comment("FakePlayer default settings")
     @CustomKey("default-settings")
     var defaultSettings = FakePlayerSettingsConfig()
-    class FakePlayerSettingsConfig : OkaeriConfig() {
-
-        @Comment("是否开启实体碰撞", "提示：本插件不会覆盖其他插件的碰撞行为。如果你安装了其他基于计分板的插件，需要你在对应插件手动关闭碰撞。比如 TAB 插件就需要设置：scoreboard-teams.enable-collision: false")
-        @Comment("Whether to enable entity collision", "Tips: This plugin does not override collision behaviors from other plugins. If you have other scoreboard-based plugins installed, you need to manually disable collision in those plugins. For example, in the TAB plugin, you need to set: scoreboard-teams.enable-collision: false")
-        @Comment("是否开启实体碰撞")
-        @Comment("Whether to enable entity collision")
-        var collidable: Boolean = true
-
-        @Comment("是否开启拾取物品")
-        @Comment("Whether to enable picking up items")
-        @CustomKey("pickup-items")
-        var pickupItems: Boolean = true
-
-        @Comment("是否开启无敌状态")
-        @Comment("Whether to enable invulnerability status")
-        var invulnerable: Boolean = false
-
-        @Comment("是否开启无限饱食度")
-        @Comment("Whether to enable infinite food level")
-        var infiniteFoodLevel: Boolean = false
-
-        @Comment("是否开启自动补货")
-        @Comment("Whether to enable auto-replenish")
-        var autoReplenish: Boolean = true
-
-        @Comment("是否开启自动钓鱼")
-        @Comment("Whether to enable auto-fishing")
-        var autoFish: Boolean = true
-
-        @Comment("假人渲染距离")
-        @Comment("Simulation Distance")
-        var simulationDistance: Int = 10
-
-        @Comment("是否开启经验吸收无冷却")
-        @Comment("Whether to disable the XP pickup cooldown")
-        var xpNoCooldown: Boolean = true
-
-        @Comment("是否开启自动切换工具")
-        @Comment("Whether to automatically equip the best tool")
-        var autoEquipTool: Boolean = false
-
-        @Comment("被交互时执行的操作, 允许玩家修改请赋予玩家fakeplayer.settings.interactedAction权限")
-        @Comment("Action to perform when interacted with, Requires the fakeplayer.settings.interactedAction permission to modify")
-        @Comment("NONE, OPEN_INVENTORY, OPEN_ENDER_CHEST, OPEN_SETTINGS_UI")
-        var interactedAction = InteractedAction.OPEN_INVENTORY
-
-        @Comment("被Shift交互时执行的操作, 允许玩家修改请赋予玩家fakeplayer.settings.shiftInteractedAction权限")
-        @Comment("Action to perform when interacted with while sneaking, Requires the fakeplayer.settings.shiftInteractedAction permission to modify")
-        @Comment("NONE, OPEN_INVENTORY, OPEN_ENDER_CHEST, OPEN_SETTINGS_UI")
-        var shiftInteractedAction = InteractedAction.OPEN_ENDER_CHEST
-
-        fun copy() = FakePlayerSettings(
-            collidable,
-            pickupItems,
-            invulnerable,
-            infiniteFoodLevel,
-            autoReplenish,
-            autoFish,
-            simulationDistance,
-            xpNoCooldown,
-            autoEquipTool,
-            interactedAction,
-            shiftInteractedAction,
-        )
-    }
 
     @Comment(
         "假人生命周期指令绑定",
@@ -260,6 +140,43 @@ class FakePlayerPlusPluginConfig : OkaeriConfig() {
         var quited: List<String> = arrayListOf(
             "[CONSOLE] /tell {spawner_name} The FakePlayer {name} you created has been removed"
         )
+    }
+
+    @Comment("其他杂项设置")
+    @Comment("Misc settings")
+    var msic = MiscConfig()
+    class MiscConfig : OkaeriConfig() {
+
+        @Comment("假人背包查看器", "VANILLA:原版(不支持查看装备栏)", "OPENINV:需单独安装 https://github.com/Jikoo/OpenInv/releases")
+        @Comment("Fake player inventory viewer", "VANILLA: Vanilla (Does not support viewing equipment/armor slots)", "OPENINV: Requires separate installation: https://github.com/Jikoo/OpenInv/releases")
+        @CustomKey("invsee-type")
+        var invseeType =  InvseeProviderType.VANILLA
+        enum class InvseeProviderType(val providerClass: Class<out InvseeProvider>) {
+            VANILLA(VanillaInvseeProvider::class.java),
+            OPENINV(OpenInvInvseeProvider::class.java)
+        }
+
+        @Comment("防止假人被其他插件踢掉, 这个选项用来兼容一些插件因为某些问题而踢掉假人", "NEVER:不进行任何处理 SPAWNING:创建时防止被踢出")
+        @Comment("Prevent some plugins kick our fake players, enabling this option may resolve some compatibility issues with login plugins.", "NEVER / SPAWNING")
+        @CustomKey("prevent-kicking")
+        var preventKicking = PreventKickingType.SPAWNING
+        enum class PreventKickingType { NEVER, SPAWNING }
+
+        @Comment("假人ping初始值","可以设置固定值 或者用20,50表示在20-50范围内的随机值")
+        @Comment("Initial ping value for fake players", "Can be a fixed value or '20,50' for a random value between 20-50")
+        @CustomKey("ping-init")
+        var pingInit = "20,50"
+
+        @Comment("模拟真实ping抖动")
+        @Comment("Simulate realistic ping jitter")
+        @CustomKey("ping-jitter")
+        var pingJitter = true
+
+        @Comment("ping值抖动间隔 (单位:秒)")
+        @Comment("Ping jitter interval (in seconds)")
+        @CustomKey("ping-jitter-interval")
+        var pingJitterInterval = 3
+
     }
 
 }

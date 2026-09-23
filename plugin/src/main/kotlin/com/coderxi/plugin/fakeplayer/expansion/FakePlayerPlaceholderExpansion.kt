@@ -1,28 +1,22 @@
 package com.coderxi.plugin.fakeplayer.expansion
 
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
-import com.coderxi.plugin.fakeplayer.api.manager.FakePlayerManager
-import com.coderxi.plugin.fakeplayer.utils.onPluginReload
-import com.coderxi.plugin.fakeplayer.utils.tls
+import com.coderxi.plugin.fakeplayer.utils.messages.tls
+import com.coderxi.plugin.fakeplayer.utils.plugin.PluginComponent
 import me.clip.placeholderapi.expansion.PlaceholderExpansion
 import org.bukkit.entity.Player
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 
-class FakePlayerPlaceholderExpansion(private val fpm: FakePlayerManager) : PlaceholderExpansion() {
+class FakePlayerPlaceholderExpansion : PlaceholderExpansion(), PluginComponent {
 
-    private val plugin get() = com.coderxi.plugin.fakeplayer.utils.plugin
+    private var timeformatters: ConcurrentHashMap<Locale, DateTimeFormatter> = ConcurrentHashMap()
 
-    private lateinit var timeformatter: DateTimeFormatter
-
-    private fun loadTimeFormatter() {
-        timeformatter = DateTimeFormatter.ofPattern(tls("fakeplayer.var.time.format")).withZone(ZoneId.systemDefault())
-    }
-
-    init {
-        loadTimeFormatter()
-        onPluginReload(::loadTimeFormatter)
+    override fun onReload() {
+        timeformatters.clear()
     }
 
     override fun getIdentifier() = "fakeplayer"
@@ -31,19 +25,20 @@ class FakePlayerPlaceholderExpansion(private val fpm: FakePlayerManager) : Place
 
     override fun onPlaceholderRequest(player: Player, params: String): String? {
         val params = params.lowercase()
+        val locale = player.locale()
         // 全局变量
         if (params == "total") {
             return fpm.fakeplayersCount().toString()
         }
         if (params == "list") {
-            return fpm.fakeplayers().joinToString(tls("fakeplayer.var.list.separator")) { it.name }
+            return fpm.fakeplayers().joinToString(tls(locale,"fakeplayer.var.list.separator")) { it.name }
         }
         if (params.startsWith("list_")) {
             val parts = params.removePrefix("list_").split("_", limit = 2)
             if (parts.size != 2) return ""
             val index = parts[0].toIntOrNull() ?: return ""
             val fakePlayer = fpm.fakeplayers().getOrNull(index) ?: return ""
-            return onPlaceholderRequest(fakePlayer, parts[1])
+            return onPlaceholderRequest(locale, fakePlayer, parts[1])
         }
         // 玩家变量
         if (params == "isfake") {
@@ -51,10 +46,10 @@ class FakePlayerPlaceholderExpansion(private val fpm: FakePlayerManager) : Place
         }
         // 假人变量
         val fakePlayer = fpm.get(player.uniqueId) ?: return ""
-        return onPlaceholderRequest(fakePlayer, params)
+        return onPlaceholderRequest(locale, fakePlayer, params)
     }
 
-    private fun onPlaceholderRequest(fakePlayer: FakePlayer, params: String): String? {
+    private fun onPlaceholderRequest(locale: Locale, fakePlayer: FakePlayer, params: String): String? {
         if (params == "name") {
             return fakePlayer.name
         }
@@ -65,11 +60,12 @@ class FakePlayerPlaceholderExpansion(private val fpm: FakePlayerManager) : Place
             return fakePlayer.spawner.name
         }
         if (params == "spawntime") {
-            return timeformatter.format(Instant.ofEpochMilli(fakePlayer.spawnTime))
+            return timeformatters.computeIfAbsent(locale) { DateTimeFormatter.ofPattern(tls(locale,"fakeplayer.var.time.format")).withZone(ZoneId.systemDefault()) }
+                .format(Instant.ofEpochMilli(fakePlayer.spawnTime))
         }
         if (params == "actions") {
             return fakePlayer.actions.activeActions.map(plugin.globalActionRegistry::getName)
-                .joinToString(tls("fakeplayer.var.action.separator")) { name -> tls("fakeplayer.action.$name") }
+                .joinToString(tls(locale,"fakeplayer.var.action.separator")) { name -> tls(locale,"fakeplayer.action.$name") }
         }
         return null
     }

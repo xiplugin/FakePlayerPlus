@@ -4,7 +4,7 @@ import com.coderxi.plugin.fakeplayer.action.base.CommonActionHandler
 import com.coderxi.plugin.fakeplayer.action.base.CommonActionMode
 import com.coderxi.plugin.fakeplayer.action.type.LookAtEntityAction
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
-import com.coderxi.plugin.fakeplayer.utils.tlp
+import com.coderxi.plugin.fakeplayer.utils.messages.sendLocalizedMessage
 import io.papermc.paper.entity.LookAnchor
 import org.bukkit.Bukkit
 import org.bukkit.entity.Damageable
@@ -21,7 +21,7 @@ object LookAtEntityHandler: CommonActionHandler<LookAtEntityAction>(
         val entities = center.getNearbyEntitiesByType(Damageable::class.java,radius)
         if (entities.size > 150) {
             fakePlayer.actions.stop(action)
-            fakePlayer.owners.forEach { Bukkit.getPlayer(it.uuid)?.sendMessage(tlp("fakeplayer.action.look-at-entity.stop.too-many-entities", it.name, entities.size)) }
+            fakePlayer.owners.forEach { Bukkit.getPlayer(it.uuid)?.sendLocalizedMessage("fakeplayer.action.look-at-entity.stop.too-many-entities", it.name, entities.size) }
             return
         }
         var nearestEntity: Entity? = null

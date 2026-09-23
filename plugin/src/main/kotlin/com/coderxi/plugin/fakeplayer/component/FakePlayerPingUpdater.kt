@@ -2,10 +2,7 @@ package com.coderxi.plugin.fakeplayer.component
 
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
 import com.coderxi.plugin.fakeplayer.api.event.FakePlayerConnectedEvent
-import com.coderxi.plugin.fakeplayer.api.manager.FakePlayerManager
-import com.coderxi.plugin.fakeplayer.utils.onPluginDisable
-import com.coderxi.plugin.fakeplayer.utils.onPluginReload
-import com.coderxi.plugin.fakeplayer.utils.plugin
+import com.coderxi.plugin.fakeplayer.utils.plugin.PluginComponent
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
@@ -13,7 +10,9 @@ import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ThreadLocalRandom
 
-class FakePlayerPingUpdater(private val fpm: FakePlayerManager) : Listener {
+class FakePlayerPingUpdater : PluginComponent, Listener {
+
+    private val config get() = plugin.config.msic
 
     private val firstPingMap = ConcurrentHashMap<UUID, Int>()
 
@@ -23,27 +22,29 @@ class FakePlayerPingUpdater(private val fpm: FakePlayerManager) : Listener {
     private var pingInitMax = -1
 
     init {
-        onload()
-        onPluginReload(::onload)
-        onPluginDisable(::dispose)
+        onReload()
     }
 
-    fun onload() {
+    override fun onReload() {
         firstPingMap.clear()
         pingJitterTask?.cancel()
         pingJitterTask = null
-        val b = plugin.config.behavior
-        val pingInit = b.pingInit
+        val pingInit = config.pingInit
         val pingInitRange = pingInit.split(',').mapNotNull { it.toIntOrNull() }
         pingInitMin = pingInitRange.min()
         pingInitMax = pingInitRange.max()
         pingInitIsFixed = pingInitMin == pingInitMax
         fpm.fakeplayers().forEach(::registerFirstPing)
-        val pingJitter = b.pingJitter
-        val pingJitterInterval = b.pingJitterInterval
+        val pingJitter = config.pingJitter
+        val pingJitterInterval = config.pingJitterInterval
         if (!pingJitter||pingJitterInterval <= 0) return
         val ticks = pingJitterInterval.toLong() * 20
         pingJitterTask = plugin.server.globalRegionScheduler.runAtFixedRate(plugin,{fpm.fakeplayers().forEach{it.pingJitter()}}, ticks, ticks)
+    }
+
+    override fun onDisable() {
+        pingJitterTask?.cancel()
+        pingJitterTask = null
     }
 
     @EventHandler
@@ -88,11 +89,6 @@ class FakePlayerPingUpdater(private val fpm: FakePlayerManager) : Listener {
             if (ping < firstPing - 8) ping = firstPing - 8
             if (ping < 0) ping = 0
         }
-    }
-
-    fun dispose() {
-        pingJitterTask?.cancel()
-        pingJitterTask = null
     }
 
 }

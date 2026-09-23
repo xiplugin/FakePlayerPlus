@@ -1,4 +1,4 @@
-package com.coderxi.plugin.fakeplayer.utils
+package com.coderxi.plugin.fakeplayer.utils.bukkit
 
 import com.coderxi.plugin.fakeplayer.api.model.PlayerTextures
 import com.google.common.cache.Cache

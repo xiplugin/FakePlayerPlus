@@ -1,4 +1,4 @@
-package com.coderxi.plugin.fakeplayer.utils
+package com.coderxi.plugin.fakeplayer.utils.common
 
 import java.net.InetAddress
 import java.util.concurrent.atomic.AtomicInteger

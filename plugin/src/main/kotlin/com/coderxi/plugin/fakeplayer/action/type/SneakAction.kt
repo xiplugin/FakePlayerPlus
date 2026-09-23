@@ -4,5 +4,5 @@ import com.coderxi.plugin.fakeplayer.api.action.Action
 import com.coderxi.plugin.fakeplayer.command.annotaion.PluginCommandPermission as Permission
 import com.coderxi.plugin.fakeplayer.command.permission.Permission.*
 
-@Permission(ACTION_SNEAK, BASIC)
+@Permission(ACTION_SNEAK)
 class SneakAction: Action

@@ -5,7 +5,7 @@ import org.bukkit.block.Block
 import com.coderxi.plugin.fakeplayer.command.annotaion.PluginCommandPermission as Permission
 import com.coderxi.plugin.fakeplayer.command.permission.Permission.*
 
-@Permission(ACTION_MINE, BASIC)
+@Permission(ACTION_MINE)
 open class MineAction: Action {
     var target: Block? = null
     var progress = 0f

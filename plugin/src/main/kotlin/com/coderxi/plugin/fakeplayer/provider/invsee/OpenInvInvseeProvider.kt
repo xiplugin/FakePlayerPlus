@@ -1,6 +1,6 @@
 package com.coderxi.plugin.fakeplayer.provider.invsee
 
-import com.coderxi.plugin.fakeplayer.utils.plugin
+import com.coderxi.plugin.fakeplayer.plugin
 import org.bukkit.entity.Player
 import com.lishid.openinv.IOpenInv
 import org.bukkit.inventory.InventoryView

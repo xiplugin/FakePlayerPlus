@@ -2,14 +2,13 @@ package com.coderxi.plugin.fakeplayer.entity
 
 import com.coderxi.plugin.fakeplayer.action.ActionControllerImpl
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
-import com.coderxi.plugin.fakeplayer.api.model.FakePlayerSettings
-import com.coderxi.plugin.fakeplayer.api.model.FakePlayerSettings.*
+import com.coderxi.plugin.fakeplayer.api.entity.FakePlayerSettings
 import com.coderxi.plugin.fakeplayer.api.model.PlayerDetail
 import com.coderxi.plugin.fakeplayer.api.model.PlayerTextures
 import com.coderxi.plugin.fakeplayer.api.nms.NMSServerGamePacketListener
 import com.coderxi.plugin.fakeplayer.api.nms.NMSServerPlayer
-import com.coderxi.plugin.fakeplayer.utils.SkinFetcher
-import com.coderxi.plugin.fakeplayer.utils.plugin
+import com.coderxi.plugin.fakeplayer.plugin
+import com.coderxi.plugin.fakeplayer.utils.bukkit.SkinFetcher
 import net.kyori.adventure.text.Component
 import org.bukkit.Bukkit
 import org.bukkit.entity.ExperienceOrb
@@ -23,8 +22,12 @@ class StandardFakePlayer(
     creatorUuid: UUID? = null,
     ownerUuids: Collection<UUID> = emptyList(),
     private val initialTextures: PlayerTextures? = null,
-    val settings: FakePlayerSettings
+    override val settings: FakePlayerSettings
 ) : FakePlayer {
+
+    init {
+        settings.bind(this)
+    }
 
     override lateinit var nms: NMSServerPlayer
     override val actions = ActionControllerImpl(this)
@@ -45,99 +48,21 @@ class StandardFakePlayer(
     override fun doTick() {
         nms.doTick()
         actions.doTick()
-        if (xpNoCooldown) {
+        if (settings.xpNoCooldown) {
             nms.takeXpDelay = 0
             if (plugin.server.currentTick % 20 == 0) {
                 nms.takeOrbs(player.location.getNearbyEntitiesByType(ExperienceOrb::class.java,2.0))
             }
         }
-        if (infiniteFoodLevel) {
-            player.foodLevel = 20
-            player.saturation = 20f
+        if (settings.infiniteFoodLevel) {
+            if (plugin.server.currentTick % 20 == 0) {
+                player.foodLevel = 20
+                player.saturation = 20f
+            }
         }
     }
 
     override var ticking: Boolean = false
-
-    private val defaultSettings get() = plugin.config.defaultSettings
-
-    override var collidable: Boolean
-        get() = settings.collidable ?: defaultSettings.collidable
-        set(value) {
-            player.isCollidable = value
-            nms.dummyCollidable = value
-            nms.dummyNotify()
-            settings.collidable = value
-        }
-    override var pickupItems: Boolean
-        get() = settings.pickupItems ?: defaultSettings.pickupItems
-        set(value) {
-            player.canPickupItems = value
-            settings.pickupItems = value
-        }
-    override var invulnerable: Boolean
-        get() = settings.invulnerable?: defaultSettings.invulnerable
-        set(value) {
-            player.isInvulnerable = value
-            settings.invulnerable = value
-        }
-
-    override var infiniteFoodLevel: Boolean
-        get() = settings.infiniteFoodLevel?: defaultSettings.infiniteFoodLevel
-        set(value) {
-            settings.infiniteFoodLevel = value
-        }
-
-    override var autoReplenish: Boolean
-        get() = settings.autoReplenish?: defaultSettings.autoReplenish
-        set(value) {
-            settings.autoReplenish = value
-        }
-    override var autoFish: Boolean
-        get() = settings.autoFish?: defaultSettings.autoFish
-        set(value) {
-            settings.autoFish = value
-        }
-    override var simulationDistance: Int
-        get() = settings.simulationDistance ?: defaultSettings.simulationDistance
-        set(value) {
-            player.simulationDistance = value
-            settings.simulationDistance = value
-        }
-    override var xpNoCooldown: Boolean
-        get() = settings.xpNoCooldown?: defaultSettings.xpNoCooldown
-        set(value) {
-            settings.xpNoCooldown = value
-        }
-    override var autoEquipTool: Boolean
-        get() = settings.autoEquipTool ?: defaultSettings.autoEquipTool
-        set(value) {
-            settings.autoEquipTool = value
-        }
-    override var interactedAction: InteractedAction
-        get() = settings.interactedAction ?: defaultSettings.interactedAction
-        set(value) {
-            settings.interactedAction = value
-        }
-    override var shiftInteractedAction: InteractedAction
-        get() = settings.shiftInteractedAction ?: defaultSettings.shiftInteractedAction
-        set(value) {
-            settings.shiftInteractedAction = value
-        }
-
-    override fun applySettings(settings: FakePlayerSettings) {
-        collidable = settings.collidable?: defaultSettings.collidable
-        pickupItems = settings.pickupItems?: defaultSettings.pickupItems
-        invulnerable = settings.invulnerable?: defaultSettings.invulnerable
-        infiniteFoodLevel = settings.infiniteFoodLevel?: defaultSettings.infiniteFoodLevel
-        autoReplenish = settings.autoReplenish?: defaultSettings.autoReplenish
-        autoFish = settings.autoFish?: defaultSettings.autoFish
-        simulationDistance = settings.simulationDistance ?: defaultSettings.simulationDistance
-        xpNoCooldown = settings.xpNoCooldown?: defaultSettings.xpNoCooldown
-        autoEquipTool = settings.autoEquipTool?: defaultSettings.autoEquipTool
-        interactedAction = settings.interactedAction ?: defaultSettings.interactedAction
-        shiftInteractedAction = settings.shiftInteractedAction ?: defaultSettings.shiftInteractedAction
-    }
 
     override var ping: Int
         get() = nmsConnection.latency()

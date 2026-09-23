@@ -1,7 +1,7 @@
 package com.coderxi.plugin.fakeplayer.command.parameter
 
 import com.coderxi.plugin.fakeplayer.api.action.Action
-import com.coderxi.plugin.fakeplayer.utils.plugin
+import com.coderxi.plugin.fakeplayer.plugin
 import revxrsal.commands.autocomplete.SuggestionProvider
 import revxrsal.commands.bukkit.actor.BukkitCommandActor
 import revxrsal.commands.node.ExecutionContext

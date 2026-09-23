@@ -4,7 +4,7 @@ import com.coderxi.plugin.fakeplayer.action.base.CommonActionHandler
 import com.coderxi.plugin.fakeplayer.action.base.CommonActionMode
 import com.coderxi.plugin.fakeplayer.action.type.SneakAction
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
-import com.coderxi.plugin.fakeplayer.utils.plugin
+import com.coderxi.plugin.fakeplayer.plugin
 
 object SneakHandler : CommonActionHandler<SneakAction>(
     type = SneakAction::class.java,

@@ -1,14 +1,13 @@
 package com.coderxi.plugin.fakeplayer.component
 
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
-import com.coderxi.plugin.fakeplayer.api.manager.FakePlayerManager
 import com.coderxi.plugin.fakeplayer.config.StaticFakePlayersConfig
+import com.coderxi.plugin.fakeplayer.repository.po.FakePlayerSettingsPO
 import com.coderxi.plugin.fakeplayer.config.StaticFakePlayersConfig.StaticFakePlayerMeta as Meta
-import com.coderxi.plugin.fakeplayer.utils.SkinFetcher
-import com.coderxi.plugin.fakeplayer.utils.dispatcher
-import com.coderxi.plugin.fakeplayer.utils.launch
-import com.coderxi.plugin.fakeplayer.utils.onPluginReload
-import com.coderxi.plugin.fakeplayer.utils.plugin
+import com.coderxi.plugin.fakeplayer.utils.bukkit.SkinFetcher
+import com.coderxi.plugin.fakeplayer.utils.coroutine.dispatcher
+import com.coderxi.plugin.fakeplayer.utils.coroutine.launch
+import com.coderxi.plugin.fakeplayer.utils.plugin.PluginComponent
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.bukkit.Bukkit
@@ -17,20 +16,18 @@ import org.bukkit.event.Listener
 import org.bukkit.event.server.ServerLoadEvent
 import java.util.concurrent.ConcurrentHashMap
 
-class StaticFakePlayerManager(private val fpm: FakePlayerManager, private val config: StaticFakePlayersConfig) : Listener {
+class StaticFakePlayerManager : PluginComponent, Listener {
+
+    private val config = plugin.loadConfig("static-fakeplayers.yml", StaticFakePlayersConfig::class).apply { saveDefaults().load(true) }
 
     private val spawnedNames = ConcurrentHashMap.newKeySet<String>()
 
-    init {
-        onPluginReload(::onload)
-    }
-
     @EventHandler
     fun onServerLoad(event: ServerLoadEvent) {
-        if (event.type == ServerLoadEvent.LoadType.STARTUP) onload()
+        if (event.type == ServerLoadEvent.LoadType.STARTUP) onReload()
     }
 
-    fun onload() {
+    override fun onReload() {
         config.load()
         if (!config.enabled) {
             spawnedNames.forEach { fpm.get(it)?.quit() }
@@ -74,7 +71,7 @@ class StaticFakePlayerManager(private val fpm: FakePlayerManager, private val co
     suspend fun setupMeta(fakePlayer: FakePlayer, meta: Meta) = withContext(fakePlayer.dispatcher) {
         fakePlayer.ticking = meta.ticking ?: false
         if (fakePlayer.textures == null) fakePlayer.textures = SkinFetcher.getPlayerTexturesByName(meta.skin, true)
-        fakePlayer.applySettings(meta.settings?.copy() ?: plugin.config.defaultSettings.copy())
+        FakePlayerSettingsPO.fromEntity(meta.settings ?: plugin.config.defaultSettings).toEntity().sync(fakePlayer.settings)
     }
 
 }

@@ -2,16 +2,16 @@ package com.coderxi.plugin.fakeplayer.dialog
 
 import com.coderxi.plugin.fakeplayer.api.action.Action
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
-import com.coderxi.plugin.fakeplayer.utils.FormDialog
-import com.coderxi.plugin.fakeplayer.utils.plugin
-import com.coderxi.plugin.fakeplayer.utils.tl
+import com.coderxi.plugin.fakeplayer.plugin
+import com.coderxi.plugin.fakeplayer.utils.bukkit.SimpleDialog
+import com.coderxi.plugin.fakeplayer.utils.messages.tl
 import io.papermc.paper.registry.data.dialog.ActionButton
 import io.papermc.paper.registry.data.dialog.action.DialogAction
 import org.bukkit.entity.Player
 
 @Suppress("UnstableApiUsage")
-class FakePlayerActionExecuteDialog (fakePlayer: FakePlayer, action: Action, val viewer: Player): FormDialog(
-    tl("fakeplayer.gui.action.title",fakePlayer.name)
+class FakePlayerActionExecuteDialog (fakePlayer: FakePlayer, action: Action, val viewer: Player): SimpleDialog(
+    tl(viewer,"fakeplayer.gui.action.title",fakePlayer.name), viewer
 ) {
     init {
         val modes = plugin.globalActionRegistry.getModes(action.javaClass)
@@ -22,7 +22,7 @@ class FakePlayerActionExecuteDialog (fakePlayer: FakePlayer, action: Action, val
                     numberRange(
                         key,
                         value,
-                        tl("fakeplayer.gui.action.params.$key"),
+                        tl(viewer,"fakeplayer.gui.action.params.$key"),
                         null,
                         1,
                         200,
@@ -32,7 +32,7 @@ class FakePlayerActionExecuteDialog (fakePlayer: FakePlayer, action: Action, val
                     text(
                         key,
                         value.toString(),
-                        tl("fakeplayer.gui.action.params.$key"),
+                        tl(viewer,"fakeplayer.gui.action.params.$key"),
                         width = 100
                     )
                 }
@@ -40,7 +40,7 @@ class FakePlayerActionExecuteDialog (fakePlayer: FakePlayer, action: Action, val
 
             actionButton(
                 ActionButton.create(
-                    tl("fakeplayer.gui.action.execute-$mode"),
+                    tl(viewer,"fakeplayer.gui.action.execute-$mode"),
                     null,
                     100,
                     DialogAction.customClick({ view, _ ->
@@ -60,7 +60,7 @@ class FakePlayerActionExecuteDialog (fakePlayer: FakePlayer, action: Action, val
         if (fakePlayer.actions.activeActions.contains(action.javaClass)) {
             actionButton(
                 ActionButton.create(
-                    tl("fakeplayer.gui.action.stop"),
+                    tl(viewer,"fakeplayer.gui.action.stop"),
                     null,
                     100,
                     DialogAction.customClick({ _, _ -> fakePlayer.actions.stop(action) }, defaultActionOptions)

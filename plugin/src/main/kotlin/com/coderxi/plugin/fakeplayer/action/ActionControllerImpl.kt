@@ -3,7 +3,7 @@ package com.coderxi.plugin.fakeplayer.action
 import com.coderxi.plugin.fakeplayer.api.action.Action
 import com.coderxi.plugin.fakeplayer.api.action.ActionController
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
-import com.coderxi.plugin.fakeplayer.utils.plugin
+import com.coderxi.plugin.fakeplayer.plugin
 import java.util.concurrent.ConcurrentHashMap
 
 class ActionControllerImpl(private val fakePlayer: FakePlayer) : ActionController {

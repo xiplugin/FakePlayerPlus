@@ -1,15 +1,15 @@
 package com.coderxi.plugin.fakeplayer.event
 
-import com.coderxi.plugin.fakeplayer.api.manager.FakePlayerManager
+import com.coderxi.plugin.fakeplayer.utils.plugin.PluginComponent
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.block.BlockDamageEvent
 
-class FakePlayerAutoEquipToolListener(private val fpm: FakePlayerManager) : Listener {
+class FakePlayerAutoEquipToolListener : PluginComponent, Listener {
 
     @EventHandler
     fun onBlockDamage(event: BlockDamageEvent) {
-        val fakePlayer = fpm.get(event.player.uniqueId)?.takeIf { it.autoEquipTool } ?: return
+        val fakePlayer = fpm.get(event.player.uniqueId)?.takeIf { it.settings.autoEquipTool } ?: return
         val inventory = fakePlayer.player.inventory
         val currentSlot = inventory.heldItemSlot
         val bestToolSlot = fakePlayer.nms.findBestToolSlot(event.block) ?: return

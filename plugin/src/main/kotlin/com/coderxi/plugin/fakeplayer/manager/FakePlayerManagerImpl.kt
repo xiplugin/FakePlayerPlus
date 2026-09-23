@@ -6,14 +6,18 @@ import com.coderxi.plugin.fakeplayer.api.event.FakePlayerPreparingEvent
 import com.coderxi.plugin.fakeplayer.api.event.FakePlayerQuitedEvent
 import com.coderxi.plugin.fakeplayer.api.event.FakePlayerSpawnedEvent
 import com.coderxi.plugin.fakeplayer.api.manager.FakePlayerManager
-import com.coderxi.plugin.fakeplayer.api.model.FakePlayerSettings
 import com.coderxi.plugin.fakeplayer.api.model.PlayerDetail
 import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandException.*
 import com.coderxi.plugin.fakeplayer.command.permission.Permission.ADMIN
-import com.coderxi.plugin.fakeplayer.config.PreventKickingType
+import com.coderxi.plugin.fakeplayer.command.permission.hasPermission
+import com.coderxi.plugin.fakeplayer.config.FakePlayerPlusPluginConfig.MiscConfig.*
 import com.coderxi.plugin.fakeplayer.entity.StandardFakePlayer
 import com.coderxi.plugin.fakeplayer.repository.FakePlayerRepository
-import com.coderxi.plugin.fakeplayer.utils.*
+import com.coderxi.plugin.fakeplayer.repository.po.FakePlayerSettingsPO
+import com.coderxi.plugin.fakeplayer.utils.bukkit.uniqueIdOrZero
+import com.coderxi.plugin.fakeplayer.utils.common.IPGenerator
+import com.coderxi.plugin.fakeplayer.utils.coroutine.dispatcher
+import com.coderxi.plugin.fakeplayer.utils.plugin.PluginComponent
 import com.google.common.cache.CacheBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -33,15 +37,15 @@ import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.math.pow
 
-class FakePlayerManagerImpl : FakePlayerManager, Listener {
+class FakePlayerManagerImpl : FakePlayerManager, PluginComponent, Listener {
 
     companion object {
         const val MAX_NAME_LENGTH: Int = 16
         const val MIN_NAME_LENGTH: Int = 3
     }
 
-    val repository = FakePlayerRepository()
-    val registry = FakePlayerRegistry()
+    private val registry = FakePlayerRegistry()
+    private val repository = FakePlayerRepository()
     override fun fakeplayers() = registry.sortedFakeplayers
     override fun fakeplayersCount() = registry.fakeplayers.count()
     override fun fakeplayersByOwners(): Map<UUID, Collection<UUID>> = registry.fakeplayersByOwnerUuids
@@ -58,11 +62,11 @@ class FakePlayerManagerImpl : FakePlayerManager, Listener {
     private val pendingSpawn = CacheBuilder.newBuilder().expireAfterWrite(15, TimeUnit.SECONDS).build<UUID, Boolean>()
 
     override suspend fun spawn(name: String, spawner: CommandSender, location: Location?) : FakePlayer {
-        val spawnerUuid = spawner.uniqueId()
+        val spawnerUuid = spawner.uniqueIdOrZero
         val spawnLocation = location ?: if (spawner is Player) spawner.location else plugin.server.worlds.first().spawnLocation
         val fakePlayer = withContext(Dispatchers.IO) {
             repository.findByName(name)
-        } ?: StandardFakePlayer(name, uuid(name), spawnerUuid, mutableSetOf(spawnerUuid),null, plugin.config.defaultSettings.copy()).also {
+        } ?: StandardFakePlayer(name, uuid(name), spawnerUuid, mutableSetOf(spawnerUuid),null, FakePlayerSettingsPO().toEntity()).also {
             withContext(Dispatchers.IO) { repository.save(it, true) }
         }
         if (pendingSpawn.getIfPresent(fakePlayer.uuid) == true) {
@@ -100,7 +104,7 @@ class FakePlayerManagerImpl : FakePlayerManager, Listener {
         withContext(fakePlayer.dispatcher) {
             if (spawned) {
                 fakePlayer.ticking = true
-                fakePlayer.applySettings(fakePlayer.settings)
+                fakePlayer.settings.sync(fakePlayer.settings)
                 fakePlayer.nms.resendPossiblyDesyncedEntityData(plugin.server.onlinePlayers)
                 FakePlayerSpawnedEvent(fakePlayer).callEvent()
                 delay(1000)
@@ -116,7 +120,7 @@ class FakePlayerManagerImpl : FakePlayerManager, Listener {
 
     override suspend fun rename(oldName: String, newName: String, operator: CommandSender, force: Boolean): FakePlayer {
         val isAdmin = operator.hasPermission(ADMIN)
-        val operatorUuid = operator.uniqueId()
+        val operatorUuid = operator.uniqueIdOrZero
         val fakePlayer = get(oldName) ?: throw NotExitsException(oldName)
         if (fakePlayer.hasOwner && !fakePlayer.isOwnedBy(operatorUuid) && !isAdmin) {
             throw NotOwnerException(oldName)
@@ -142,7 +146,8 @@ class FakePlayerManagerImpl : FakePlayerManager, Listener {
         val creatorUuid = fakePlayer.creator?.uuid
         val ownerUuids = fakePlayer.owners.map { it.uuid }.toMutableSet()
         val textures = fakePlayer.textures
-        val settings = FakePlayerSettings.from(fakePlayer)
+        FakePlayerSettingsPO.fromEntity(fakePlayer.settings).toEntity()
+        val settings = FakePlayerSettingsPO.fromEntity(fakePlayer.settings).toEntity()
         val location = fakePlayer.player.location.clone()
 
         withContext(fakePlayer.dispatcher) {
@@ -202,7 +207,7 @@ class FakePlayerManagerImpl : FakePlayerManager, Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     fun onFakePlayerKick(event: PlayerKickEvent) {
-        if (plugin.config.behavior.preventKicking == PreventKickingType.SPAWNING && pendingSpawn.getIfPresent(event.player.uniqueId) != null) {
+        if (plugin.config.msic.preventKicking == PreventKickingType.SPAWNING && pendingSpawn.getIfPresent(event.player.uniqueId) != null) {
             event.isCancelled = true
         }
     }
@@ -235,7 +240,7 @@ class FakePlayerManagerImpl : FakePlayerManager, Listener {
     }
 
     override suspend fun saveSettings(operator: CommandSender, fakePlayer: FakePlayer) {
-        withContext(Dispatchers.IO) {repository.saveSettings(operator, fakePlayer)}
+        withContext(Dispatchers.IO) {repository.saveSettings(fakePlayer)}
     }
 
     override suspend fun addOwner(fakePlayer: FakePlayer, ownerUuid: UUID) {

@@ -1,8 +1,6 @@
 package com.coderxi.plugin.fakeplayer.api.entity
 
 import com.coderxi.plugin.fakeplayer.api.action.ActionController
-import com.coderxi.plugin.fakeplayer.api.model.FakePlayerSettings
-import com.coderxi.plugin.fakeplayer.api.model.FakePlayerSettings.InteractedAction
 import com.coderxi.plugin.fakeplayer.api.model.PlayerDetail
 import com.coderxi.plugin.fakeplayer.api.model.PlayerTextures
 import com.coderxi.plugin.fakeplayer.api.nms.NMSServerPlayer
@@ -30,25 +28,13 @@ interface FakePlayer {
     fun removeOwner(uuid: UUID)
     val spawnTime: Long
 
+    // 假人设置
+    val settings: FakePlayerSettings
+
     // 执行nms.doTick和actions.doTick
     fun doTick()
     // 控制是否执行刻运算
     var ticking: Boolean
-
-    // 假人设置(持久化)
-    var collidable: Boolean
-    var pickupItems: Boolean
-    var invulnerable: Boolean
-    var infiniteFoodLevel: Boolean
-    var autoReplenish: Boolean
-    var autoFish: Boolean
-    var simulationDistance: Int
-    var xpNoCooldown: Boolean
-    var autoEquipTool: Boolean
-    var interactedAction: InteractedAction
-    var shiftInteractedAction: InteractedAction
-
-    fun applySettings(settings: FakePlayerSettings)
 
     // nms属性
     var ping: Int

@@ -1,9 +1,10 @@
 package com.coderxi.plugin.fakeplayer.command.permission
 
+import org.bukkit.permissions.Permission as Permission0
+
 enum class Permission(val value: String) {
 
     ADMIN("fakeplayer.admin"),
-    BASIC("fakeplayer.basic"),
 
     HELP("fakeplayer.help"),
     RELOAD("fakeplayer.reload"),
@@ -17,6 +18,7 @@ enum class Permission(val value: String) {
     REMOVE("fakeplayer.remove"),
 
     KILL("fakeplayer.kill"),
+    RESPAWN("fakeplayer.respawn"),
     INVSEE("fakeplayer.invsee"),
     ENDER_CHEST("fakeplayer.enderchest"),
     TP("fakeplayer.tp"),
@@ -38,6 +40,10 @@ enum class Permission(val value: String) {
     SETTINGS_AUTO_EQUIP_TOOL("fakeplayer.settings.autoEquipTool"),
     SETTINGS_INTERACTED_ACTION("fakeplayer.settings.interactedAction"),
     SETTINGS_SHIFT_INTERACTED_ACTION("fakeplayer.settings.shiftInteractedAction"),
+    SETTINGS_DEATH_ACTION("fakeplayer.settings.deathAction"),
+    SETTINGS_KEEP_INVENTORY("fakeplayer.settings.keepInventory"),
+    SETTINGS_FOLLOW_QUITING("fakeplayer.settings.followQuiting"),
+    SETTINGS_FOLLOW_QUITING_DELAY("fakeplayer.settings.followQuitingDelay"),
 
     ACTION("fakeplayer.action"),
     ACTION_ATTACK("fakeplayer.action.attack"),
@@ -51,5 +57,46 @@ enum class Permission(val value: String) {
     OWNER_ADD("fakeplayer.owner.add"),
     OWNER_LIST("fakeplayer.owner.list"),
     OWNER_REMOVE("fakeplayer.owner.remove"),
+
+    ;
+    companion object {
+        val BASIC = Permission0("fakeplayer.basic", "Basic FakePlayer permissions", mapOf(
+            HELP.value to true,
+            SPAWN.value to true,
+            SELECT.value to true,
+            REMOVE.value to true,
+            KILL.value to true,
+            RESPAWN.value to true,
+            INVSEE.value to true,
+            ENDER_CHEST.value to true,
+            TP.value to true,
+            EXPME.value to true,
+            SKIN.value to true,
+            CMD.value to true,
+            CHAT.value to true,
+            SWAP.value to true,
+            SETTINGS.value to true,
+            SETTINGS_COLLIDABLE.value to true,
+            SETTINGS_PICKUP_ITEMS.value to true,
+            SETTINGS_INVULNERABLE.value to true,
+            SETTINGS_INFINITE_FOOD_LEVEL.value to true,
+            SETTINGS_AUTO_REPLENISH.value to true,
+            SETTINGS_AUTO_FISH.value to true,
+            SETTINGS_SIMULATION_DISTANCE.value to true,
+            SETTINGS_XP_NO_COOLDOWN.value to true,
+            SETTINGS_AUTO_EQUIP_TOOL.value to true,
+            ACTION.value to true,
+            ACTION_ATTACK.value to true,
+            ACTION_MINE.value to true,
+            ACTION_USE_ITEM.value to true,
+            ACTION_DROP_ITEM.value to true,
+            ACTION_JUMP.value to true,
+            ACTION_SNEAK.value to true,
+            ACTION_LOOT_AT_ENTITY.value to true,
+            OWNER_ADD.value to true,
+            OWNER_LIST.value to true,
+            OWNER_REMOVE.value to true,
+        ))
+    }
 
 }

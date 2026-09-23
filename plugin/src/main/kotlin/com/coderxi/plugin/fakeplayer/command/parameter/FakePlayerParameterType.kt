@@ -6,9 +6,9 @@ import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandExceptio
 import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandException.NotOwnerException
 import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandException.NoSelectedException
 import com.coderxi.plugin.fakeplayer.command.permission.Permission.ADMIN
+import com.coderxi.plugin.fakeplayer.command.permission.hasPermission
 import com.coderxi.plugin.fakeplayer.component.FakePlayerSelector.selected
-import com.coderxi.plugin.fakeplayer.utils.hasPermission
-import com.coderxi.plugin.fakeplayer.utils.plugin
+import com.coderxi.plugin.fakeplayer.utils.plugin.PluginComponent
 import org.bukkit.command.ConsoleCommandSender
 import org.bukkit.entity.Player
 import revxrsal.commands.autocomplete.SuggestionProvider
@@ -43,9 +43,8 @@ class FakePlayerParameterType(private val fpm : FakePlayerManager) : ParameterTy
 
     override fun defaultSuggestions() = DefaultSuggestions
 
-    object DefaultSuggestions : SuggestionProvider<BukkitCommandActor> {
+    object DefaultSuggestions : PluginComponent, SuggestionProvider<BukkitCommandActor> {
 
-        val fpm get() = plugin.fakePlayerManager
         private val emptySuggestions = emptyList<String>()
 
         override fun getSuggestions(context: ExecutionContext<BukkitCommandActor?>): Collection<String?> {

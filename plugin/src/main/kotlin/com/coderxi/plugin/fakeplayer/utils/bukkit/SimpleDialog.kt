@@ -1,5 +1,6 @@
-package com.coderxi.plugin.fakeplayer.utils
+package com.coderxi.plugin.fakeplayer.utils.bukkit
 
+import com.coderxi.plugin.fakeplayer.utils.messages.tl
 import io.papermc.paper.dialog.Dialog
 import io.papermc.paper.dialog.DialogResponseView
 import io.papermc.paper.registry.data.dialog.ActionButton
@@ -16,12 +17,12 @@ import java.time.Duration
 import kotlin.reflect.KMutableProperty0
 
 @Suppress("UnstableApiUsage")
-open class FormDialog(val title: Component) {
+open class SimpleDialog(val title: Component, private val viewer: Player) {
 
     private val defaultButtonWidth = 120
 
     private class FormEntry(
-        val permissions: Collection<String>?,
+        val permission: String?,
         val build: () -> DialogInput,
         val onSubmit: (DialogResponseView) -> Unit
     )
@@ -31,11 +32,11 @@ open class FormDialog(val title: Component) {
     fun bool(
         property: KMutableProperty0<Boolean>,
         label: Component = Component.text(property.name),
-        permissions: Collection<String>? = null,
+        permission: String? = null,
         onChange: ((newValue: Boolean) -> Unit)? = null
-    ): FormDialog = apply {
+    ): SimpleDialog = apply {
         entries.add(FormEntry(
-            permissions = permissions,
+            permission = permission,
             build = { DialogInput.bool(property.name, label).initial(property.get()).build() },
             onSubmit = { view ->
                 val newValue = view.getBoolean(property.name)
@@ -52,11 +53,11 @@ open class FormDialog(val title: Component) {
         label: Component = Component.text(property.name),
         options: List<Pair<T, Component>>,
         width: Int = defaultButtonWidth,
-        permissions: Collection<String>? = null,
+        permission: String? = null,
         onChange: ((newValue: T) -> Unit)? = null
-    ): FormDialog = apply {
+    ): SimpleDialog = apply {
         entries.add(FormEntry(
-            permissions = permissions,
+            permission = permission,
             build = {
                 val currentValue = property.get()
                 val optionEntries = options.mapIndexed { index, (value, optionLabel) ->
@@ -82,14 +83,14 @@ open class FormDialog(val title: Component) {
     fun boolSingleOption(
         property: KMutableProperty0<Boolean>,
         label: Component = Component.text(property.name),
-        trueLabel: Component = tl("fakeplayer.gui.var.true"),
-        falseLabel: Component = tl("fakeplayer.gui.var.false"),
+        trueLabel: Component = tl(viewer,"fakeplayer.gui.var.true"),
+        falseLabel: Component = tl(viewer,"fakeplayer.gui.var.false"),
         width: Int = defaultButtonWidth,
-        permissions: Collection<String>? = null,
+        permission: String? = null,
         onChange: ((newValue: Boolean) -> Unit)? = null
-    ): FormDialog {
+    ): SimpleDialog {
         val options = listOf(true to trueLabel, false to falseLabel)
-        return singleOption(property, label, options, width, permissions, onChange)
+        return singleOption(property, label, options, width, permission, onChange)
     }
 
     fun <E : Enum<E>> enumSingleOption(
@@ -97,12 +98,12 @@ open class FormDialog(val title: Component) {
         property: KMutableProperty0<E>,
         label: Component = Component.text(property.name),
         width: Int = defaultButtonWidth,
-        permissions: Collection<String>? = null,
+        permission: String? = null,
         optionLabelProvider: (E) -> Component = { Component.text(it.name) },
         onChange: ((newValue: E) -> Unit)? = null
-    ): FormDialog {
+    ): SimpleDialog {
         val options = enumClass.enumConstants.map { it to optionLabelProvider(it) }
-        return singleOption(property, label, options, width, permissions, onChange)
+        return singleOption(property, label, options, width, permission, onChange)
     }
 
     fun numberRange(
@@ -112,11 +113,11 @@ open class FormDialog(val title: Component) {
         end: Float,
         step: Float = 0.5f,
         width: Int = defaultButtonWidth,
-        permissions: Collection<String>? = null,
+        permission: String? = null,
         onChange: ((newValue: Float) -> Unit)? = null
-    ): FormDialog = apply {
+    ): SimpleDialog = apply {
         entries.add(FormEntry(
-            permissions = permissions,
+            permission = permission,
             build = {
                 DialogInput.numberRange(property.name, label, start, end)
                     .step(step)
@@ -142,11 +143,11 @@ open class FormDialog(val title: Component) {
         end: Int,
         step: Int = 1,
         width: Int = defaultButtonWidth,
-        permissions: Collection<String>? = null,
+        permission: String? = null,
         onChange: ((newValue: Int) -> Unit)? = null
-    ): FormDialog = apply {
+    ): SimpleDialog = apply {
         entries.add(FormEntry(
-            permissions = permissions,
+            permission = permission,
             build = {
                 DialogInput.numberRange(property.name, label, start.toFloat(), end.toFloat())
                     .step(step.toFloat())
@@ -174,11 +175,11 @@ open class FormDialog(val title: Component) {
         end: Int,
         step: Int = 1,
         width: Int = defaultButtonWidth,
-        permissions: Collection<String>? = null,
+        permission: String? = null,
         onChange: ((newValue: Int) -> Unit)? = null
-    ): FormDialog = apply {
+    ): SimpleDialog = apply {
         entries.add(FormEntry(
-            permissions = permissions,
+            permission = permission,
             build = {
                 DialogInput.numberRange(key, label, start.toFloat(), end.toFloat())
                     .step(step.toFloat())
@@ -201,11 +202,11 @@ open class FormDialog(val title: Component) {
         label: Component = Component.text(property.name),
         width: Int = defaultButtonWidth,
         maxLength: Int = 16,
-        permissions: Collection<String>? = null,
+        permission: String? = null,
         onChange: ((newValue: String) -> Unit)? = null
-    ): FormDialog = apply {
+    ): SimpleDialog = apply {
         entries.add(FormEntry(
-            permissions = permissions,
+            permission = permission,
             build = {
                 DialogInput.text(property.name, label)
                     .initial(property.get())
@@ -229,11 +230,11 @@ open class FormDialog(val title: Component) {
         label: Component = Component.text(key),
         width: Int = defaultButtonWidth,
         maxLength: Int = 16,
-        permissions: Collection<String>? = null,
+        permission: String? = null,
         onChange: ((newValue: String) -> Unit)? = null
-    ): FormDialog = apply {
+    ): SimpleDialog = apply {
         entries.add(FormEntry(
-            permissions = permissions,
+            permission = permission,
             build = {
                 DialogInput.text(key, label)
                     .initial(initial)
@@ -253,23 +254,23 @@ open class FormDialog(val title: Component) {
     private val actionButtons = mutableListOf<ActionButton>()
     private var actionButtonColumns: Int? = null
 
-    fun actionButton(button: ActionButton): FormDialog {
+    fun actionButton(button: ActionButton): SimpleDialog {
         actionButtons.add(button)
         return this
     }
 
-    fun actionButtonColumns(columns: Int): FormDialog {
+    fun actionButtonColumns(columns: Int): SimpleDialog {
         actionButtonColumns = columns
         return this
     }
 
     private var submitButton : ActionButton? = null
     fun submitButton(
-        label: Component = tl("fakeplayer.gui.submit"),
+        label: Component = tl(viewer,"fakeplayer.gui.submit"),
         width: Int = defaultButtonWidth,
         options: ClickCallback.Options = defaultActionOptions,
         onClick: (() -> Unit)? = null
-    ): FormDialog {
+    ): SimpleDialog {
         submitButton = ActionButton.create(label, null, width,
             DialogAction.customClick({ view, _ -> entries.forEach { it.onSubmit(view) }; onClick?.invoke() }, options)
         )
@@ -278,11 +279,11 @@ open class FormDialog(val title: Component) {
 
     private var cancelButton : ActionButton? = null
     fun cancelButton(
-        label: Component = tl("fakeplayer.gui.cancel"),
+        label: Component = tl(viewer,"fakeplayer.gui.cancel"),
         width: Int = defaultButtonWidth,
         options: ClickCallback.Options = defaultActionOptions,
         onClick: (() -> Unit)? = null
-    ): FormDialog {
+    ): SimpleDialog {
         cancelButton = ActionButton.create(label, null, width,
             DialogAction.customClick({ _, _ ->  onClick?.invoke() }, options)
         )
@@ -296,7 +297,7 @@ open class FormDialog(val title: Component) {
                 .base(
                     DialogBase.builder(title)
                         .canCloseWithEscape(true)
-                        .inputs(entries.filter { it.permissions == null || it.permissions.any(player::hasPermission)}.map { it.build() })
+                        .inputs(entries.filter { it.permission == null || player.hasPermission(it.permission) }.map { it.build() })
                         .build()
                 )
                 .type(

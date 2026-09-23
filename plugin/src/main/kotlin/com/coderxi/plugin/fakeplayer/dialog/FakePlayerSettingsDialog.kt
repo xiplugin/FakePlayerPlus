@@ -1,39 +1,47 @@
 package com.coderxi.plugin.fakeplayer.dialog
 
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
-import com.coderxi.plugin.fakeplayer.api.model.FakePlayerSettings.InteractedAction
+import com.coderxi.plugin.fakeplayer.api.entity.FakePlayerSettings.*
 import com.coderxi.plugin.fakeplayer.command.permission.Permission.*
-import com.coderxi.plugin.fakeplayer.utils.FormDialog
-import com.coderxi.plugin.fakeplayer.utils.hasPermission
-import com.coderxi.plugin.fakeplayer.utils.launch
-import com.coderxi.plugin.fakeplayer.utils.plugin
-import com.coderxi.plugin.fakeplayer.utils.tl
-import com.coderxi.plugin.fakeplayer.utils.tlp
-import com.coderxi.plugin.fakeplayer.utils.tls
+import com.coderxi.plugin.fakeplayer.command.permission.hasPermission
+import com.coderxi.plugin.fakeplayer.plugin
+import com.coderxi.plugin.fakeplayer.utils.bukkit.SimpleDialog
+import com.coderxi.plugin.fakeplayer.utils.coroutine.launch
+import com.coderxi.plugin.fakeplayer.utils.messages.sendLocalizedMessage
+import com.coderxi.plugin.fakeplayer.utils.messages.tl
+import com.coderxi.plugin.fakeplayer.utils.messages.tls
 import org.bukkit.entity.Player
 
-class FakePlayerSettingsDialog(fakePlayer: FakePlayer, val viewer: Player): FormDialog(
-    tl("fakeplayer.gui.settings.title",fakePlayer.name)
+class FakePlayerSettingsDialog(fakePlayer: FakePlayer, val viewer: Player): SimpleDialog(
+    tl(viewer,"fakeplayer.gui.settings.title",fakePlayer.name), viewer
 ) {
 
     init {
-        boolSingleOption(fakePlayer::collidable, tl("fakeplayer.gui.settings.collidable"), permissions = listOf(SETTINGS_COLLIDABLE.value, BASIC.value))
-        boolSingleOption(fakePlayer::pickupItems, tl("fakeplayer.gui.settings.pickup-items"), permissions = listOf(SETTINGS_PICKUP_ITEMS.value, BASIC.value))
-        boolSingleOption(fakePlayer::invulnerable, tl("fakeplayer.gui.settings.invulnerable"), permissions = listOf(SETTINGS_INVULNERABLE.value, BASIC.value))
-        boolSingleOption(fakePlayer::infiniteFoodLevel, tl("fakeplayer.gui.settings.infinite-food-level"), permissions = listOf(SETTINGS_INFINITE_FOOD_LEVEL.value, BASIC.value))
-        boolSingleOption(fakePlayer::autoReplenish, tl("fakeplayer.gui.settings.auto-replenish"), permissions = listOf(SETTINGS_AUTO_REPLENISH.value, BASIC.value))
-        boolSingleOption(fakePlayer::autoFish, tl("fakeplayer.gui.settings.auto-fish"), permissions = listOf(SETTINGS_AUTO_FISH.value, BASIC.value))
-        numberRange(fakePlayer::simulationDistance, tl("fakeplayer.gui.settings.simulation-distance"), "%s: %s"+tls("fakeplayer.gui.unit.chunk") ,
-            permissions = listOf(SETTINGS_SIMULATION_DISTANCE.value, BASIC.value),
+        boolSingleOption(fakePlayer.settings::collidable, tl(viewer,"fakeplayer.gui.settings.collidable"), permission = SETTINGS_COLLIDABLE.value)
+        boolSingleOption(fakePlayer.settings::pickupItems, tl(viewer,"fakeplayer.gui.settings.pickup-items"), permission = SETTINGS_PICKUP_ITEMS.value)
+        boolSingleOption(fakePlayer.settings::invulnerable, tl(viewer,"fakeplayer.gui.settings.invulnerable"), permission = SETTINGS_INVULNERABLE.value)
+        boolSingleOption(fakePlayer.settings::infiniteFoodLevel, tl(viewer,"fakeplayer.gui.settings.infinite-food-level"), permission = SETTINGS_INFINITE_FOOD_LEVEL.value)
+        boolSingleOption(fakePlayer.settings::autoReplenish, tl(viewer,"fakeplayer.gui.settings.auto-replenish"), permission = SETTINGS_AUTO_REPLENISH.value)
+        boolSingleOption(fakePlayer.settings::autoFish, tl(viewer,"fakeplayer.gui.settings.auto-fish"), permission = SETTINGS_AUTO_FISH.value)
+        numberRange(fakePlayer.settings::simulationDistance, tl(viewer,"fakeplayer.gui.settings.simulation-distance"), "%s: %s"+tls(viewer,"fakeplayer.gui.unit.chunk") ,
+            permission = SETTINGS_SIMULATION_DISTANCE.value,
             start = 1,
             end = if (viewer.hasPermission(ADMIN)) 32 else plugin.server.simulationDistance
         )
-        boolSingleOption(fakePlayer::xpNoCooldown, tl("fakeplayer.gui.settings.xp-no-cooldown"), permissions = listOf(SETTINGS_XP_NO_COOLDOWN.value, BASIC.value))
-        boolSingleOption(fakePlayer::autoEquipTool, tl("fakeplayer.gui.settings.auto-equip-tool"), permissions = listOf(SETTINGS_AUTO_EQUIP_TOOL.value, BASIC.value))
-        enumSingleOption(InteractedAction::class.java,fakePlayer::interactedAction, tl("fakeplayer.gui.settings.interacted-action"), optionLabelProvider = {tl("fakeplayer.gui.var.interacted-action.${it.name}")}, permissions = listOf(SETTINGS_INTERACTED_ACTION.value, ADMIN.value))
-        enumSingleOption(InteractedAction::class.java,fakePlayer::shiftInteractedAction, tl("fakeplayer.gui.settings.shift-interacted-action"), optionLabelProvider = {tl("fakeplayer.gui.var.interacted-action.${it.name}")}, permissions = listOf(SETTINGS_SHIFT_INTERACTED_ACTION.value, ADMIN.value))
+        boolSingleOption(fakePlayer.settings::xpNoCooldown, tl(viewer,"fakeplayer.gui.settings.xp-no-cooldown"), permission = SETTINGS_XP_NO_COOLDOWN.value)
+        boolSingleOption(fakePlayer.settings::autoEquipTool, tl(viewer,"fakeplayer.gui.settings.auto-equip-tool"), permission = SETTINGS_AUTO_EQUIP_TOOL.value)
+        enumSingleOption(InteractedAction::class.java,fakePlayer.settings::interactedAction, tl(viewer,"fakeplayer.gui.settings.interacted-action"), optionLabelProvider = {tl(viewer,"fakeplayer.gui.var.interacted-action.${it.name}")}, permission = SETTINGS_INTERACTED_ACTION.value)
+        enumSingleOption(InteractedAction::class.java,fakePlayer.settings::shiftInteractedAction, tl(viewer,"fakeplayer.gui.settings.shift-interacted-action"), optionLabelProvider = {tl(viewer,"fakeplayer.gui.var.interacted-action.${it.name}")}, permission = SETTINGS_SHIFT_INTERACTED_ACTION.value)
+        enumSingleOption(DeathAction::class.java,fakePlayer.settings::deathAction,tl(viewer,"fakeplayer.gui.settings.death-action"),  optionLabelProvider = {tl(viewer,"fakeplayer.gui.var.death-action.${it.name}")}, permission = SETTINGS_DEATH_ACTION.value)
+        boolSingleOption(fakePlayer.settings::keepInventory, tl(viewer,"fakeplayer.gui.settings.keep-inventory"), permission = SETTINGS_KEEP_INVENTORY.value)
+        boolSingleOption(fakePlayer.settings::followQuiting, tl(viewer,"fakeplayer.gui.settings.follow-quitting"), permission = SETTINGS_FOLLOW_QUITING.value)
+        numberRange(fakePlayer.settings::followQuitingDelay, tl(viewer,"fakeplayer.gui.settings.follow-quitting-delay"),"%s: %s"+tls(viewer,"fakeplayer.gui.unit.seconds"),
+            permission = SETTINGS_FOLLOW_QUITING_DELAY.value,
+            start = 1,
+            end = 120
+        )
         submitButton(width = 100) {
-            viewer.sendMessage(tlp("fakeplayer.gui.settings.submit.success", fakePlayer.name))
+            viewer.sendLocalizedMessage("fakeplayer.gui.settings.submit.success", fakePlayer.name)
             launch { plugin.fakePlayerManager.saveSettings(viewer, fakePlayer) }
         }
     }

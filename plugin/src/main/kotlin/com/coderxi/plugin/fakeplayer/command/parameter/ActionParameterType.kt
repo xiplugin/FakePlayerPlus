@@ -2,8 +2,8 @@ package com.coderxi.plugin.fakeplayer.command.parameter
 
 import com.coderxi.plugin.fakeplayer.api.action.Action
 import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandException.NoPermissionException
-import com.coderxi.plugin.fakeplayer.utils.hasPermission
-import com.coderxi.plugin.fakeplayer.utils.plugin
+import com.coderxi.plugin.fakeplayer.command.permission.hasPermission
+import com.coderxi.plugin.fakeplayer.plugin
 import revxrsal.commands.autocomplete.SuggestionProvider
 import revxrsal.commands.bukkit.actor.BukkitCommandActor
 import revxrsal.commands.node.ExecutionContext
@@ -21,7 +21,7 @@ class ActionParameterType: ParameterType<BukkitCommandActor, Action> {
         val sender = context.actor().sender()
         val actionType = plugin.globalActionRegistry.getType(actionName) ?: return null
         val permissions = actionType.getAnnotation(Permission::class.java)
-        if (permissions != null && !sender.hasPermission(permissions.node, permissions.or)) {
+        if (permissions != null && !sender.hasPermission(permissions.node)) {
             throw NoPermissionException()
         }
         return actionType.getConstructor().newInstance() as Action
@@ -34,7 +34,7 @@ class ActionParameterType: ParameterType<BukkitCommandActor, Action> {
             return plugin.globalActionRegistry.actions.mapNotNull { actionType ->
                 val sender = context.actor().sender()
                 val permissions = actionType.getAnnotation(Permission::class.java)
-                if (permissions != null && !sender.hasPermission(permissions.node, permissions.or)) {
+                if (permissions != null && !sender.hasPermission(permissions.node)) {
                     null
                 } else {
                     plugin.globalActionRegistry.getName(actionType)

@@ -6,14 +6,14 @@ import com.coderxi.plugin.fakeplayer.api.event.FakePlayerPreparingEvent
 import com.coderxi.plugin.fakeplayer.api.event.FakePlayerQuitEvent
 import com.coderxi.plugin.fakeplayer.api.event.FakePlayerQuitedEvent
 import com.coderxi.plugin.fakeplayer.api.event.FakePlayerSpawnedEvent
-import com.coderxi.plugin.fakeplayer.utils.isFolia
-import com.coderxi.plugin.fakeplayer.utils.plugin
+import com.coderxi.plugin.fakeplayer.utils.bukkit.isFolia
+import com.coderxi.plugin.fakeplayer.utils.plugin.PluginComponent
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 
-class FakePlayerLifecycleCommandListener: Listener {
+class FakePlayerLifecycleCommandListener: PluginComponent, Listener {
 
     val commands get() = plugin.config.lifecycleCommands
 
