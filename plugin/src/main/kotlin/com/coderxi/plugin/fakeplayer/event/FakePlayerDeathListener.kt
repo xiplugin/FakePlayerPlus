@@ -5,6 +5,7 @@ import com.coderxi.plugin.fakeplayer.utils.coroutine.dispatcher
 import com.coderxi.plugin.fakeplayer.utils.coroutine.launch
 import com.coderxi.plugin.fakeplayer.utils.plugin.PluginComponent
 import kotlinx.coroutines.delay
+import org.bukkit.GameRules
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.entity.PlayerDeathEvent
@@ -20,8 +21,14 @@ class FakePlayerDeathListener: PluginComponent, Listener {
         event.deathMessage(null)
 
         if (fakePlayer.settings.keepInventory) {
-            event.keepInventory = true;
+            event.keepInventory = true
             event.drops.clear()
+        } else if (fakePlayer.player.world.getGameRuleValue(GameRules.KEEP_INVENTORY) == true) {
+            event.keepInventory = false
+            event.drops.clear()
+            val inv = event.player.inventory
+            event.drops.addAll(inv)
+            inv.clear()
         }
 
         when (fakePlayer.settings.deathAction) {
