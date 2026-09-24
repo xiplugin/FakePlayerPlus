@@ -1,5 +1,6 @@
 package com.coderxi.plugin.fakeplayer.config
 
+import com.coderxi.plugin.fakeplayer.provider.invsee.AdvancedInvseeProvider
 import com.coderxi.plugin.fakeplayer.provider.invsee.InvseeProvider
 import com.coderxi.plugin.fakeplayer.provider.invsee.OpenInvInvseeProvider
 import com.coderxi.plugin.fakeplayer.provider.invsee.VanillaInvseeProvider
@@ -147,11 +148,12 @@ class FakePlayerPlusPluginConfig : OkaeriConfig() {
     var msic = MiscConfig()
     class MiscConfig : OkaeriConfig() {
 
-        @Comment("假人背包查看器", "VANILLA:原版(不支持查看装备栏)", "OPENINV:需单独安装 https://github.com/Jikoo/OpenInv/releases")
-        @Comment("Fake player inventory viewer", "VANILLA: Vanilla (Does not support viewing equipment/armor slots)", "OPENINV: Requires separate installation: https://github.com/Jikoo/OpenInv/releases")
+        @Comment("假人背包查看器", "ADVANCED:高级(装备栏+副手+快捷栏切换)", "VANILLA:原版(不支持查看装备栏)", "OPENINV:需单独安装(装备栏+副手+合成) https://github.com/Jikoo/OpenInv/releases")
+        @Comment("Fake player inventory viewer", "VANILLA: Vanilla (Does not support viewing equipment/armor slots)", "ADVANCED: Advanced 6x9 layout (Equipment slots + hotbar selector)", "OPENINV: Requires separate installation: https://github.com/Jikoo/OpenInv/releases")
         @CustomKey("invsee-type")
-        var invseeType =  InvseeProviderType.VANILLA
+        var invseeType =  InvseeProviderType.ADVANCED
         enum class InvseeProviderType(val providerClass: Class<out InvseeProvider>) {
+            ADVANCED(AdvancedInvseeProvider::class.java),
             VANILLA(VanillaInvseeProvider::class.java),
             OPENINV(OpenInvInvseeProvider::class.java)
         }
