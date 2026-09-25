@@ -1,15 +1,9 @@
 package com.coderxi.plugin.fakeplayer.utils.plugin
 
-interface PluginComponent {
+import com.coderxi.plugin.fakeplayer.api.FakePlayerPlusPluginComponent
 
-    val priority get() = 0
+interface PluginComponent: FakePlayerPlusPluginComponent {
 
     val plugin get() = com.coderxi.plugin.fakeplayer.plugin
-
-    val fpm get() = plugin.fakePlayerManager
-
-    fun onReload() {}
-
-    fun onDisable() {}
 
 }

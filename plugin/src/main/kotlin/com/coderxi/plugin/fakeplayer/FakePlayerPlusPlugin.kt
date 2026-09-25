@@ -5,6 +5,7 @@ import com.coderxi.plugin.fakeplayer.action.ActionRegistryImpl
 import com.coderxi.plugin.fakeplayer.action.base.CommonActionMode
 import com.coderxi.plugin.fakeplayer.action.handler.*
 import com.coderxi.plugin.fakeplayer.api.FakePlayerPlusPluginApi
+import com.coderxi.plugin.fakeplayer.api.FakePlayerPlusPluginComponent as PluginComponent0
 import com.coderxi.plugin.fakeplayer.api.action.Action
 import com.coderxi.plugin.fakeplayer.api.action.ActionRegistry
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
@@ -25,7 +26,6 @@ import com.coderxi.plugin.fakeplayer.provider.invsee.InvseeProvider
 import com.coderxi.plugin.fakeplayer.utils.plugin.NMSBridgeLoader
 import com.coderxi.plugin.fakeplayer.utils.common.RegexTransformer
 import com.coderxi.plugin.fakeplayer.utils.coroutine.globalCoroutineScope
-import com.coderxi.plugin.fakeplayer.utils.plugin.PluginComponent
 import eu.okaeri.configs.ConfigManager
 import eu.okaeri.configs.OkaeriConfig
 import eu.okaeri.configs.yaml.bukkit.YamlBukkitConfigurer
@@ -55,7 +55,7 @@ class FakePlayerPlusPlugin: FakePlayerPlusPluginApi, JavaPlugin() {
     lateinit var sql2o: Sql2o private set
     lateinit var lamp: Lamp<BukkitCommandActor> private set
 
-    private val components = CopyOnWriteArrayList<PluginComponent>()
+    private val components = CopyOnWriteArrayList<PluginComponent0>()
 
     override lateinit var fakePlayerManager: FakePlayerManager
 
@@ -141,7 +141,11 @@ class FakePlayerPlusPlugin: FakePlayerPlusPluginApi, JavaPlugin() {
         return sql2o
     }
 
-    fun registerComponents(vararg components: PluginComponent) {
+    override fun registerComponent(component: PluginComponent0) {
+        registerComponents(component)
+    }
+
+    fun registerComponents(vararg components: PluginComponent0) {
         components.forEach { component ->
             this.components.add(component)
             (component as? Listener)?.let { server.pluginManager.registerEvents(it, this) }
@@ -152,13 +156,13 @@ class FakePlayerPlusPlugin: FakePlayerPlusPluginApi, JavaPlugin() {
     fun onReload() {
         config.load()
         messages.reload()
-        components.forEach(PluginComponent::onReload)
+        components.forEach(PluginComponent0::onReload)
     }
 
     override fun onDisable() {
         globalCoroutineScope.cancel()
         HandlerList.unregisterAll(this)
-        components.forEach(PluginComponent::onDisable)
+        components.forEach(PluginComponent0::onDisable)
     }
 
 }
