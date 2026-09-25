@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.0.0](https://github.com/xiplugin/FakePlayerPlus/compare/v1.10.1...v2.0.0) (2026-09-25)
+
+
+### ⚠ BREAKING CHANGES
+
+* release 2.0.0
+
+### Features
+
+* release 2.0.0 ([2d33a04](https://github.com/xiplugin/FakePlayerPlus/commit/2d33a04f8fe51f21edf99ef2425a9b98a7b55a70))
+
 ## [1.10.1](https://github.com/xiplugin/FakePlayerPlus/compare/v1.10.0...v1.10.1) (2026-09-02)
 
 
