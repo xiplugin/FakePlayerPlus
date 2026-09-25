@@ -1,7 +1,9 @@
 package com.coderxi.plugin.fakeplayer.api.nms
 
+import org.bukkit.Bukkit
 import org.bukkit.block.Block
 import org.bukkit.entity.Entity
+import org.bukkit.entity.ExperienceOrb
 import org.bukkit.entity.Player
 import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.inventory.ItemStack
@@ -26,6 +28,8 @@ interface NMSServerPlayer {
     var yya: Float
     var zza: Float
 
+    var takeXpDelay: Int
+
     /** 获取时刻计数, 尽管假人会退出游戏, 但服务器重启前这个值不会重置 */
     val tickCount: Int
     /** 判断是否在地面 */
@@ -45,7 +49,7 @@ interface NMSServerPlayer {
     /** 移动玩家 */
     fun absMoveTo(x: Double, y: Double, z: Double, yRot: Float, xRot: Float)
     /** 设置相对移动 */
-    fun setDeltaMovement(vector: Vector)
+    var deltaMovement: Vector
 
     /** 发送消息 */
     fun chat(msg: String)
@@ -85,7 +89,8 @@ interface NMSServerPlayer {
     // 基于数据包的属性, 若修改基于数据包的属性,必须调用dummyNotify方法手动通知
     var dummyNametagVisibility : Boolean
     var dummyCollidable : Boolean
-    fun dummyNotify(targets: Collection<Player>)
+    fun dummyNotify(targets: Collection<Player> = Bukkit.getOnlinePlayers())
+    fun updateLatency()
 
     // 协助完成动作的方法
     fun getDestroyProgress(target: Block): Float
@@ -93,5 +98,13 @@ interface NMSServerPlayer {
     enum class BlockBreakActionType { START, ABORT, STOP }
     fun useItem(type: EquipmentSlot): Boolean
     fun releaseUsingItem()
+    fun swapHandItem()
 
+    /** 寻找背包中的合适工具 */
+    fun findBestToolSlot(target: Block): Int?
+
+    // 其他
+    fun saveData() { player.saveData() }
+
+    fun takeOrbs(orbs: MutableCollection<ExperienceOrb>)
 }

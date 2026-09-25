@@ -2,7 +2,7 @@
 
 <img align="right" src="https://github.com/user-attachments/assets/1ce21dfc-fd0c-4e6c-b006-ee3844adb274" border="0" alt="" />
 
-# FakePlayerPlus ![](https://img.shields.io/badge/Paper-1.21.11_--_26.2-2B7FFF?logo=telegram&logoColor=3884F7) ![](https://img.shields.io/badge/Folia-1.21.11_--_26.2-C33CCA?logo=leaflet&logoColor=C33CCA)
+# FakePlayerPlus ![](https://img.shields.io/badge/Paper-1.21.11_--_26.3-2B7FFF?logo=telegram&logoColor=3884F7) ![](https://img.shields.io/badge/Folia-1.21.11_--_26.2-C33CCA?logo=leaflet&logoColor=C33CCA)
 
 这个插件模拟了真实玩家，对服务端而言，这个插件生成的假人就是一个真正的“活人”。
 
@@ -58,6 +58,7 @@
 | /fp skin \<name\> | 给假人设置正版玩家皮肤 | fakeplayer.skin | 此指令有 60 秒冷却 |
 | /fp cmd | 让假人执行命令 | fakeplayer.cmd | 命令有空格时或需要 `/` 前缀时需将命令文本使用 `"` 包裹，例如 `/fp cmd "kill @p"` |
 | /fp chat | 让假人发送聊天消息 | fakeplayer.chat | 消息有空格时需将消息文本使用 `"` 包裹 |
+| /fp swap | 交换假人主副手物品 | fakeplayer.swap |  |
 | **/fp settings** | 打开假人设置 GUI | fakeplayer.settings | |
 | **/fp action** | 打开假人动作列表 GUI | fakeplayer.action | 有对应的动作权限（如下）才能显示动作按钮 |
 | **/fp action start \<action\>** | 打开假人动作执行 GUI | fakeplayer.action.\<action\> | |

@@ -49,7 +49,7 @@ interface FakePlayerManager {
 
     suspend fun saveSkin(fakePlayer: FakePlayer)
 
-    suspend fun saveSettings(fakePlayer: FakePlayer)
+    suspend fun saveSettings(operator: CommandSender, fakePlayer: FakePlayer)
 
     suspend fun addOwner(fakePlayer: FakePlayer, ownerUuid: UUID)
 

@@ -3,14 +3,13 @@ package com.coderxi.plugin.fakeplayer.component
 import com.coderxi.plugin.fakeplayer.api.event.FakePlayerQuitEvent
 import com.coderxi.plugin.fakeplayer.api.event.FakePlayerQuitedEvent
 import com.coderxi.plugin.fakeplayer.api.event.FakePlayerSpawnedEvent
-import com.coderxi.plugin.fakeplayer.api.manager.FakePlayerManager
-import com.coderxi.plugin.fakeplayer.utils.plugin
-import com.coderxi.plugin.fakeplayer.utils.isFolia
+import com.coderxi.plugin.fakeplayer.utils.bukkit.isFolia
+import com.coderxi.plugin.fakeplayer.utils.plugin.PluginComponent
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.scheduler.BukkitTask
 
-class FakePlayerTicker(private val fpm: FakePlayerManager): Listener {
+class FakePlayerTicker: PluginComponent, Listener {
 
     // Folia Logic
     @EventHandler
@@ -21,8 +20,7 @@ class FakePlayerTicker(private val fpm: FakePlayerManager): Listener {
         fakePlayer.player.scheduler.runAtFixedRate(plugin, { task ->
             if (fakePlayer.ticking) {
                 try {
-                    fakePlayer.nms.doTick()
-                    fakePlayer.actions.doTick()
+                    fakePlayer.doTick()
                 } catch (_: Exception) {
                 }
             } else {
@@ -52,8 +50,7 @@ class FakePlayerTicker(private val fpm: FakePlayerManager): Listener {
             fpm.fakeplayers().forEach { fakePlayer ->
                 if (fakePlayer.ticking) {
                     try {
-                        fakePlayer.nms.doTick()
-                        fakePlayer.actions.doTick()
+                        fakePlayer.doTick()
                     } catch (_: Exception) {
                     }
                 }

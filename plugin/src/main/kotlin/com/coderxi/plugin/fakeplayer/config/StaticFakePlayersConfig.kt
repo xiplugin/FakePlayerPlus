@@ -3,7 +3,8 @@ package com.coderxi.plugin.fakeplayer.config
 import eu.okaeri.configs.OkaeriConfig
 import eu.okaeri.configs.annotation.Comment
 import eu.okaeri.configs.annotation.CustomKey
-import com.coderxi.plugin.fakeplayer.config.FakePlayerPlusPluginConfig.FakePlayerSettingsConfig
+import org.bukkit.Bukkit
+import org.bukkit.Location
 
 class StaticFakePlayersConfig : OkaeriConfig() {
 
@@ -19,12 +20,22 @@ class StaticFakePlayersConfig : OkaeriConfig() {
     @Comment("Default Spawn Location")
     @CustomKey("default-location")
     var defaultLocation: LocationConfig? = LocationConfig()
+    class LocationConfig : OkaeriConfig() {
+        var world: String = "world"
+        var x: Double = 0.5
+        var y: Double = 64.0
+        var z: Double = 0.5
+        var yaw: Float = 0.0f
+        var pitch: Float = 0.0f
+        fun asLocation(): Location {
+            return Location(Bukkit.getWorld(world), x, y, z, yaw, pitch)
+        }
+    }
 
     @Comment("静态持久假人列表")
     @Comment("List of static fake players to be spawned automatically")
     @CustomKey("static-fakeplayers")
     var staticFakePlayerMetas = mutableListOf(StaticFakePlayerMeta())
-
     class StaticFakePlayerMeta : OkaeriConfig() {
         var name = "Npc_1"
         var skin: String? = "bot"
@@ -32,4 +43,5 @@ class StaticFakePlayersConfig : OkaeriConfig() {
         var location: LocationConfig? = null
         var settings: FakePlayerSettingsConfig? = null
     }
+
 }

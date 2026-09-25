@@ -1,0 +1,73 @@
+package com.coderxi.plugin.fakeplayer.dialog
+
+import com.coderxi.plugin.fakeplayer.api.action.Action
+import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
+import com.coderxi.plugin.fakeplayer.plugin
+import com.coderxi.plugin.fakeplayer.utils.bukkit.SimpleDialog
+import com.coderxi.plugin.fakeplayer.utils.messages.tl
+import io.papermc.paper.registry.data.dialog.ActionButton
+import io.papermc.paper.registry.data.dialog.action.DialogAction
+import org.bukkit.entity.Player
+
+@Suppress("UnstableApiUsage")
+class FakePlayerActionExecuteDialog (fakePlayer: FakePlayer, action: Action, val viewer: Player): SimpleDialog(
+    tl(viewer,"fakeplayer.gui.action.title",fakePlayer.name), viewer
+) {
+    init {
+        val modes = plugin.globalActionRegistry.getModes(action.javaClass)
+        modes?.forEach { mode ->
+            val suggestParameters = plugin.globalActionRegistry.getModeSuggestParameters(mode)
+            suggestParameters.entries.forEach { (key, value) ->
+                if (value is Int) {
+                    numberRange(
+                        key,
+                        value,
+                        tl(viewer,"fakeplayer.gui.action.params.$key"),
+                        null,
+                        1,
+                        200,
+                        width = 100
+                    )
+                } else {
+                    text(
+                        key,
+                        value.toString(),
+                        tl(viewer,"fakeplayer.gui.action.params.$key"),
+                        width = 100
+                    )
+                }
+            }
+
+            actionButton(
+                ActionButton.create(
+                    tl(viewer,"fakeplayer.gui.action.execute-$mode"),
+                    null,
+                    100,
+                    DialogAction.customClick({ view, _ ->
+                        val params = suggestParameters.entries.associate { (key, value) ->
+                            if (value is Int) {
+                                key to ((view.getFloat(key) ?: value).toInt().toString())
+                            } else {
+                                key to (view.getText(key) ?: value.toString())
+                            }
+                        }
+                        fakePlayer.actions.execute(action, mode, params)
+                    }, defaultActionOptions)
+                )
+            )
+        }
+
+        if (fakePlayer.actions.activeActions.contains(action.javaClass)) {
+            actionButton(
+                ActionButton.create(
+                    tl(viewer,"fakeplayer.gui.action.stop"),
+                    null,
+                    100,
+                    DialogAction.customClick({ _, _ -> fakePlayer.actions.stop(action) }, defaultActionOptions)
+                )
+            )
+        }
+
+        actionButtonColumns(modes?.size?.coerceAtLeast(1) ?: 1)
+    }
+}

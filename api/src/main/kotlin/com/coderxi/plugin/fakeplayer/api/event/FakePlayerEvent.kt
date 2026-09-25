@@ -2,7 +2,6 @@ package com.coderxi.plugin.fakeplayer.api.event
 
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
 import net.kyori.adventure.text.Component
-import org.bukkit.Location
 import org.bukkit.entity.Player
 import org.bukkit.event.Event
 import org.bukkit.event.HandlerList
@@ -33,15 +32,6 @@ data class FakePlayerQuitEvent(override val fakePlayer: FakePlayer, val reason: 
 }
 /** 假人完全退出 */
 class FakePlayerQuitedEvent(override val fakePlayer: FakePlayer): FakePlayerEvent() {
-    companion object { @JvmStatic val HANDLERS = HandlerList() ; @JvmStatic fun getHandlerList() = HANDLERS }
-    override fun getHandlers() = HANDLERS
-}
-// 从Player转发的事件
-class FakePlayerRespawnEvent(override val fakePlayer: FakePlayer): FakePlayerEvent() {
-    companion object { @JvmStatic val HANDLERS = HandlerList() ; @JvmStatic fun getHandlerList() = HANDLERS }
-    override fun getHandlers() = HANDLERS
-}
-data class FakePlayerDeathEvent(override val fakePlayer: FakePlayer, val location: Location): FakePlayerEvent() {
     companion object { @JvmStatic val HANDLERS = HandlerList() ; @JvmStatic fun getHandlerList() = HANDLERS }
     override fun getHandlers() = HANDLERS
 }

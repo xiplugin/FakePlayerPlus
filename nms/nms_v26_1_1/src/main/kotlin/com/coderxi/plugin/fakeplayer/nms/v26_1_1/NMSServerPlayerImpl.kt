@@ -28,4 +28,12 @@ open class NMSServerPlayerImpl(override val player: Player) : com.coderxi.plugin
         }
         return false
     }
+
+    override fun findBestToolSlot(target: Block): Int? {
+        val inventory = handle.inventory
+        val block = (target as CraftBlock).blockState
+        return (0 until inventory.containerSize).maxByOrNull { slot ->
+            inventory.getItem(slot).getDestroySpeed(block)
+        }
+    }
 }

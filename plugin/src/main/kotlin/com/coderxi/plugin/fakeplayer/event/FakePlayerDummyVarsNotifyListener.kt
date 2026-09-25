@@ -1,11 +1,11 @@
 package com.coderxi.plugin.fakeplayer.event
 
-import com.coderxi.plugin.fakeplayer.api.manager.FakePlayerManager
+import com.coderxi.plugin.fakeplayer.utils.plugin.PluginComponent
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerJoinEvent
 
-class FakePlayerDummyVarsNotifyListener(private val fpm: FakePlayerManager): Listener {
+class FakePlayerDummyVarsNotifyListener: PluginComponent, Listener {
 
     @EventHandler
     fun onPlayerJoinEvent(event: PlayerJoinEvent) {

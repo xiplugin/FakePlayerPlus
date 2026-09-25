@@ -6,9 +6,9 @@ import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandExceptio
 import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandException.NotOwnerException
 import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandException.NoSelectedException
 import com.coderxi.plugin.fakeplayer.command.permission.Permission.ADMIN
+import com.coderxi.plugin.fakeplayer.command.permission.hasPermission
 import com.coderxi.plugin.fakeplayer.component.FakePlayerSelector.selected
-import com.coderxi.plugin.fakeplayer.utils.hasPermission
-import com.coderxi.plugin.fakeplayer.utils.plugin
+import com.coderxi.plugin.fakeplayer.utils.plugin.PluginComponent
 import org.bukkit.command.ConsoleCommandSender
 import org.bukkit.entity.Player
 import revxrsal.commands.autocomplete.SuggestionProvider
@@ -32,7 +32,7 @@ class FakePlayerParameterType(private val fpm : FakePlayerManager) : ParameterTy
                 return sender.selected ?: throw NoSelectedException()
             }
             val selected = fpm.get(name) ?: throw NotExitsException(name)
-            if (!selected.ownerUuids.contains(sender.uniqueId) && !sender.hasPermission(ADMIN)) {
+            if (!selected.isOwnedBy(sender.uniqueId) && !sender.hasPermission(ADMIN)) {
                 throw NotOwnerException(selected.name)
             }
             return selected
@@ -41,14 +41,11 @@ class FakePlayerParameterType(private val fpm : FakePlayerManager) : ParameterTy
     }
 
 
-    val defaultSuggestions = DefaultSuggestions()
+    override fun defaultSuggestions() = DefaultSuggestions
 
-    override fun defaultSuggestions() = defaultSuggestions
+    object DefaultSuggestions : PluginComponent, SuggestionProvider<BukkitCommandActor> {
 
-    class DefaultSuggestions : SuggestionProvider<BukkitCommandActor> {
-
-        val fpm get() = plugin.fakePlayerManager
-        private val emptySuggestions = listOf<String>()
+        private val emptySuggestions = emptyList<String>()
 
         override fun getSuggestions(context: ExecutionContext<BukkitCommandActor?>): Collection<String?> {
             val sender = context.actor().sender()

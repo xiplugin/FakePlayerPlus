@@ -1,83 +1,94 @@
 package com.coderxi.plugin.fakeplayer.entity
 
-import com.coderxi.plugin.fakeplayer.action.ActionHandlerImpl
-import com.coderxi.plugin.fakeplayer.api.action.ActionHandler
-import com.coderxi.plugin.fakeplayer.api.config.FakePlayerSettings
+import com.coderxi.plugin.fakeplayer.action.ActionControllerImpl
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
-import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer.SkinInfo
-import com.coderxi.plugin.fakeplayer.api.nms.*
+import com.coderxi.plugin.fakeplayer.api.entity.FakePlayerSettings
+import com.coderxi.plugin.fakeplayer.api.model.PlayerDetail
+import com.coderxi.plugin.fakeplayer.api.model.PlayerTextures
+import com.coderxi.plugin.fakeplayer.api.nms.NMSServerGamePacketListener
+import com.coderxi.plugin.fakeplayer.api.nms.NMSServerPlayer
+import com.coderxi.plugin.fakeplayer.plugin
+import com.coderxi.plugin.fakeplayer.utils.bukkit.SkinFetcher
 import net.kyori.adventure.text.Component
 import org.bukkit.Bukkit
+import org.bukkit.entity.ExperienceOrb
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.properties.Delegates
 
 class StandardFakePlayer(
     override val name: String,
     override val uuid: UUID,
-    override var creatorUuid: UUID? = null,
-    override var ownerUuids: MutableSet<UUID> = mutableSetOf(),
-    private var _skin: SkinInfo? = null,
-    private var _settings: FakePlayerSettings
+    creatorUuid: UUID? = null,
+    ownerUuids: Collection<UUID> = emptyList(),
+    private val initialTextures: PlayerTextures? = null,
+    override val settings: FakePlayerSettings
 ) : FakePlayer {
 
-    override var spawnTime: Long = -1
+    init {
+        settings.bind(this)
+    }
 
-    override var skin: SkinInfo?
-        get() = _skin;
-        set(skin) {
-            if (skin == null || skin.textures == null || skin.signature == null) nmsPlayer.setTextures(null, null)
-            else nmsPlayer.setTextures(skin.textures!!, skin.signature!!)
-            _skin = skin
+    override lateinit var nms: NMSServerPlayer
+    override val actions = ActionControllerImpl(this)
+    lateinit var nmsConnection: NMSServerGamePacketListener
+
+    override lateinit var spawner: PlayerDetail
+    override var creator: PlayerDetail? = creatorUuid?.let(PlayerDetail::of)
+
+    private val ownersMap = ownerUuids.associateWithTo(mutableMapOf(),PlayerDetail::of)
+    override val owners get() = ownersMap.values
+    override val hasOwner get() = ownersMap.isNotEmpty()
+    override fun isOwnedBy(uuid: UUID) = ownersMap.contains(uuid)
+    override fun addOwner(uuid: UUID) { ownersMap[uuid] = PlayerDetail.of(uuid) }
+    override fun removeOwner(uuid: UUID) { ownersMap.remove(uuid) }
+
+    override var spawnTime by Delegates.notNull<Long>()
+
+    override fun doTick() {
+        nms.doTick()
+        actions.doTick()
+        if (settings.xpNoCooldown) {
+            nms.takeXpDelay = 0
+            if (plugin.server.currentTick % 20 == 0) {
+                nms.takeOrbs(player.location.getNearbyEntitiesByType(ExperienceOrb::class.java,2.0))
+            }
         }
-
-    override var settings: FakePlayerSettings
-        get() = _settings
-        set(settings) {
-            player.isCollidable = settings.collidable
-            nmsPlayer.dummyCollidable = settings.collidable
-            nmsPlayer.dummyNotify(Bukkit.getOnlinePlayers())
-            player.canPickupItems = settings.pickupItems
-            player.isInvulnerable = settings.invulnerable
-            _settings = settings
-        }
-
-    override lateinit var spawnerName: String
-    override lateinit var spawnerUuid: UUID
-    override lateinit var spawnerIp: String
-
-    override var ticking: Boolean = false
-    override var actions : ActionHandler = ActionHandlerImpl(this)
-
-    private lateinit var nmsPlayer: NMSServerPlayer
-    private lateinit var nmsConnection: NMSServerGamePacketListener
-    override fun onConnected(nmsPlayer: NMSServerPlayer, nmsConnection: NMSServerGamePacketListener) {
-        this.nmsPlayer = nmsPlayer
-        this.nmsConnection = nmsConnection
-        player.apply {
-            isPersistent = true
-            isSleepingIgnored = true
-            nmsPlayer.dummyCollidable = settings.collidable
-            nmsPlayer.dummyNotify(Bukkit.getOnlinePlayers())
-            canPickupItems = settings.pickupItems
-            isInvulnerable = settings.invulnerable
-            health = 20.0
-            foodLevel = 20
+        if (settings.infiniteFoodLevel) {
+            if (plugin.server.currentTick % 20 == 0) {
+                player.foodLevel = 20
+                player.saturation = 20f
+            }
         }
     }
 
-    override val nms: NMSServerPlayer get() = nmsPlayer
+    override var ticking: Boolean = false
 
     override var ping: Int
         get() = nmsConnection.latency()
-        set(value) {nmsConnection.latency(value)}
+        set(value) {
+            nmsConnection.latency(value)
+        }
 
-    override fun setPing(value: Int, flush: Boolean) = nmsConnection.latency(value, flush)
+    override var textures: PlayerTextures? = null
+    suspend fun loadTextures() {
+        if (initialTextures != null) {
+            nms.setTextures(initialTextures.value, initialTextures.signature)
+            return
+        }
+        val defaultSkin = plugin.config.skin.default.takeIf { it.isNotBlank() && !it.equals("none",true) } ?: return
+        if (defaultSkin.equals("spawner", true)) {
+            Bukkit.getPlayer(spawner.uuid)?.let(nms::copyTextures)
+            return
+        }
+        val randomSkin = SkinFetcher.getPlayerTexturesByName(defaultSkin.split(',').random(), true)
+        nms.setTextures(randomSkin?.value, randomSkin?.signature)
+    }
 
     private val quitting = AtomicBoolean(false)
     override fun quit(cause: String) {
-        if (!quitting.compareAndSet(false, true)) {
-            return
-        }
+        if (!quitting.compareAndSet(false, true)) return
         player.kick(Component.text(cause))
     }
+
 }

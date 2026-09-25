@@ -1,6 +1,6 @@
 package com.coderxi.plugin.fakeplayer.utils.coroutine
 
-import com.coderxi.plugin.fakeplayer.utils.plugin
+import com.coderxi.plugin.fakeplayer.plugin
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.resume
 import kotlinx.coroutines.*

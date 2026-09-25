@@ -1,7 +1,6 @@
 package com.coderxi.plugin.fakeplayer.provider.invsee
 
-import com.coderxi.plugin.fakeplayer.utils.onPluginReload
-import com.coderxi.plugin.fakeplayer.utils.plugin
+import com.coderxi.plugin.fakeplayer.utils.plugin.PluginComponent
 import org.bukkit.entity.Player
 import org.bukkit.inventory.InventoryView
 
@@ -11,12 +10,15 @@ interface InvseeProvider {
 
     fun openEnderChest(viewer: Player, whom: Player): InventoryView?
 
-    companion object {
+    companion object : PluginComponent {
+
         private var _current: InvseeProvider? = null
 
-        val current: InvseeProvider get() = _current ?: plugin.config.behavior.invseeType.providerClass.getConstructor().newInstance().also { _current = it }
+        val current: InvseeProvider get() = _current ?: plugin.config.msic.invseeType.providerClass.getConstructor().newInstance().also { _current = it }
 
-        init { onPluginReload { _current = null } }
+        override fun onReload() {
+            _current = null
+        }
     }
 
 }

@@ -34,12 +34,14 @@ import org.bukkit.craftbukkit.block.CraftBlock
 import org.bukkit.craftbukkit.entity.CraftEntity
 import org.bukkit.craftbukkit.entity.CraftPlayer
 import org.bukkit.entity.Entity
+import org.bukkit.entity.ExperienceOrb
 import org.bukkit.entity.Player
 import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.inventory.ItemStack
 import org.bukkit.util.Vector
 import java.lang.reflect.Field
 import java.nio.file.Paths
+import java.util.EnumSet
 import kotlin.math.ceil
 import com.coderxi.plugin.fakeplayer.api.FakePlayerPlusPluginApi.Companion.javaPlugin as plugin
 
@@ -61,6 +63,7 @@ open class NMSServerPlayerImpl(override val player: Player) : NMSServerPlayer {
     override var yya: Float get() = handle.yya; set(v) {handle.yya=v}
     override var zza: Float get() = handle.zza; set(v) {handle.zza=v}
 
+    override var takeXpDelay: Int get() = handle.takeXpDelay; set(value) {handle.takeXpDelay=value}
     override val tickCount: Int get() = handle.tickCount
     override val onGround: Boolean get() = handle.onGround
     override val isUsingItem: Boolean get() = handle.isUsingItem
@@ -71,7 +74,7 @@ open class NMSServerPlayerImpl(override val player: Player) : NMSServerPlayer {
 
     override fun doTick() = handle.doTick()
     override fun absMoveTo(x: Double, y: Double, z: Double, yRot: Float, xRot: Float) = handle.absSnapTo(x, y, z, yRot, xRot)
-    override fun setDeltaMovement(vector: Vector) { handle.deltaMovement = Vec3(vector.x, vector.y, vector.z) }
+    override var deltaMovement: Vector get() = handle.deltaMovement.asVector(); set(v){handle.deltaMovement = Vec3(v.x, v.y, v.z)}
     override fun startRiding(entity: Entity, force: Boolean, triggerEvents: Boolean): Boolean = handle.startRiding((entity as CraftEntity).handle,force,triggerEvents)
     override fun stopRiding() = handle.stopRiding()
     override fun dropInventory() = handle.inventory.dropAll()
@@ -138,6 +141,13 @@ open class NMSServerPlayerImpl(override val player: Player) : NMSServerPlayer {
         if (playerTeamPacket!=null) targets.forEach { target ->  target.sendPacket(playerTeamPacket!!) }
     }
 
+    override fun updateLatency() {
+        server.server.handle.broadcastAll(ClientboundPlayerInfoUpdatePacket(
+            EnumSet.of(
+            ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LATENCY
+        ),listOf(handle)))
+    }
+
     override fun getDestroyProgress(target: Block): Float {
         val block = target as CraftBlock
         return block.nms.getDestroyProgress(handle,handle.level(), block.position)
@@ -160,7 +170,7 @@ open class NMSServerPlayerImpl(override val player: Player) : NMSServerPlayer {
     }
 
     open fun slot2hand(type: EquipmentSlot) = when (type) {
-        EquipmentSlot.HAND -> InteractionHand.MAIN_HAND;
+        EquipmentSlot.HAND -> InteractionHand.MAIN_HAND
         EquipmentSlot.OFF_HAND -> InteractionHand.OFF_HAND
         else -> throw Exception("Invalid equipment slot (Only HAND/OFF_HAND).")
     }
@@ -181,7 +191,7 @@ open class NMSServerPlayerImpl(override val player: Player) : NMSServerPlayer {
         val isTooHigh = blockHitResult.blockPos.y >= level.maxY - (if (blockHitResult.direction == Direction.UP) 1 else 0)
         if (isTooHigh || !level.mayInteract(handle, blockHitResult.blockPos)) return false
         if (handle.gameMode.useItemOn(handle,level,stack, hand ,blockHitResult).consumesAction()) {
-            handle.swing(hand)
+            swingHand(hand)
             return true
         }
         return false
@@ -191,11 +201,11 @@ open class NMSServerPlayerImpl(override val player: Player) : NMSServerPlayer {
         val entity = entityHitResult.entity
         val relativePos = entityHitResult.location.subtract(entity.x, entity.y, entity.z)
         if (entity.interactAt(handle, relativePos, hand).consumesAction()) {
-            handle.swing(hand)
+            swingHand(hand)
             return true
         }
         if (handle.interactOn(entity, hand).consumesAction()) {
-            handle.swing(hand)
+            swingHand(hand)
             return true
         }
         return false
@@ -212,14 +222,34 @@ open class NMSServerPlayerImpl(override val player: Player) : NMSServerPlayer {
             HitResult.Type.ENTITY -> useItemOnEntity(level,stack, hand, hitResult as EntityHitResult)
         }
         if (handle.gameMode.useItem(handle,level,stack, hand).consumesAction()) {
-            handle.swing(hand)
+            swingHand(hand)
             return true
         }
         return useResult
     }
 
+    open fun swingHand(hand: InteractionHand) {
+        handle.swing(hand)
+    }
+
     override fun releaseUsingItem() {
         handle.releaseUsingItem()
+    }
+
+    override fun swapHandItem() {
+         handle.connection.handlePlayerAction(ServerboundPlayerActionPacket(
+                ServerboundPlayerActionPacket.Action.SWAP_ITEM_WITH_OFFHAND,
+                BlockPos(0, 0, 0),
+                Direction.DOWN
+        ))
+    }
+
+    override fun findBestToolSlot(target: Block): Int? {
+        val inventory = handle.inventory
+        val block = (target as CraftBlock).nms
+        return (0 until inventory.containerSize).maxByOrNull { slot ->
+            inventory.getItem(slot).getDestroySpeed(block)
+        }
     }
 
     var advancements: PlayerAdvancements?
@@ -246,11 +276,35 @@ open class NMSServerPlayerImpl(override val player: Player) : NMSServerPlayer {
         }
     }
 
+    override fun takeOrbs(orbs: MutableCollection<ExperienceOrb>) {
+        if (orbs.isEmpty()) return
+        var sum = 0
+        val location = orbs.first().location
+        val iterator = orbs.iterator()
+        while (iterator.hasNext()) {
+            val orb = iterator.next()
+            sum += orb.experience
+            orb.remove()
+        }
+        val sumOrb = net.minecraft.world.entity.ExperienceOrb(
+            handle.level(),
+            location.x,
+            location.y,
+            location.z,
+            sum,
+            null,
+            null,
+            null
+        )
+        sumOrb.playerTouch(handle)
+    }
+
     companion object {
         private val advancementsField: Field? = runCatching { ServerPlayer::class.java.getDeclaredField("advancements").apply { isAccessible = true } }.getOrNull()
         fun Player.sendPacket(packet: Packet<*>) {
             (this as CraftPlayer).handle.connection.send(packet)
         }
         private val dummyScoreboard  = Scoreboard()
+        private fun Vec3.asVector() = Vector(x, y, z)
     }
 }
