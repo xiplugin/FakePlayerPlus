@@ -25,6 +25,7 @@ import org.bukkit.craftbukkit.entity.CraftPlayer
 import org.bukkit.craftbukkit.inventory.CraftInventoryView
 import org.bukkit.craftbukkit.inventory.CraftItemStack
 import org.bukkit.entity.Player
+import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.inventory.InventoryView
 import org.bukkit.inventory.ItemStack as BukkitItemStack
 import java.util.Optional
@@ -35,7 +36,6 @@ open class NMSInventoryViewImpl(viewer: Player, whom: Player, readOnly: Boolean,
         const val TOP_SIZE = 54
         const val SELECTOR_START = 36
         const val SELECTOR_END = 44
-        const val FILLER_START = 50
         const val SLOT_HELMET = 39
         const val SLOT_CHESTPLATE = 38
         const val SLOT_LEGGINGS = 37
@@ -43,6 +43,7 @@ open class NMSInventoryViewImpl(viewer: Player, whom: Player, readOnly: Boolean,
         const val SLOT_OFFHAND = 40
         const val CUSTOM_DATA_PANE = "inventory_pane"
         const val CUSTOM_DATA_PANE_ACTIVE = "inventory_pane_active"
+        val INTERCEPT_SLOTS = intArrayOf(49,51,52,53)
         val PANE: ItemStack = CraftItemStack.asNMSCopy(BukkitItemStack(Material.WHITE_STAINED_GLASS_PANE)).apply {
             set(DataComponents.TOOLTIP_DISPLAY, TooltipDisplay(true, ReferenceSortedSets.emptySet()))
             set(DataComponents.CUSTOM_DATA, CustomData.of(CompoundTag().apply { putBoolean(CUSTOM_DATA_PANE, true) } ))
@@ -109,11 +110,11 @@ open class NMSInventoryViewImpl(viewer: Player, whom: Player, readOnly: Boolean,
             addSlot(createBackedSlot(inventory, SLOT_CHESTPLATE, x(1), y(5)))
             addSlot(createBackedSlot(inventory, SLOT_LEGGINGS, x(2), y(5)))
             addSlot(createBackedSlot(inventory, SLOT_BOOTS, x(3), y(5)))
-            // 49: 装饰
+            // 49: 装饰占位
             addSlot(FillerPaneSlot(x(4), y(5)))
             // 50: 副手
-            addSlot(createBackedSlot(inventory, SLOT_OFFHAND, x(5), y(5)))
-            // 50-53: 装饰占位 (伪槽位)
+            addSlot(createBackedSlot(inventory, SLOT_OFFHAND, x(5), y(5), EquipmentSlot.OFF_HAND))
+            // 50-53: 装饰占位
             for (col in 6 until 9) {
                 addSlot(FillerPaneSlot(x(col), y(5)))
             }
@@ -130,13 +131,15 @@ open class NMSInventoryViewImpl(viewer: Player, whom: Player, readOnly: Boolean,
         }
 
 
-        protected open fun createBackedSlot(inventory: NMSInventory0, containerIndex: Int, x: Int, y: Int): Slot {
+        protected open fun createBackedSlot(inventory: NMSInventory0, containerIndex: Int, x: Int, y: Int, equipmentSlot: EquipmentSlot? = null): Slot {
             if (readOnly) return ReadOnlySlot(inventory, containerIndex, x, y)
             return Slot(inventory, containerIndex, x, y)
         }
 
         protected open fun intercept(slotId: Int, quickCraft: Boolean): Boolean {
             when {
+                // 装饰占位
+                slotId in INTERCEPT_SLOTS -> return true
                 // 快捷栏选择器: 切换目标手持槽
                 slotId in SELECTOR_START..SELECTOR_END -> {
                     if (!readOnly) {
@@ -144,8 +147,6 @@ open class NMSInventoryViewImpl(viewer: Player, whom: Player, readOnly: Boolean,
                     }
                     return true
                 }
-                // 装饰占位
-                slotId in FILLER_START until TOP_SIZE -> return true
                 // 只读模式下顶部全部吞掉; 拖拽时强制全量同步消除客户端幽灵物品
                 readOnly && slotId in 0 until TOP_SIZE -> {
                     if (quickCraft) {
