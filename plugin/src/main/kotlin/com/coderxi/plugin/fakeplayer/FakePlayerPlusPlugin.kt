@@ -79,6 +79,7 @@ class FakePlayerPlusPlugin: FakePlayerPlusPluginApi, JavaPlugin() {
             FakePlayerPingUpdater(),
             FakePlayerLifecycleCommandListener(),
             InvseeProvider.Companion,
+            FakePlayerAutoAuthListener(),
             //settings
             FakePlayerDummyVarsNotifyListener(),
             FakePlayerAutoReplenishListener(),
