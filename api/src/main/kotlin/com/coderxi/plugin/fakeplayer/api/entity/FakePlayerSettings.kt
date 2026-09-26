@@ -48,6 +48,7 @@ interface FakePlayerSettings {
         that.interactedAction = interactedAction
         that.shiftInteractedAction = shiftInteractedAction
         that.deathAction = deathAction
+        that.keepingMode = keepingMode
     }
 
     fun bind(fakePlayer: FakePlayer){
