@@ -10,15 +10,27 @@ interface InvseeProvider {
 
     fun openEnderChest(viewer: Player, whom: Player): InventoryView?
 
-    companion object : PluginComponent {
+    companion object : InvseeProvider,  PluginComponent {
 
-        private var _current: InvseeProvider? = null
+        private var provider: InvseeProvider? = null
 
-        val current: InvseeProvider get() = _current ?: plugin.config.msic.invseeType.providerClass.getConstructor().newInstance().also { _current = it }
+        private fun loadProvider(): InvseeProvider = synchronized(InvseeProvider) {
+            provider = plugin.config.msic.invseeType.providerClass.getConstructor().newInstance()
+            return provider!!
+        }
 
         override fun onReload() {
-            _current = null
+            provider = null
         }
+
+        override fun openInventory(viewer: Player, whom: Player): InventoryView? {
+            return (provider ?: loadProvider()).openInventory(viewer, whom)
+        }
+
+        override fun openEnderChest(viewer: Player, whom: Player): InventoryView? {
+            return (provider ?: loadProvider()).openEnderChest(viewer, whom)
+        }
+
     }
 
 }

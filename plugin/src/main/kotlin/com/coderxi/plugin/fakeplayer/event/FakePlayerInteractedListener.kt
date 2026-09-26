@@ -38,12 +38,12 @@ class FakePlayerInteractedListener : PluginComponent, Listener {
             NONE -> {}
             OPEN_INVENTORY -> {
                 if (!player.hasPermission(INVSEE)) return
-                InvseeProvider.current.openInventory(player, fakePlayer.player)
+                InvseeProvider.openInventory(player, fakePlayer.player)
                 fakePlayer.player.world.playSound(fakePlayer.player.location, Sound.BLOCK_CHEST_OPEN, 1f, 1f)
             }
             OPEN_ENDER_CHEST -> {
                 if (!player.hasPermission(ENDER_CHEST)) return
-                InvseeProvider.current.openEnderChest(player, fakePlayer.player)
+                InvseeProvider.openEnderChest(player, fakePlayer.player)
                 fakePlayer.player.world.playSound(fakePlayer.player.location, Sound.BLOCK_ENDER_CHEST_OPEN, 1f, 1f)
             }
             OPEN_SETTINGS_UI -> {

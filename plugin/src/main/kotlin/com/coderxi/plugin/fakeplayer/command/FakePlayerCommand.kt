@@ -208,7 +208,7 @@ class FakePlayerCommand : PluginComponent {
     @Permission(INVSEE)
     @HelpLine("fakeplayer.help.cmd.invsee", playerOnly = true)
     fun Player.invsee(@Select fakePlayer: FakePlayer) {
-        InvseeProvider.current.openInventory(this,fakePlayer.player)
+        InvseeProvider.openInventory(this,fakePlayer.player)
         playSound(location, Sound.BLOCK_CHEST_OPEN, 1f, 1f)
     }
 
@@ -216,7 +216,7 @@ class FakePlayerCommand : PluginComponent {
     @HelpLine("fakeplayer.help.cmd.enderchest", playerOnly = true)
     @Permission(ENDER_CHEST)
     fun Player.enderchest(@Select fakePlayer: FakePlayer) {
-        InvseeProvider.current.openEnderChest(this,fakePlayer.player)
+        InvseeProvider.openEnderChest(this,fakePlayer.player)
         playSound(location, Sound.BLOCK_ENDER_CHEST_OPEN, 1f, 1f)
     }
 
