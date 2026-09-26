@@ -75,6 +75,6 @@ class FakePlayerSettingsConfig : FakePlayerSettings, OkaeriConfig() {
 
         @Comment("延迟x秒再跟随退出(若在x秒内重新上线则假人不会退出)")
         @Comment("Delay x seconds before following to quit (If player logs back in within x seconds, the fake player will not be removed)")
-        override var followQuitingDelay = 10
+        override var followQuitingDelay = 3
 
     }

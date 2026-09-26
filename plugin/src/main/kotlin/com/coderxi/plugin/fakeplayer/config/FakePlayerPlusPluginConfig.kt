@@ -1,5 +1,6 @@
 package com.coderxi.plugin.fakeplayer.config
 
+import com.coderxi.plugin.fakeplayer.api.entity.FakePlayerSettings.DeathAction
 import com.coderxi.plugin.fakeplayer.provider.invsee.AdvancedInvseeProvider
 import com.coderxi.plugin.fakeplayer.provider.invsee.InvseeProvider
 import com.coderxi.plugin.fakeplayer.provider.invsee.OpenInvInvseeProvider
@@ -98,8 +99,9 @@ class FakePlayerPlusPluginConfig : OkaeriConfig() {
     @Comment("Force override fake player settings. If you want all fake players on the server to use a specific setting and prevent it from being modified, configure it here.")
     @CustomKey("override-settings")
     var overrideSettings = mapOf(
+        "deathAction" to DeathAction.QUIT.name,
         "followQuiting" to true,
-        "followQuitingDelay" to 30
+        "followQuitingDelay" to 10
     )
 
     @Comment(
