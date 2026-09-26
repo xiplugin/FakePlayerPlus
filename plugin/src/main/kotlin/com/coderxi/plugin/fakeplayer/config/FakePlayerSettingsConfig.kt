@@ -45,6 +45,10 @@ class FakePlayerSettingsConfig : FakePlayerSettings, OkaeriConfig() {
         @Comment("Whether to automatically equip the best tool")
         override var autoEquipTool: Boolean = false
 
+        @Comment("死亡不掉落")
+        @Comment("Keep inventory")
+        override var keepInventory = true
+
         @Comment("=======================================================")
         @Comment("下列设置默认不包含在[fakeplayer.basic]权限中, 允许玩家修改需给予权限[fakeplayer.settings.变量名]")
         @Comment("These settings are not included in the [fakeplayer.basic] permission by default. Players must be granted the fakeplayer.settings.<settingName> permission to modify them.")
@@ -64,10 +68,6 @@ class FakePlayerSettingsConfig : FakePlayerSettings, OkaeriConfig() {
         @Comment("Action on fake player death")
         @Comment("NONE, QUIT, RESPAWN, RESPAWN_BACK")
         override var deathAction = DeathAction.RESPAWN_BACK
-
-        @Comment("死亡不掉落")
-        @Comment("Keep inventory")
-        override var keepInventory = true
 
         @Comment("跟随玩家退出")
         @Comment("Follow player to quit")

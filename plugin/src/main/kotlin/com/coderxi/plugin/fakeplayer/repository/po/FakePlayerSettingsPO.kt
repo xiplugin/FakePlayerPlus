@@ -33,10 +33,10 @@ data class FakePlayerSettingsPO(
         simulationDistance ?: default.simulationDistance,
         xpNoCooldown ?: default.xpNoCooldown,
         autoEquipTool ?: default.autoEquipTool,
+        keepInventory ?: default.keepInventory,
         interactedAction ?: default.interactedAction,
         shiftInteractedAction ?: default.shiftInteractedAction,
         deathAction ?: default.deathAction,
-        keepInventory ?: default.keepInventory,
         followQuiting ?: default.followQuiting,
         followQuitingDelay ?: default.followQuitingDelay,
     )

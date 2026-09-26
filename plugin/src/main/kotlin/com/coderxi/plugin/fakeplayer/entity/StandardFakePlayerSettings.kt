@@ -17,10 +17,10 @@ class StandardFakePlayerSettings(
     private var _simulationDistance: Int,
     private var _xpNoCooldown: Boolean,
     private var _autoEquipTool: Boolean,
+    private var _keepInventory: Boolean,
     private var _interactedAction: InteractedAction,
     private var _shiftInteractedAction: InteractedAction,
     private var _deathAction: DeathAction,
-    private var _keepInventory: Boolean,
     private var _followQuiting: Boolean,
     private var _followQuitingDelay: Int
 ) : FakePlayerSettings {
@@ -96,6 +96,12 @@ class StandardFakePlayerSettings(
             _autoEquipTool = value
         }
 
+    override var keepInventory
+        get() = overrides.keepInventory ?: _keepInventory
+        set(value) {
+            _keepInventory = value
+        }
+
     override var interactedAction
         get() = overrides.interactedAction ?: _interactedAction
         set(value) {
@@ -114,12 +120,6 @@ class StandardFakePlayerSettings(
             _deathAction = value
         }
 
-    override var keepInventory
-        get() = overrides.keepInventory ?: _keepInventory
-        set(value) {
-            _keepInventory = value
-        }
-
     override var followQuiting
         get() = overrides.followQuiting ?: _followQuiting
         set(value) {
@@ -135,4 +135,5 @@ class StandardFakePlayerSettings(
     override fun bind(fakePlayer: FakePlayer) {
         this.fakePlayer = fakePlayer
     }
+
 }
