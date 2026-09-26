@@ -27,8 +27,12 @@ interface FakePlayerSettings {
         RESPAWN,
         RESPAWN_BACK
     }
-    var followQuiting: Boolean
-    var followQuitingDelay: Int
+    var keepingMode: KeepingMode
+    enum class KeepingMode {
+        ALWAYS,
+        FOLLOW_SPAWNER,
+        FOLLOW_SPAWNER_QUIT
+    }
 
     fun sync(that: FakePlayerSettings) {
         that.collidable = collidable
@@ -44,8 +48,6 @@ interface FakePlayerSettings {
         that.interactedAction = interactedAction
         that.shiftInteractedAction = shiftInteractedAction
         that.deathAction = deathAction
-        that.followQuiting = followQuiting
-        that.followQuitingDelay = followQuitingDelay
     }
 
     fun bind(fakePlayer: FakePlayer){

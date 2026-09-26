@@ -7,6 +7,8 @@ CREATE TABLE IF NOT EXISTS fakeplayer (
   settings      TEXT
 );
 
+ALTER TABLE fakeplayer ADD COLUMN actions TEXT;
+
 CREATE TABLE IF NOT EXISTS ref_fakeplayer_owner (
   owner_uuid       TEXT NOT NULL,
   fakeplayer_uuid  TEXT NOT NULL,

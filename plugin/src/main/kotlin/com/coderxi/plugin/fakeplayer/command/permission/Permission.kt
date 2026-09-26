@@ -42,8 +42,7 @@ enum class Permission(val value: String) {
     SETTINGS_INTERACTED_ACTION("fakeplayer.settings.interactedAction"),
     SETTINGS_SHIFT_INTERACTED_ACTION("fakeplayer.settings.shiftInteractedAction"),
     SETTINGS_DEATH_ACTION("fakeplayer.settings.deathAction"),
-    SETTINGS_FOLLOW_QUITING("fakeplayer.settings.followQuiting"),
-    SETTINGS_FOLLOW_QUITING_DELAY("fakeplayer.settings.followQuitingDelay"),
+    SETTINGS_KEEPING_MODE("fakeplayer.settings.keepingMode"),
 
     ACTION("fakeplayer.action"),
     ACTION_ATTACK("fakeplayer.action.attack"),

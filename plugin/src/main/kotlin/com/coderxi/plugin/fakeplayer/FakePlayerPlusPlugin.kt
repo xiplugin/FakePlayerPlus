@@ -89,7 +89,7 @@ class FakePlayerPlusPlugin: FakePlayerPlusPluginApi, JavaPlugin() {
             FakePlayerAutoEquipToolListener(),
             FakePlayerInteractedListener(),
             FakePlayerDeathListener(),
-            FakePlayerFollowQuittingListener(),
+            FakePlayerKeepingModeListener(),
             //other
             StaticFakePlayerManager()
         )
@@ -140,7 +140,7 @@ class FakePlayerPlusPlugin: FakePlayerPlusPluginApi, JavaPlugin() {
         val initSql = classLoader.getResourceAsStream("database/init.sql")!!.readAllBytes().toString(Charsets.UTF_8)
         val sqlList = initSql.split(";").map { it.trim() }.filter { it.isNotBlank() }
         @Suppress("SqlSourceToSinkFlow")
-        sqlList.forEach { sql2o.open().createQuery(it).executeUpdate() }
+        sqlList.forEach { runCatching { sql2o.open().createQuery(it).executeUpdate() } }
         return sql2o
     }
 

@@ -13,7 +13,8 @@ data class FakePlayerPO(
     val uuid: String = "",
     val creatorUuid: String? = null,
     val skin: String? = null,
-    val settings: String? = null
+    val settings: String? = null,
+    val actions: String? = null,
 ) {
 
     fun toEntity(ownerUuids: Collection<UUID>) = StandardFakePlayer(

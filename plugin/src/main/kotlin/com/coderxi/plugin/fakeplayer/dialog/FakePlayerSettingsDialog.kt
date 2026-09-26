@@ -34,12 +34,7 @@ class FakePlayerSettingsDialog(fakePlayer: FakePlayer, val viewer: Player): Simp
         enumSingleOption(InteractedAction::class.java,fakePlayer.settings::shiftInteractedAction, tl(viewer,"fakeplayer.gui.settings.shift-interacted-action"), optionLabelProvider = {tl(viewer,"fakeplayer.gui.var.interacted-action.${it.name}")}, permission = SETTINGS_SHIFT_INTERACTED_ACTION.value)
         enumSingleOption(DeathAction::class.java,fakePlayer.settings::deathAction,tl(viewer,"fakeplayer.gui.settings.death-action"),  optionLabelProvider = {tl(viewer,"fakeplayer.gui.var.death-action.${it.name}")}, permission = SETTINGS_DEATH_ACTION.value)
         boolSingleOption(fakePlayer.settings::keepInventory, tl(viewer,"fakeplayer.gui.settings.keep-inventory"), permission = SETTINGS_KEEP_INVENTORY.value)
-        boolSingleOption(fakePlayer.settings::followQuiting, tl(viewer,"fakeplayer.gui.settings.follow-quitting"), permission = SETTINGS_FOLLOW_QUITING.value)
-        numberRange(fakePlayer.settings::followQuitingDelay, tl(viewer,"fakeplayer.gui.settings.follow-quitting-delay"),"%s: %s"+tls(viewer,"fakeplayer.gui.unit.seconds"),
-            permission = SETTINGS_FOLLOW_QUITING_DELAY.value,
-            start = 1,
-            end = 120
-        )
+        enumSingleOption(KeepingMode::class.java,fakePlayer.settings::keepingMode, tl(viewer,"fakeplayer.gui.settings.keeping-mode") , optionLabelProvider = {tl(viewer, "fakeplayer.gui.var.keeping-mode.${it.name}")}, permission = SETTINGS_KEEPING_MODE.value)
         submitButton(width = 100) {
             viewer.sendLocalizedMessage("fakeplayer.gui.settings.submit.success", fakePlayer.name)
             launch { plugin.fakePlayerManager.saveSettings(viewer, fakePlayer) }

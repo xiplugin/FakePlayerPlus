@@ -6,6 +6,7 @@ import com.coderxi.plugin.fakeplayer.api.event.FakePlayerPreparingEvent
 import com.coderxi.plugin.fakeplayer.api.event.FakePlayerQuitedEvent
 import com.coderxi.plugin.fakeplayer.api.event.FakePlayerSpawnedEvent
 import com.coderxi.plugin.fakeplayer.api.manager.FakePlayerManager
+import com.coderxi.plugin.fakeplayer.api.model.ActionState
 import com.coderxi.plugin.fakeplayer.api.model.PlayerDetail
 import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandException.*
 import com.coderxi.plugin.fakeplayer.command.permission.Permission.ADMIN
@@ -56,6 +57,9 @@ class FakePlayerManagerImpl : FakePlayerManager, PluginComponent, Listener {
 
     override suspend fun getFromRepository(uuid: UUID): FakePlayer? = withContext(Dispatchers.IO) { repository.findByUuid(uuid) }
     override suspend fun getFromRepository(name: String): FakePlayer? = withContext(Dispatchers.IO) { repository.findByName(name) }
+    override suspend fun findNamesBySettingFromRepository(key: String, value: String): Collection<String> = withContext(Dispatchers.IO) { repository.findNamesBySetting(key,value) }
+    override suspend fun getActiveActionStatesFromRepository(uuid: UUID): Collection<ActionState> = withContext(Dispatchers.IO) { repository.findActiveActionStatesByUuid(uuid) }
+    override suspend fun findNamesByCreatorUuidAndSetting(creatorUuid: UUID, settingKey: String, settingValue: String): Collection<String> = withContext(Dispatchers.IO) { repository.findNamesByCreatorUuidAndSetting(creatorUuid, settingKey, settingValue) }
 
     private fun uuid(name: String) = UUID.nameUUIDFromBytes("${plugin.name}:$name".toByteArray())
 
@@ -241,6 +245,10 @@ class FakePlayerManagerImpl : FakePlayerManager, PluginComponent, Listener {
 
     override suspend fun saveSettings(operator: CommandSender, fakePlayer: FakePlayer) {
         withContext(Dispatchers.IO) {repository.saveSettings(fakePlayer)}
+    }
+
+    override suspend fun saveActions(uuid: UUID, actives: Collection<ActionState>) {
+        withContext(Dispatchers.IO) {repository.saveActions(uuid,actives)}
     }
 
     override suspend fun addOwner(fakePlayer: FakePlayer, ownerUuid: UUID) {

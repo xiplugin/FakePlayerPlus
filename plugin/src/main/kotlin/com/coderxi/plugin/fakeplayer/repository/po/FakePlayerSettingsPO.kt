@@ -15,12 +15,11 @@ data class FakePlayerSettingsPO(
     var simulationDistance: Int? = null,
     var xpNoCooldown: Boolean? = null,
     var autoEquipTool: Boolean? = null,
+    var keepInventory: Boolean? = null,
     var interactedAction: InteractedAction? = null,
     var shiftInteractedAction: InteractedAction? = null,
     var deathAction: DeathAction? = null,
-    var keepInventory: Boolean? = null,
-    var followQuiting: Boolean? = null,
-    var followQuitingDelay: Int? = null,
+    var keepingMode: KeepingMode? = null,
 ) {
 
     fun toEntity(default: FakePlayerSettings = plugin.config.defaultSettings) = StandardFakePlayerSettings(
@@ -37,8 +36,7 @@ data class FakePlayerSettingsPO(
         interactedAction ?: default.interactedAction,
         shiftInteractedAction ?: default.shiftInteractedAction,
         deathAction ?: default.deathAction,
-        followQuiting ?: default.followQuiting,
-        followQuitingDelay ?: default.followQuitingDelay,
+        keepingMode ?: default.keepingMode,
     )
 
     companion object {
@@ -52,12 +50,11 @@ data class FakePlayerSettingsPO(
             settings.simulationDistance,
             settings.xpNoCooldown,
             settings.autoEquipTool,
+            settings.keepInventory,
             settings.interactedAction,
             settings.shiftInteractedAction,
             settings.deathAction,
-            settings.keepInventory,
-            settings.followQuiting,
-            settings.followQuitingDelay,
+            settings.keepingMode
         )
     }
 

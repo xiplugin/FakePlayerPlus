@@ -21,8 +21,7 @@ class StandardFakePlayerSettings(
     private var _interactedAction: InteractedAction,
     private var _shiftInteractedAction: InteractedAction,
     private var _deathAction: DeathAction,
-    private var _followQuiting: Boolean,
-    private var _followQuitingDelay: Int
+    private var _keepingMode: KeepingMode
 ) : FakePlayerSettings {
 
     companion object: PluginComponent {
@@ -120,16 +119,10 @@ class StandardFakePlayerSettings(
             _deathAction = value
         }
 
-    override var followQuiting
-        get() = overrides.followQuiting ?: _followQuiting
+    override var keepingMode
+        get() = overrides.keepingMode ?: _keepingMode
         set(value) {
-            _followQuiting = value
-        }
-
-    override var followQuitingDelay
-        get() = overrides.followQuitingDelay ?: _followQuitingDelay
-        set(value) {
-            _followQuitingDelay = value
+            _keepingMode = value
         }
 
     override fun bind(fakePlayer: FakePlayer) {

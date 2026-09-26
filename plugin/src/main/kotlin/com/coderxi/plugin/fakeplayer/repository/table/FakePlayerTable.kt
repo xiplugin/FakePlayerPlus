@@ -2,6 +2,7 @@ package com.coderxi.plugin.fakeplayer.repository.table
 
 import com.coderxi.plugin.fakeplayer.api.model.PlayerTextures
 import com.coderxi.plugin.fakeplayer.plugin
+import com.coderxi.plugin.fakeplayer.repository.po.FakePlayerActionsPO
 import com.coderxi.plugin.fakeplayer.repository.po.FakePlayerPO
 import com.coderxi.plugin.fakeplayer.repository.po.FakePlayerSettingsPO
 import com.google.gson.Gson
@@ -15,13 +16,13 @@ class FakePlayerTable {
     val sql2o get() = plugin.sql2o
 
     fun findByUuid(uuid: UUID) = sql2o.open()
-        .createQuery("SELECT id, name, uuid, creator_uuid AS creatorUuid, skin, settings FROM fakeplayer WHERE uuid = :uuid LIMIT 1")
+        .createQuery("SELECT id, name, uuid, creator_uuid AS creatorUuid, skin, settings, actions FROM fakeplayer WHERE uuid = :uuid LIMIT 1")
         .addParameter("uuid", uuid.toString())
         .executeAndFetch(FakePlayerPO::class.java)
         .firstOrNull()
 
     fun findByName(name: String) = sql2o.open()
-        .createQuery("SELECT id, name, uuid, creator_uuid AS creatorUuid, skin, settings FROM fakeplayer WHERE LOWER(name) = LOWER(:name) LIMIT 1")
+        .createQuery("SELECT id, name, uuid, creator_uuid AS creatorUuid, skin, settings, actions FROM fakeplayer WHERE LOWER(name) = LOWER(:name) LIMIT 1")
         .addParameter("name", name)
         .executeAndFetch(FakePlayerPO::class.java)
         .firstOrNull()
@@ -137,5 +138,25 @@ class FakePlayerTable {
             throw e
         }
     }
+
+    fun findNamesBySetting(key: String, value: String): Collection<String> = sql2o.open()
+        .createQuery("SELECT name FROM fakeplayer WHERE settings LIKE :pattern")
+        .addParameter("pattern", "%\"$key\":$value%")
+        .executeAndFetch(String::class.java)
+        .toSet()
+
+    fun saveActions(uuid: UUID, actionsPO: FakePlayerActionsPO) = sql2o.open()
+        .createQuery("UPDATE fakeplayer SET actions = :actions WHERE uuid = :uuid")
+        .addParameter("actions", gson.toJson(actionsPO))
+        .addParameter("uuid", uuid.toString())
+        .executeUpdate()
+        .result > 0
+
+    fun findNamesByCreatorUuidAndSetting(creatorUuid: UUID, settingKey: String, settingValue: String): Collection<String> = sql2o.open()
+        .createQuery("SELECT name FROM fakeplayer WHERE creator_uuid = :creatorUuid AND settings LIKE :pattern")
+        .addParameter("creatorUuid", creatorUuid.toString())
+        .addParameter("pattern", "%\"$settingKey\":$settingValue%")
+        .executeAndFetch(String::class.java)
+        .toSet()
 
 }

@@ -1,12 +1,15 @@
 package com.coderxi.plugin.fakeplayer.repository
 
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
+import com.coderxi.plugin.fakeplayer.api.model.ActionState
 import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandException
 import com.coderxi.plugin.fakeplayer.entity.StandardFakePlayer
+import com.coderxi.plugin.fakeplayer.repository.po.FakePlayerActionsPO
 import com.coderxi.plugin.fakeplayer.repository.po.FakePlayerPO
 import com.coderxi.plugin.fakeplayer.repository.po.FakePlayerSettingsPO
 import com.coderxi.plugin.fakeplayer.repository.table.FakePlayerTable
 import com.coderxi.plugin.fakeplayer.utils.common.Sql2oUtil
+import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.sql2o.Sql2o
@@ -14,6 +17,8 @@ import java.io.File
 import java.util.UUID
 
 class FakePlayerRepository {
+
+    private val gson = Gson()
 
     private val table = FakePlayerTable()
 
@@ -23,6 +28,19 @@ class FakePlayerRepository {
 
     fun findByName(name: String): StandardFakePlayer? {
         return table.findByName(name)?.let { it.toEntity(table.findOwnerUuidsByUuid(UUID.fromString(it.uuid))) }
+    }
+
+    fun findNamesBySetting(key: String, value: String): Collection<String> {
+        return table.findNamesBySetting(key, value)
+    }
+
+    fun findActiveActionStatesByUuid(uuid: UUID): Collection<ActionState> {
+        return gson.fromJson(table.findByUuid(uuid)?.actions?:"{}", FakePlayerActionsPO::class.java).actives ?: emptyList()
+    }
+
+
+    fun findNamesByCreatorUuidAndSetting(creatorUuid: UUID, settingKey: String, settingValue: String): Collection<String> {
+        return table.findNamesByCreatorUuidAndSetting(creatorUuid,settingKey,settingValue)
     }
 
     fun save(fakePlayer: FakePlayer, saveOwners: Boolean) {
@@ -50,6 +68,10 @@ class FakePlayerRepository {
         return table.saveSettings(fakePlayer.uuid, FakePlayerSettingsPO.fromEntity(fakePlayer.settings))
     }
 
+    fun saveActions(uuid: UUID, actives: Collection<ActionState>): Boolean {
+        return table.saveActions(uuid, FakePlayerActionsPO(actives))
+    }
+
     suspend fun importFakePlayerData(databaseFile: File, tableName: String): Int {
         val fakePlayerPOs = withContext(Dispatchers.IO) {
             val database = Sql2o("jdbc:sqlite:${databaseFile.absolutePath}", null, null)
@@ -59,4 +81,6 @@ class FakePlayerRepository {
         }
         return table.saveBatch(fakePlayerPOs)
     }
+
+
 }

@@ -1,6 +1,7 @@
 package com.coderxi.plugin.fakeplayer.api.manager
 
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
+import com.coderxi.plugin.fakeplayer.api.model.ActionState
 import org.bukkit.Location
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
@@ -29,6 +30,12 @@ interface FakePlayerManager {
 
     suspend fun getFromRepository(name: String): FakePlayer?
 
+    suspend fun findNamesBySettingFromRepository(key: String, value: String): Collection<String>
+
+    suspend fun getActiveActionStatesFromRepository(uuid: UUID): Collection<ActionState>
+
+    suspend fun findNamesByCreatorUuidAndSetting(creatorUuid: UUID, settingKey: String, settingValue: String): Collection<String>
+
     // 假人判断(本地API)
 
     fun isNameUsed(name: String): Boolean
@@ -50,6 +57,8 @@ interface FakePlayerManager {
     suspend fun saveSkin(fakePlayer: FakePlayer)
 
     suspend fun saveSettings(operator: CommandSender, fakePlayer: FakePlayer)
+
+    suspend fun saveActions(uuid: UUID, actives: Collection<ActionState>)
 
     suspend fun addOwner(fakePlayer: FakePlayer, ownerUuid: UUID)
 
