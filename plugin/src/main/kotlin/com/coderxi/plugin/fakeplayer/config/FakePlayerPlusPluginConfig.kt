@@ -94,6 +94,14 @@ class FakePlayerPlusPluginConfig : OkaeriConfig() {
     @CustomKey("default-settings")
     var defaultSettings = FakePlayerSettingsConfig()
 
+    @Comment("强制覆盖假人的设置，如果你希望服务器假人统一应用某个选项并不可修改，可以在这里设置")
+    @Comment("Force override fake player settings. If you want all fake players on the server to use a specific setting and prevent it from being modified, configure it here.")
+    @CustomKey("override-settings")
+    var overrideSettings = mapOf(
+        "followQuiting" to true,
+        "followQuitingDelay" to 30
+    )
+
     @Comment(
         "假人生命周期指令绑定",
         "(无前缀)假人自身执行 变量 {uuid} {name} {spawner_uuid} {spawner_name}",

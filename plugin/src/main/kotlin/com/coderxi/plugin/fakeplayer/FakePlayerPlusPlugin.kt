@@ -20,6 +20,7 @@ import com.coderxi.plugin.fakeplayer.api.manager.FakePlayerManager
 import com.coderxi.plugin.fakeplayer.command.annotaion.*
 import com.coderxi.plugin.fakeplayer.command.parameter.*
 import com.coderxi.plugin.fakeplayer.command.permission.Permission
+import com.coderxi.plugin.fakeplayer.entity.StandardFakePlayerSettings
 import com.coderxi.plugin.fakeplayer.expansion.FakePlayerPlaceholderExpansion
 import com.coderxi.plugin.fakeplayer.manager.FakePlayerManagerImpl
 import com.coderxi.plugin.fakeplayer.provider.invsee.InvseeProvider
@@ -77,6 +78,7 @@ class FakePlayerPlusPlugin: FakePlayerPlusPluginApi, JavaPlugin() {
             //config
             FakePlayerLimiter,
             FakePlayerPingUpdater(),
+            StandardFakePlayerSettings.Companion,
             FakePlayerLifecycleCommandListener(),
             InvseeProvider.Companion,
             FakePlayerAutoAuthListener(),
