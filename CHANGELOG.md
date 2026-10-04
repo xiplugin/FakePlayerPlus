@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.1.3](https://github.com/xiplugin/FakePlayerPlus/compare/v2.1.2...v2.1.3) (2026-10-04)
+
+
+### Bug Fixes
+
+* kick fake players on plugin disable to prevent them from remaining online after hot reload ([d439072](https://github.com/xiplugin/FakePlayerPlus/commit/d4390723f6894f74a50f52fb4bd1738fd400df60))
+* kick fake players on plugin disable to prevent them from remaining online after hot reload ([db674e9](https://github.com/xiplugin/FakePlayerPlus/commit/db674e917de555aaad0682eada8312f21adf19fc))
+
 ## [2.1.2](https://github.com/xiplugin/FakePlayerPlus/compare/v2.1.1...v2.1.2) (2026-09-28)
 
 
