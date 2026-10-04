@@ -50,6 +50,8 @@ open class NMSInventoryViewImpl(viewer: Player, whom: Player, readOnly: Boolean,
         }
     }
 
+    protected val whomUuid = whom.uniqueId
+
     override lateinit var view: InventoryView
 
     init {
@@ -70,6 +72,10 @@ open class NMSInventoryViewImpl(viewer: Player, whom: Player, readOnly: Boolean,
     open fun containerMenu(containerId: Int, viewer: ServerPlayer, whom: ServerPlayer, readOnly: Boolean, title: Component) : AbstractContainerMenu {
         return object : BaseInventoryMenu(containerId,viewer, whom, readOnly, title) {
             override fun clicked(slotId: Int, button: Int, clickType: ClickType, player: NMSPlayer0) {
+                if (Bukkit.getPlayer(whomUuid)?.isOnline != true) {
+                    player.closeContainer()
+                    return
+                }
                 if (intercept(slotId, clickType == ClickType.QUICK_CRAFT)) return
                 super.clicked(slotId, button, clickType, player)
             }
