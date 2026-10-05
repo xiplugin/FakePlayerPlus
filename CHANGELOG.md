@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.2.0](https://github.com/xiplugin/FakePlayerPlus/compare/v2.1.3...v2.2.0) (2026-10-05)
+
+
+### Features
+
+* add update checker and bStats metrics ([16582ff](https://github.com/xiplugin/FakePlayerPlus/commit/16582ff5a2b5d193c9945deaf49a560a4bed64f0))
+
+
+### Bug Fixes
+
+* make inventory duplication prevention more reliable ([7cd2986](https://github.com/xiplugin/FakePlayerPlus/commit/7cd2986ca3424bc21366530da25537ff659adc3f))
+
 ## [2.1.3](https://github.com/xiplugin/FakePlayerPlus/compare/v2.1.2...v2.1.3) (2026-10-04)
 
 
