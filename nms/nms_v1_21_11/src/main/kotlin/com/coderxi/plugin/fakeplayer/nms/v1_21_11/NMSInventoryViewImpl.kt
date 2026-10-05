@@ -50,8 +50,6 @@ open class NMSInventoryViewImpl(viewer: Player, whom: Player, readOnly: Boolean,
         }
     }
 
-    protected val whomUuid = whom.uniqueId
-
     override lateinit var view: InventoryView
 
     init {
@@ -72,10 +70,6 @@ open class NMSInventoryViewImpl(viewer: Player, whom: Player, readOnly: Boolean,
     open fun containerMenu(containerId: Int, viewer: ServerPlayer, whom: ServerPlayer, readOnly: Boolean, title: Component) : AbstractContainerMenu {
         return object : BaseInventoryMenu(containerId,viewer, whom, readOnly, title) {
             override fun clicked(slotId: Int, button: Int, clickType: ClickType, player: NMSPlayer0) {
-                if (Bukkit.getPlayer(whomUuid)?.isOnline != true) {
-                    player.closeContainer()
-                    return
-                }
                 if (intercept(slotId, clickType == ClickType.QUICK_CRAFT)) return
                 super.clicked(slotId, button, clickType, player)
             }
@@ -89,6 +83,8 @@ open class NMSInventoryViewImpl(viewer: Player, whom: Player, readOnly: Boolean,
         val readOnly: Boolean,
         private val title: Component
     ) : AbstractContainerMenu(MenuType.GENERIC_9x6, containerId) {
+
+        private val whomUuid = whom.uuid
 
         private var bukkitView: CraftInventoryView<*, *>? = null
 
@@ -173,10 +169,6 @@ open class NMSInventoryViewImpl(viewer: Player, whom: Player, readOnly: Boolean,
             }
         }
 
-        //endregion
-
-        //region Shift 转移: 顶部 -> 观察者背包, 底部 -> 目标背包 (伪槽位 mayPlace=false 自动跳过)
-
         override fun quickMoveStack(player: NMSPlayer0, index: Int): ItemStack {
             val slot = slots.getOrNull(index) ?: return ItemStack.EMPTY
             if (!slot.hasItem()) return ItemStack.EMPTY
@@ -197,7 +189,7 @@ open class NMSInventoryViewImpl(viewer: Player, whom: Player, readOnly: Boolean,
         }
 
         //暴露接口
-        override fun stillValid(player: NMSPlayer0): Boolean = true
+        override fun stillValid(player: NMSPlayer0): Boolean = Bukkit.getPlayer(whomUuid) == whom.bukkitEntity
         override fun getBukkitView(): CraftInventoryView<*, *> {
             return bukkitView ?: run {
                 // 仅用于 Bukkit 事件/视图元数据, 真实数据走 NMS 槽位
