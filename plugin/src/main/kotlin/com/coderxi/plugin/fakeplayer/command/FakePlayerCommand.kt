@@ -372,14 +372,14 @@ class FakePlayerCommand : PluginComponent {
     @Subcommand("action start")
     @Permission(ACTION)
     fun Player.actionUI(@Named("action") action: Action, @Select fakePlayer: FakePlayer) {
-        assertPermission("${ACTION.value}.$name")
+        action.javaClass.getAnnotation(Permission::class.java)?.node?.value?.let { assertPermission(it) }
         FakePlayerActionExecuteDialog(fakePlayer, action, this).show(this)
     }
 
     @Subcommand("action execute")
     @Permission(ACTION)
     fun CommandSender.executeAction(@Named("action") action: Action, modeAndParams: ActionModeAndParameters, @Select fakePlayer: FakePlayer) {
-        assertPermission("${ACTION.value}.$name")
+        action.javaClass.getAnnotation(Permission::class.java)?.node?.value?.let { assertPermission(it) }
         fakePlayer.actions.execute(action, modeAndParams.mode, modeAndParams.parameters)
     }
 
