@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.1](https://github.com/xiplugin/FakePlayerPlus/compare/v2.2.0...v2.2.1) (2026-10-05)
+
+
+### Bug Fixes
+
+* player cannot use action start/execute command ([8dcfdcc](https://github.com/xiplugin/FakePlayerPlus/commit/8dcfdccf9374e154a92655cd525b067a89757a28))
+
 ## [2.2.0](https://github.com/xiplugin/FakePlayerPlus/compare/v2.1.3...v2.2.0) (2026-10-05)
 
 
