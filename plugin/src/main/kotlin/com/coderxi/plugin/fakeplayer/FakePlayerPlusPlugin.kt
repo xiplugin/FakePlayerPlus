@@ -1,38 +1,39 @@
 package com.coderxi.plugin.fakeplayer
 
-import com.coderxi.plugin.fakeplayer.utils.messages.MessageLocalizer
 import com.coderxi.plugin.fakeplayer.action.ActionRegistryImpl
 import com.coderxi.plugin.fakeplayer.action.base.CommonActionMode
 import com.coderxi.plugin.fakeplayer.action.handler.*
 import com.coderxi.plugin.fakeplayer.api.FakePlayerPlusPluginApi
-import com.coderxi.plugin.fakeplayer.api.FakePlayerPlusPluginComponent as PluginComponent0
 import com.coderxi.plugin.fakeplayer.api.action.Action
 import com.coderxi.plugin.fakeplayer.api.action.ActionRegistry
 import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
+import com.coderxi.plugin.fakeplayer.api.manager.FakePlayerManager
 import com.coderxi.plugin.fakeplayer.api.nms.NMSBridge
 import com.coderxi.plugin.fakeplayer.api.nms.NMSServer
 import com.coderxi.plugin.fakeplayer.command.FakePlayerCommand
-import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandExceptionHandler
-import com.coderxi.plugin.fakeplayer.config.FakePlayerPlusPluginConfig
-import com.coderxi.plugin.fakeplayer.event.*
-import com.coderxi.plugin.fakeplayer.component.*
-import com.coderxi.plugin.fakeplayer.api.manager.FakePlayerManager
 import com.coderxi.plugin.fakeplayer.command.annotaion.*
+import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandExceptionHandler
 import com.coderxi.plugin.fakeplayer.command.parameter.*
 import com.coderxi.plugin.fakeplayer.command.permission.Permission
+import com.coderxi.plugin.fakeplayer.component.*
+import com.coderxi.plugin.fakeplayer.config.FakePlayerPlusPluginConfig
 import com.coderxi.plugin.fakeplayer.entity.StandardFakePlayerSettings
+import com.coderxi.plugin.fakeplayer.event.*
 import com.coderxi.plugin.fakeplayer.expansion.FakePlayerPlaceholderExpansion
 import com.coderxi.plugin.fakeplayer.manager.FakePlayerManagerImpl
 import com.coderxi.plugin.fakeplayer.provider.invsee.InvseeProvider
 import com.coderxi.plugin.fakeplayer.utils.bukkit.UUID_ZERO
-import com.coderxi.plugin.fakeplayer.utils.plugin.NMSBridgeLoader
 import com.coderxi.plugin.fakeplayer.utils.common.RegexTransformer
 import com.coderxi.plugin.fakeplayer.utils.coroutine.globalCoroutineScope
+import com.coderxi.plugin.fakeplayer.utils.messages.MessageLocalizer
+import com.coderxi.plugin.fakeplayer.utils.plugin.NMSBridgeLoader
+import com.coderxi.plugin.fakeplayer.utils.stats.UpdateChecker
 import eu.okaeri.configs.ConfigManager
 import eu.okaeri.configs.OkaeriConfig
 import eu.okaeri.configs.yaml.bukkit.YamlBukkitConfigurer
 import kotlinx.coroutines.cancel
 import me.clip.placeholderapi.expansion.PlaceholderExpansion
+import org.bstats.bukkit.Metrics
 import org.bukkit.event.HandlerList
 import org.bukkit.event.Listener
 import org.bukkit.plugin.java.JavaPlugin
@@ -43,6 +44,7 @@ import revxrsal.commands.bukkit.actor.BukkitCommandActor
 import java.io.File
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.reflect.KClass
+import com.coderxi.plugin.fakeplayer.api.FakePlayerPlusPluginComponent as PluginComponent0
 
 lateinit var plugin: FakePlayerPlusPlugin
 
@@ -56,6 +58,9 @@ class FakePlayerPlusPlugin: FakePlayerPlusPluginApi, JavaPlugin() {
 
     lateinit var sql2o: Sql2o private set
     lateinit var lamp: Lamp<BukkitCommandActor> private set
+
+    private var metrics: Metrics ?= null
+    private var updateChecker: UpdateChecker? = null
 
     private val components = CopyOnWriteArrayList<PluginComponent0>()
 
@@ -124,6 +129,12 @@ class FakePlayerPlusPlugin: FakePlayerPlusPluginApi, JavaPlugin() {
             .exceptionHandler(FakePlayerCommandExceptionHandler())
             .build()
             .apply { register(FakePlayerCommand()) }
+        if (config.enableBStats) {
+            metrics = Metrics(this, 34514)
+        }
+        if (config.enableUpdateChecker) {
+            updateChecker = UpdateChecker("fakeplayerplus", pluginMeta.version)
+        }
     }
 
     fun <T : OkaeriConfig> loadConfig(name: String, clazz: KClass<T>): T = ConfigManager.create(clazz.java).apply {
@@ -169,6 +180,8 @@ class FakePlayerPlusPlugin: FakePlayerPlusPluginApi, JavaPlugin() {
         globalCoroutineScope.cancel()
         HandlerList.unregisterAll(this)
         components.forEach(PluginComponent0::onDisable)
+        metrics?.shutdown()
+        updateChecker?.shutdown()
     }
 
 }

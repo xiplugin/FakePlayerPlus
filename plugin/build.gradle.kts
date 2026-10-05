@@ -8,7 +8,7 @@ import xyz.jpenilla.runtask.service.DownloadsAPIService.Companion.paper
 val progressLoggerFactory = project.serviceOf<ProgressLoggerFactory>()
 
 plugins {
-    id("com.gradleup.shadow") version "9.2.0"
+    id("com.gradleup.shadow") version "9.3.1"
     id("xyz.jpenilla.run-paper") version "3.1.0"
 }
 
@@ -30,6 +30,7 @@ dependencies {
     implementation("org.sql2o:sql2o:1.9.1")
     testImplementation(kotlin("test"))
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    implementation("org.bstats:bstats-bukkit:3.2.1")
 }
 
 val supportVersions = listOf(
@@ -92,6 +93,7 @@ tasks.shadowJar {
     archiveClassifier.set("")
     archiveVersion.set(project.version.toString())
     relocate("eu.okaeri", "${project.group}.libs.okaeri")
+    relocate("org.bstats", "${project.group}.libs.bstats")
     manifest {
         platformVersions.forEach { (platform, versionsStr) ->
             attributes("Support-Versions-$platform" to versionsStr)

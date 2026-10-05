@@ -195,4 +195,10 @@ class FakePlayerPlusPluginConfig : OkaeriConfig() {
 
     }
 
+    @CustomKey("bstats")
+    var enableBStats : Boolean = true
+
+    @CustomKey("update-checker")
+    var enableUpdateChecker : Boolean = true
+
 }
