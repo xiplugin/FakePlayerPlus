@@ -30,6 +30,7 @@ interface FakePlayerSettings {
     var keepingMode: KeepingMode
     enum class KeepingMode {
         ALWAYS,
+        AFTER_SPAWN,
         FOLLOW_SPAWNER,
         FOLLOW_SPAWNER_QUIT
     }
