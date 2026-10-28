@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.2](https://github.com/xiplugin/FakePlayerPlus/compare/v2.2.1...v2.2.2) (2026-10-28)
+
+
+### Bug Fixes
+
+* add KeepingMode.AFTER_SPAWN to make fakeplayers only exist until the next restart, closes [#76](https://github.com/xiplugin/FakePlayerPlus/issues/76) ([3878f3c](https://github.com/xiplugin/FakePlayerPlus/commit/3878f3cce64b32b38bc7863364d4bb60582a94cc))
+
 ## [2.2.1](https://github.com/xiplugin/FakePlayerPlus/compare/v2.2.0...v2.2.1) (2026-10-05)
 
 
