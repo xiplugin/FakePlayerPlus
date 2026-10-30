@@ -58,6 +58,7 @@ class FakePlayerManagerImpl : FakePlayerManager, PluginComponent, Listener {
 
     override suspend fun getFromRepository(uuid: UUID): FakePlayer? = withContext(Dispatchers.IO) { repository.findByUuid(uuid) }
     override suspend fun getFromRepository(name: String): FakePlayer? = withContext(Dispatchers.IO) { repository.findByName(name) }
+    override suspend fun deleteFromRepository(uuid: UUID) = withContext(Dispatchers.IO) { repository.delete(uuid) }
     override suspend fun findNamesBySettingFromRepository(key: String, value: String): Collection<String> = withContext(Dispatchers.IO) { repository.findNamesBySetting(key,value) }
     override suspend fun getActiveActionStatesFromRepository(uuid: UUID): Collection<ActionState> = withContext(Dispatchers.IO) { repository.findActiveActionStatesByUuid(uuid) }
     override suspend fun findNamesByCreatorUuidAndSetting(creatorUuid: UUID, settingKey: String, settingValue: String): Collection<String> = withContext(Dispatchers.IO) { repository.findNamesByCreatorUuidAndSetting(creatorUuid, settingKey, settingValue) }
@@ -66,12 +67,12 @@ class FakePlayerManagerImpl : FakePlayerManager, PluginComponent, Listener {
 
     private val pendingSpawn = CacheBuilder.newBuilder().expireAfterWrite(15, TimeUnit.SECONDS).build<UUID, Location>()
 
-    override suspend fun spawn(name: String, spawner: CommandSender, location: Location?) : FakePlayer {
+    override suspend fun spawn(name: String, spawner: CommandSender, location: Location?, uuid: UUID?) : FakePlayer {
         val spawnerUuid = spawner.uniqueIdOrZero
         val spawnLocation = location ?: if (spawner is Player) spawner.location else plugin.server.worlds.first().spawnLocation
         val fakePlayer = withContext(Dispatchers.IO) {
             repository.findByName(name)
-        } ?: StandardFakePlayer(name, uuid(name), spawnerUuid, mutableSetOf(spawnerUuid),null, FakePlayerSettingsPO().toEntity()).also {
+        } ?: StandardFakePlayer(name, uuid ?: uuid(name), spawnerUuid, mutableSetOf(spawnerUuid),null, FakePlayerSettingsPO().toEntity()).also {
             withContext(Dispatchers.IO) { repository.save(it, true) }
         }
         if (pendingSpawn.getIfPresent(fakePlayer.uuid) != null) {
@@ -170,7 +171,7 @@ class FakePlayerManagerImpl : FakePlayerManager, PluginComponent, Listener {
         }
 
         delay(200)
-        return spawn(newName, operator, location)
+        return spawn(newName, operator, location, null)
     }
 
     override suspend fun sequenceName(spawner: Player, reservedSequenceLength: Int): String {

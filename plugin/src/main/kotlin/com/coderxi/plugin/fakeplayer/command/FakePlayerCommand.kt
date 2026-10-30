@@ -38,6 +38,7 @@ import revxrsal.commands.bukkit.actor.BukkitCommandActor
 import revxrsal.commands.help.Help
 import revxrsal.commands.help.Help.RelatedCommands
 import java.io.File
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 import kotlin.math.ceil
 import com.coderxi.plugin.fakeplayer.command.annotaion.PluginCommandPermission as Permission
@@ -100,7 +101,16 @@ class FakePlayerCommand : PluginComponent {
     @Subcommand("spawn")
     @Permission(SPAWN_WITH_NAME)
     @HelpLine("fakeplayer.help.cmd.spawn-name")
-    fun CommandSender.spawn(@Named("name") name: String, context: CommandContext) {
+    fun CommandSender.spawn(@Named("name") name: String, @Named("uuid") @Default(" ") uuidStr: String, context: CommandContext) {
+        var uuid: UUID? = null
+        if (uuidStr != " ") {
+            uuid = try {
+                UUID.fromString(uuidStr)
+            } catch (_: IllegalArgumentException) {
+                sendLocalizedMessage("fakeplayer.command.invalid-uuid", uuidStr)
+                return
+            }
+        }
         val player = this as? Player
         if (!plugin.config.name.pattern.matches(name)) throw SpawnNameInvalidException(name)
         assertNoSpawnLimited()
@@ -112,7 +122,7 @@ class FakePlayerCommand : PluginComponent {
                     throw SpawnNameAlreadyUsedException(name)
                 }
             }
-            executeSpawn(name)
+            executeSpawn(name, uuid)
         }
     }
 
@@ -138,8 +148,8 @@ class FakePlayerCommand : PluginComponent {
         if (fpl.isTpsAdaptiveLimited(this)) throw SpawnTpsAdaptiveLimitedException()
     }
 
-    suspend fun CommandSender.executeSpawn(name: String) {
-        val fakePlayer = fpm.spawn(name, this) ?: throw SpawnUnknownException()
+    suspend fun CommandSender.executeSpawn(name: String, uuid: UUID? = null) {
+        val fakePlayer = fpm.spawn(name, this, null, uuid) ?: throw SpawnUnknownException()
         val locationText = "%.2f, %.2f, %.2f".format(fakePlayer.nms.x, fakePlayer.nms.y, fakePlayer.nms.z)
         sendLocalizedMessage("fakeplayer.spawn.success", name, fakePlayer.player.world.name, locationText)
         selected = fakePlayer
@@ -268,7 +278,7 @@ class FakePlayerCommand : PluginComponent {
     @Permission(SKIN)
     @Cooldown(value = 1, unit = TimeUnit.MINUTES)
     @HelpLine("fakeplayer.help.cmd.skin")
-    fun CommandSender.skin(@Named("name") targetName: String, @Select fakePlayer: FakePlayer) {
+    fun CommandSender.skin(targetName: String, @Select fakePlayer: FakePlayer) {
         launch {
             val skin = SkinFetcher.getPlayerTexturesByName(targetName)
             withContext(fakePlayer.dispatcher) {

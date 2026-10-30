@@ -49,6 +49,10 @@ class FakePlayerSettingsConfig : FakePlayerSettings, OkaeriConfig() {
         @Comment("Keep inventory")
         override var keepInventory = true
 
+        @Comment("是否显示死亡信息") // This was suggested by translate, please verify
+        @Comment("Enable death message")
+        override var deathMessage = false
+
         @Comment("=======================================================")
         @Comment("下列设置默认不包含在[fakeplayer.basic]权限中, 允许玩家修改需给予权限[fakeplayer.settings.变量名]")
         @Comment("These settings are not included in the [fakeplayer.basic] permission by default. Players must be granted the fakeplayer.settings.<settingName> permission to modify them.")

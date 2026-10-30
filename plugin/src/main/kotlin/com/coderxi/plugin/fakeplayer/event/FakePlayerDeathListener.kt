@@ -18,7 +18,9 @@ class FakePlayerDeathListener: PluginComponent, Listener {
 
         event.keepLevel = true
         event.droppedExp = 0
-        event.deathMessage(null)
+        if (!fakePlayer.settings.deathMessage) {
+            event.deathMessage(null)
+        }
 
         if (fakePlayer.settings.keepInventory) {
             event.keepInventory = true

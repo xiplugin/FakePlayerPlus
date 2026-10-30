@@ -35,6 +35,7 @@ class FakePlayerSettingsDialog(fakePlayer: FakePlayer, val viewer: Player): Simp
         enumSingleOption(DeathAction::class.java,fakePlayer.settings::deathAction,tl(viewer,"fakeplayer.gui.settings.death-action"),  optionLabelProvider = {tl(viewer,"fakeplayer.gui.var.death-action.${it.name}")}, permission = SETTINGS_DEATH_ACTION.value)
         boolSingleOption(fakePlayer.settings::keepInventory, tl(viewer,"fakeplayer.gui.settings.keep-inventory"), permission = SETTINGS_KEEP_INVENTORY.value)
         enumSingleOption(KeepingMode::class.java,fakePlayer.settings::keepingMode, tl(viewer,"fakeplayer.gui.settings.keeping-mode") , optionLabelProvider = {tl(viewer, "fakeplayer.gui.var.keeping-mode.${it.name}")}, permission = SETTINGS_KEEPING_MODE.value)
+        boolSingleOption(fakePlayer.settings::deathMessage, tl(viewer,"fakeplayer.gui.settings.death-message"), permission = SETTINGS_DEATH_MESSAGE.value)
         submitButton(width = 100) {
             viewer.sendLocalizedMessage("fakeplayer.gui.settings.submit.success", fakePlayer.name)
             launch { plugin.fakePlayerManager.saveSettings(viewer, fakePlayer) }

@@ -51,7 +51,10 @@ open class NMSServerGamePacketListenerImpl(
             return
         }
         handle.quitReason = PlayerQuitEvent.QuitReason.KICKED
-        server.playerList.remove(handle, event.reason())
+        val leaveMessage: Component? = server.playerList.remove(handle, event.leaveMessage())
+        if (leaveMessage != null && leaveMessage != Component.empty()) {
+            server.playerList.broadcastSystemMessage(PaperAdventure.asVanilla(leaveMessage), false)
+        }
     }
 
 }

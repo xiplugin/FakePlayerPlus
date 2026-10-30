@@ -30,6 +30,8 @@ interface FakePlayerManager {
 
     suspend fun getFromRepository(name: String): FakePlayer?
 
+    suspend fun deleteFromRepository(uuid: UUID)
+
     suspend fun findNamesBySettingFromRepository(key: String, value: String): Collection<String>
 
     suspend fun getActiveActionStatesFromRepository(uuid: UUID): Collection<ActionState>
@@ -46,7 +48,12 @@ interface FakePlayerManager {
 
     // 生成假人(先查数据库再生成)
 
-    suspend fun spawn(name: String, spawner: CommandSender, location: Location? = null): FakePlayer?
+    @Deprecated("Use spawn(name, spawner, location, uuid) instead", ReplaceWith("spawn(name, spawner, location, null)"))
+    suspend fun spawn(name: String, spawner: CommandSender, location: Location? = null): FakePlayer? {
+        return spawn(name, spawner, location, null)
+    }
+
+    suspend fun spawn(name: String, spawner: CommandSender, location: Location? = null, uuid: UUID? = null): FakePlayer?
 
     suspend fun rename(oldName: String, newName: String, operator: CommandSender, force: Boolean): FakePlayer
 

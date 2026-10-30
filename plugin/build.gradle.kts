@@ -68,6 +68,10 @@ tasks.build {
     dependsOn("shadowJar")
 }
 
+java {
+    withSourcesJar()
+}
+
 tasks.processResources {
     val props = mapOf("version" to version)
     inputs.properties(props)
@@ -83,9 +87,13 @@ val platformVersions = supportVersions
     .mapValues { (_, versions) -> versions.distinct().sortedDescending().joinToString(", ") }
 
 tasks.jar {
-    archiveBaseName.set(rootProject.name)
+//    archiveBaseName.set(rootProject.name)
     archiveClassifier.set("original")
     archiveVersion.set(project.version.toString())
+}
+
+base {
+    archivesName.set(rootProject.name)
 }
 
 tasks.shadowJar {
