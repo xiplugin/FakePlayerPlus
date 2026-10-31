@@ -14,7 +14,6 @@ import net.minecraft.server.level.ServerPlayer
 import net.minecraft.server.network.CommonListenerCookie
 import org.bukkit.event.player.PlayerKickEvent
 import org.bukkit.event.player.PlayerQuitEvent
-import com.coderxi.plugin.fakeplayer.api.FakePlayerPlusPluginApi.Companion.javaPlugin as plugin
 
 open class NMSServerGamePacketListenerImpl(
     server: DedicatedServer,
@@ -25,7 +24,7 @@ open class NMSServerGamePacketListenerImpl(
 
     override fun handleClientboundSetEntityMotionPacket(packet: ClientboundSetEntityMotionPacket) {
         if (packet.id() != player.id) return
-        player.bukkitEntity.scheduler.execute(plugin,{ player.lerpMotion(packet.movement) },null,1L)
+        pendingMotion = packet.movement
     }
 
     @Suppress("UnstableApiUsage")
