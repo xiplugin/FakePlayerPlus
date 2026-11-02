@@ -39,6 +39,7 @@ enum class Permission(val value: String) {
     SETTINGS_XP_NO_COOLDOWN("fakeplayer.settings.xpNoCooldown"),
     SETTINGS_AUTO_EQUIP_TOOL("fakeplayer.settings.autoEquipTool"),
     SETTINGS_KEEP_INVENTORY("fakeplayer.settings.keepInventory"),
+    SETTINGS_DEATH_MESSAGE("fakeplayer.settings.deathMessage"),
     SETTINGS_INTERACTED_ACTION("fakeplayer.settings.interactedAction"),
     SETTINGS_SHIFT_INTERACTED_ACTION("fakeplayer.settings.shiftInteractedAction"),
     SETTINGS_DEATH_ACTION("fakeplayer.settings.deathAction"),

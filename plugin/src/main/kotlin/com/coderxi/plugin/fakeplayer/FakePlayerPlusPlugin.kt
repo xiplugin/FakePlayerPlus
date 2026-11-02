@@ -10,6 +10,7 @@ import com.coderxi.plugin.fakeplayer.api.entity.FakePlayer
 import com.coderxi.plugin.fakeplayer.api.manager.FakePlayerManager
 import com.coderxi.plugin.fakeplayer.api.nms.NMSBridge
 import com.coderxi.plugin.fakeplayer.api.nms.NMSServer
+import com.coderxi.plugin.fakeplayer.api.model.PlayerTextures
 import com.coderxi.plugin.fakeplayer.command.FakePlayerCommand
 import com.coderxi.plugin.fakeplayer.command.annotaion.*
 import com.coderxi.plugin.fakeplayer.command.exception.FakePlayerCommandExceptionHandler
@@ -23,6 +24,7 @@ import com.coderxi.plugin.fakeplayer.expansion.FakePlayerPlaceholderExpansion
 import com.coderxi.plugin.fakeplayer.manager.FakePlayerManagerImpl
 import com.coderxi.plugin.fakeplayer.provider.invsee.InvseeProvider
 import com.coderxi.plugin.fakeplayer.utils.bukkit.UUID_ZERO
+import com.coderxi.plugin.fakeplayer.utils.bukkit.SkinFetcher
 import com.coderxi.plugin.fakeplayer.utils.common.RegexTransformer
 import com.coderxi.plugin.fakeplayer.utils.coroutine.globalCoroutineScope
 import com.coderxi.plugin.fakeplayer.utils.messages.MessageLocalizer
@@ -67,6 +69,9 @@ class FakePlayerPlusPlugin: FakePlayerPlusPluginApi, JavaPlugin() {
     override lateinit var fakePlayerManager: FakePlayerManager
 
     override lateinit var globalActionRegistry: ActionRegistry
+
+    override suspend fun getPlayerTexturesByName(name: String?, cache: Boolean): PlayerTextures? =
+        SkinFetcher.getPlayerTexturesByName(name, cache)
 
     override fun onEnable() {
         plugin = this

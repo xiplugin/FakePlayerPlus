@@ -74,6 +74,7 @@ interface NMSServerPlayer {
 
     /** 设置不保存成就数据 */
     fun disableAdvancements()
+    fun enableAdvancements()
     /** 设置客户端选项 */
     fun setupClientOptions()
     /** 设置皮肤贴图 */
@@ -82,6 +83,8 @@ interface NMSServerPlayer {
     fun copyTextures(target: Player)
     /** 重设最后活跃时间 */
     fun resetLastActionTime()
+    /** Set client loaded. Can be used after player joined to remove delay before it can take damage */
+    fun setClientLoaded()
 
     // 数据包相关操作
     fun resendPossiblyDesyncedEntityData(targets: Collection<Player>)

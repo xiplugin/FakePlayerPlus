@@ -54,8 +54,8 @@ class StaticFakePlayerManager : PluginComponent, Listener {
                     val fakePlayer = fpm.spawn(
                         meta.name,
                         Bukkit.getConsoleSender(),
-                        location
-                    )
+                        location,
+                        null)
                     if (fakePlayer != null) {
                         spawnedNames.add(meta.name)
                         setupMeta(fakePlayer, meta)

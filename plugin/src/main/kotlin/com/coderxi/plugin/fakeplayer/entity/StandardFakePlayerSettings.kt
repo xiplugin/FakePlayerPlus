@@ -18,6 +18,7 @@ class StandardFakePlayerSettings(
     private var _xpNoCooldown: Boolean,
     private var _autoEquipTool: Boolean,
     private var _keepInventory: Boolean,
+    private var _deathMessage: Boolean,
     private var _interactedAction: InteractedAction,
     private var _shiftInteractedAction: InteractedAction,
     private var _deathAction: DeathAction,
@@ -99,6 +100,12 @@ class StandardFakePlayerSettings(
         get() = overrides.keepInventory ?: _keepInventory
         set(value) {
             _keepInventory = value
+        }
+
+    override var deathMessage
+        get() = overrides.deathMessage ?: _deathMessage
+        set(value) {
+            _deathMessage = value
         }
 
     override var interactedAction

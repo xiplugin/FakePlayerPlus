@@ -16,6 +16,7 @@ import net.minecraft.server.level.ClientInformation
 import net.minecraft.server.level.ParticleStatus
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
+import net.minecraft.server.network.ServerGamePacketListenerImpl
 import net.minecraft.world.InteractionHand
 import net.minecraft.world.entity.HumanoidArm
 import net.minecraft.world.entity.ai.attributes.Attributes
@@ -40,6 +41,7 @@ import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.inventory.ItemStack
 import org.bukkit.util.Vector
 import java.lang.reflect.Field
+import java.lang.reflect.Method
 import java.nio.file.Paths
 import java.util.EnumSet
 import kotlin.math.ceil
@@ -83,6 +85,7 @@ open class NMSServerPlayerImpl(override val player: Player) : NMSServerPlayer {
     override fun respawn() { handle.connection.handleClientCommand(ServerboundClientCommandPacket(ServerboundClientCommandPacket.Action.PERFORM_RESPAWN)) }
     override fun swapItemWithOffhand() { handle.connection.handlePlayerAction(ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.SWAP_ITEM_WITH_OFFHAND,BlockPos(0, 0, 0),Direction.DOWN)) }
     override fun disableAdvancements() { advancements = FakePlayerAdvancements(server.getFixerUpper(), server.playerList, server.advancements, Paths.get(System.getProperty("java.io.tmpdir")), handle) }
+    override fun enableAdvancements() { advancements = server.playerList.getPlayerAdvancements(handle) }
     override fun setupClientOptions() { handle.updateOptions(ClientInformation(
             "en_us",
             Bukkit.getViewDistance(),
@@ -114,6 +117,8 @@ open class NMSServerPlayerImpl(override val player: Player) : NMSServerPlayer {
     }
 
     override fun resetLastActionTime() = handle.resetLastActionTime()
+
+    override fun setClientLoaded() { markClientLoadedMethod?.invoke(handle.connection) }
 
     override fun resendPossiblyDesyncedEntityData(targets: Collection<Player>) {
         targets.forEach { handle.resendPossiblyDesyncedEntityData((it as CraftPlayer).handle) }
@@ -301,6 +306,7 @@ open class NMSServerPlayerImpl(override val player: Player) : NMSServerPlayer {
 
     companion object {
         private val advancementsField: Field? = runCatching { ServerPlayer::class.java.getDeclaredField("advancements").apply { isAccessible = true } }.getOrNull()
+        private val markClientLoadedMethod: Method? = runCatching { ServerGamePacketListenerImpl::class.java.getDeclaredMethod("markClientLoaded").apply { isAccessible = true } }.getOrNull()
         fun Player.sendPacket(packet: Packet<*>) {
             (this as CraftPlayer).handle.connection.send(packet)
         }

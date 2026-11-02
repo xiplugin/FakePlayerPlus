@@ -30,7 +30,7 @@ class FakePlayerKeepingModeListener: PluginComponent, Listener {
         names.forEach { name ->
             val location = Bukkit.getOfflinePlayer(name).location ?: return@forEach
             launch {
-                val fakePlayer = fpm.spawn(name, Bukkit.getConsoleSender(), location) ?: return@launch
+                val fakePlayer = fpm.spawn(name, Bukkit.getConsoleSender(), location, null) ?: return@launch
                 val actionStates = fpm.getActiveActionStatesFromRepository(fakePlayer.uuid)
                 if (actionStates.isEmpty()) return@launch
                 actionStates.forEach { state ->

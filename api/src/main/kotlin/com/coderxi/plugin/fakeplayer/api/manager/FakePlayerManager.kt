@@ -30,6 +30,8 @@ interface FakePlayerManager {
 
     suspend fun getFromRepository(name: String): FakePlayer?
 
+    suspend fun deleteFromRepository(uuid: UUID)
+
     suspend fun findNamesBySettingFromRepository(key: String, value: String): Collection<String>
 
     suspend fun getActiveActionStatesFromRepository(uuid: UUID): Collection<ActionState>
@@ -42,11 +44,11 @@ interface FakePlayerManager {
 
     // 假人判断(先在线 后数据库)
 
-    fun isFake(uuid: UUID, queryFromRepository: Boolean = false): Boolean
+    fun isFake(uuid: UUID, queryFromRepository: Boolean = false, includePendingSpawn: Boolean = false): Boolean
 
     // 生成假人(先查数据库再生成)
 
-    suspend fun spawn(name: String, spawner: CommandSender, location: Location? = null): FakePlayer?
+    suspend fun spawn(name: String, spawner: CommandSender, location: Location? = null, uuid: UUID? = null): FakePlayer?
 
     suspend fun rename(oldName: String, newName: String, operator: CommandSender, force: Boolean): FakePlayer
 
