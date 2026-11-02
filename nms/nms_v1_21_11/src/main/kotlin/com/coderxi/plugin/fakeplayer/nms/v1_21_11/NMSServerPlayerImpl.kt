@@ -67,12 +67,13 @@ open class NMSServerPlayerImpl(override val player: Player) : NMSServerPlayer {
     override val tickCount: Int get() = handle.tickCount
     override val onGround: Boolean get() = handle.onGround
     override val isUsingItem: Boolean get() = handle.isUsingItem
-    override val mainHandItem: ItemStack get() = handle.mainHandItem.asBukkitMirror()
-    override val offHandItem: ItemStack get() =  handle.offhandItem.asBukkitMirror()
     override val blockReachDistance: Double get() = handle.getAttributeValue(Attributes.BLOCK_INTERACTION_RANGE)
     override val entityReachDistance: Double get() = handle.getAttributeValue(Attributes.ENTITY_INTERACTION_RANGE)
 
-    override fun doTick() = handle.doTick()
+    override fun doTick() {
+        (handle.connection as? NMSServerGamePacketListenerImpl)?.applyPendingMotion()
+        handle.doTick()
+    }
     override fun absMoveTo(x: Double, y: Double, z: Double, yRot: Float, xRot: Float) = handle.absSnapTo(x, y, z, yRot, xRot)
     override var deltaMovement: Vector get() = handle.deltaMovement.asVector(); set(v){handle.deltaMovement = Vec3(v.x, v.y, v.z)}
     override fun startRiding(entity: Entity, force: Boolean, triggerEvents: Boolean): Boolean = handle.startRiding((entity as CraftEntity).handle,force,triggerEvents)

@@ -22,7 +22,8 @@ class StandardFakePlayer(
     creatorUuid: UUID? = null,
     ownerUuids: Collection<UUID> = emptyList(),
     private val initialTextures: PlayerTextures? = null,
-    override val settings: FakePlayerSettings
+    override val settings: FakePlayerSettings,
+    override var manuallyRemoved: Boolean? = null
 ) : FakePlayer {
 
     init {

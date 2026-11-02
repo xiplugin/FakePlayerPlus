@@ -15,6 +15,7 @@ data class FakePlayerPO(
     val skin: String? = null,
     val settings: String? = null,
     val actions: String? = null,
+    val manuallyRemoved: Int? = null,
 ) {
 
     fun toEntity(ownerUuids: Collection<UUID>) = StandardFakePlayer(
@@ -23,7 +24,8 @@ data class FakePlayerPO(
         creatorUuid?.runCatching { UUID.fromString(creatorUuid) }?.getOrNull(),
         ownerUuids,
         skin?.split("|")?.takeIf { it.size > 1 }?.let { PlayerTextures(it[0],it[1]) },
-        (settings?.runCatching { gson.fromJson(settings, FakePlayerSettingsPO::class.java) }?.getOrNull() ?: FakePlayerSettingsPO()).toEntity()
+        (settings?.runCatching { gson.fromJson(settings, FakePlayerSettingsPO::class.java) }?.getOrNull() ?: FakePlayerSettingsPO()).toEntity(),
+        manuallyRemoved?.let { it == 1 }
     )
 
     companion object {

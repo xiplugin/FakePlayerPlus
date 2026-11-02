@@ -42,6 +42,7 @@ val supportVersions = listOf(
     "folia-26.1.2",
     "folia-26.2-5",
     "paper-26.3-31",
+    "folia-26.3-6",
 )
 
 tasks {

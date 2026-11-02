@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS fakeplayer (
 );
 
 ALTER TABLE fakeplayer ADD COLUMN actions TEXT;
+ALTER TABLE fakeplayer ADD COLUMN manually_removed INTEGER;
 
 CREATE TABLE IF NOT EXISTS ref_fakeplayer_owner (
   owner_uuid       TEXT NOT NULL,

@@ -94,9 +94,10 @@ class FakePlayerAutoReplenishListener : PluginComponent, Listener {
     }
 
     private fun FakePlayer.getConsumingHand(itemType: Material): EquipmentSlot? {
+        val inventory = player.inventory
         return when {
-            nms.mainHandItem.type == itemType -> EquipmentSlot.HAND
-            nms.offHandItem.type == itemType -> EquipmentSlot.OFF_HAND
+            inventory.itemInMainHand.type == itemType -> EquipmentSlot.HAND
+            inventory.itemInOffHand.type == itemType -> EquipmentSlot.OFF_HAND
             else -> null
         }
     }
