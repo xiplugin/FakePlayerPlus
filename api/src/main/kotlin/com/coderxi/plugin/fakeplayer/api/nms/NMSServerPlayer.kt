@@ -36,10 +36,6 @@ interface NMSServerPlayer {
     val onGround: Boolean
     /** 是否在使用物品 */
     val isUsingItem: Boolean
-    /** 主手物品 */
-    val mainHandItem: ItemStack
-    /** 副手物品 */
-    val offHandItem: ItemStack
     /** 方块触及距离 */
     val blockReachDistance: Double
     /** 实体触及距离 */
