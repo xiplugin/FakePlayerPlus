@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.2.3](https://github.com/xiplugin/FakePlayerPlus/compare/v2.2.2...v2.2.3) (2026-11-02)
+
+
+### Bug Fixes
+
+* apply knockback before the fake player's next tick ([021bb3d](https://github.com/xiplugin/FakePlayerPlus/commit/021bb3d2dd056d8ec61a4a0289fd6454f9b2c8ab))
+* apply knockback before the fake player's next tick ([a8cbd7f](https://github.com/xiplugin/FakePlayerPlus/commit/a8cbd7fd27cf28ed82f8c2395ff046452cb02268))
+* replace nms.mainHandItem with paper-api to  to prevent asBukkitMirror failures in 26.3 ([bc839d2](https://github.com/xiplugin/FakePlayerPlus/commit/bc839d2bd39ec0d1c45a5f2c6847f3f114c0d57b))
+* skip auto-restore for manually removed fake players ([b972a97](https://github.com/xiplugin/FakePlayerPlus/commit/b972a97ac231fba484dc0e3db5751307d7525375))
+
 ## [2.2.2](https://github.com/xiplugin/FakePlayerPlus/compare/v2.2.1...v2.2.2) (2026-10-28)
 
 
