@@ -240,12 +240,13 @@ class FakePlayerManagerImpl : FakePlayerManager, PluginComponent, Listener {
         return offlineCache != null && offlineCache.hasPlayedBefore()
     }
 
-    override fun isFake(uuid: UUID, queryFromRepository: Boolean): Boolean {
+    override fun isFake(uuid: UUID, queryFromRepository: Boolean, includePendingSpawn: Boolean): Boolean {
         val onlineResult = get(uuid) != null
+        val pendingSpawnResult = includePendingSpawn && pendingSpawn.getIfPresent(uuid) != null
         return if (!queryFromRepository) {
-            onlineResult
+            onlineResult || pendingSpawnResult
         } else {
-            onlineResult && repository.findByUuid(uuid) != null
+            onlineResult || pendingSpawnResult || repository.findByUuid(uuid) != null
         }
     }
 
