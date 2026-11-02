@@ -38,7 +38,6 @@ class FakePlayerRepository {
         return gson.fromJson(table.findByUuid(uuid)?.actions?:"{}", FakePlayerActionsPO::class.java).actives ?: emptyList()
     }
 
-
     fun findNamesByCreatorUuidAndSetting(creatorUuid: UUID, settingKey: String, settingValue: String): Collection<String> {
         return table.findNamesByCreatorUuidAndSetting(creatorUuid,settingKey,settingValue)
     }
@@ -80,6 +79,14 @@ class FakePlayerRepository {
             database.open().createQuery("SELECT * FROM $tableName").executeAndFetch(FakePlayerPO::class.java)
         }
         return table.saveBatch(fakePlayerPOs)
+    }
+
+    fun isManuallyRemoved(name: String): Boolean {
+        return table.isManuallyRemoved(name)
+    }
+
+    fun saveManuallyRemoved(fakePlayer: FakePlayer) {
+        table.saveManuallyRemoved(fakePlayer.uuid, fakePlayer.manuallyRemoved)
     }
 
 

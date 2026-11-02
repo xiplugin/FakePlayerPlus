@@ -62,6 +62,8 @@ class FakePlayerManagerImpl : FakePlayerManager, PluginComponent, Listener {
     override suspend fun getActiveActionStatesFromRepository(uuid: UUID): Collection<ActionState> = withContext(Dispatchers.IO) { repository.findActiveActionStatesByUuid(uuid) }
     override suspend fun findNamesByCreatorUuidAndSetting(creatorUuid: UUID, settingKey: String, settingValue: String): Collection<String> = withContext(Dispatchers.IO) { repository.findNamesByCreatorUuidAndSetting(creatorUuid, settingKey, settingValue) }
 
+    override suspend fun isManuallyRemoved(name: String): Boolean = withContext(Dispatchers.IO) { repository.isManuallyRemoved(name) }
+
     private fun uuid(name: String) = UUID.nameUUIDFromBytes("${plugin.name}:$name".toByteArray())
 
     private val pendingSpawn = CacheBuilder.newBuilder().expireAfterWrite(15, TimeUnit.SECONDS).build<UUID, Location>()
@@ -270,6 +272,10 @@ class FakePlayerManagerImpl : FakePlayerManager, PluginComponent, Listener {
         fakePlayer.removeOwner(ownerUuid)
         registry.register(fakePlayer)
         withContext(Dispatchers.IO) {repository.save(fakePlayer, true)}
+    }
+
+    override fun saveManuallyRemoved(fakePlayer: FakePlayer) {
+        repository.saveManuallyRemoved(fakePlayer)
     }
 
     override suspend fun importFakePlayerData(databaseFile: File, tableName: String): Int {

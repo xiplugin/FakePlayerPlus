@@ -159,4 +159,16 @@ class FakePlayerTable {
         .executeAndFetch(String::class.java)
         .toSet()
 
+    fun isManuallyRemoved(name: String): Boolean = sql2o.open()
+        .createQuery("SELECT manually_removed FROM fakeplayer WHERE LOWER(name) = LOWER(:name) LIMIT 1")
+        .addParameter("name", name)
+        .executeAndFetch(Int::class.java)
+        .firstOrNull() == 1
+
+    fun saveManuallyRemoved(uuid: UUID, manuallyRemoved: Boolean?)  = sql2o.open()
+        .createQuery("UPDATE fakeplayer SET manually_removed = :manuallyRemoved WHERE uuid = :uuid")
+        .addParameter("uuid", uuid.toString())
+        .addParameter("manuallyRemoved", manuallyRemoved?.let { if (it) 1 else null })
+        .executeUpdate()
+        .result > 0
 }

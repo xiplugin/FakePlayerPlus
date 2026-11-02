@@ -17,6 +17,7 @@ interface FakePlayer {
     // 基本信息
     val name: String
     val uuid: UUID
+    var manuallyRemoved: Boolean?
 
     // 关联信息
     val spawner: PlayerDetail

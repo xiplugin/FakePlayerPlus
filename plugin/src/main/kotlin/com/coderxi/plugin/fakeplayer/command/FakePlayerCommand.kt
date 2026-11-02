@@ -140,6 +140,8 @@ class FakePlayerCommand : PluginComponent {
 
     suspend fun CommandSender.executeSpawn(name: String) {
         val fakePlayer = fpm.spawn(name, this) ?: throw SpawnUnknownException()
+        fakePlayer.manuallyRemoved = false
+        fpm.saveManuallyRemoved(fakePlayer)
         val locationText = "%.2f, %.2f, %.2f".format(fakePlayer.nms.x, fakePlayer.nms.y, fakePlayer.nms.z)
         sendLocalizedMessage("fakeplayer.spawn.success", name, fakePlayer.player.world.name, locationText)
         selected = fakePlayer
@@ -162,6 +164,8 @@ class FakePlayerCommand : PluginComponent {
         HelpLine("fakeplayer.help.cmd.remove-all","fp remove --all")
     ])
     fun CommandSender.remove(@Select fakePlayer: FakePlayer) {
+        fakePlayer.manuallyRemoved = true
+        fpm.saveManuallyRemoved(fakePlayer)
         fpm.get(fakePlayer.name)?.quit("Removed by $name")
         sendLocalizedMessage("fakeplayer.remove.success", fakePlayer.name)
         fakePlayer.owners.forEach {

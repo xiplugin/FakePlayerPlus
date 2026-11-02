@@ -36,6 +36,8 @@ interface FakePlayerManager {
 
     suspend fun findNamesByCreatorUuidAndSetting(creatorUuid: UUID, settingKey: String, settingValue: String): Collection<String>
 
+    suspend fun isManuallyRemoved(name: String): Boolean
+
     // 假人判断(本地API)
 
     fun isNameUsed(name: String): Boolean
@@ -63,6 +65,8 @@ interface FakePlayerManager {
     suspend fun addOwner(fakePlayer: FakePlayer, ownerUuid: UUID)
 
     suspend fun removeOwner(fakePlayer: FakePlayer, ownerUuid: UUID)
+
+    fun saveManuallyRemoved(fakePlayer: FakePlayer)
 
     // 导入假人信息(数据库)
 

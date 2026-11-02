@@ -28,8 +28,9 @@ class FakePlayerKeepingModeListener: PluginComponent, Listener {
         if (names.isEmpty()) return
         plugin.logger.info("restoring ${names.size} fakeplayers : $names")
         names.forEach { name ->
-            val location = Bukkit.getOfflinePlayer(name).location ?: return@forEach
+            val location = Bukkit.getOfflinePlayerIfCached(name)?.location ?: return@forEach
             launch {
+                if (fpm.isManuallyRemoved(name)) return@launch
                 val fakePlayer = fpm.spawn(name, Bukkit.getConsoleSender(), location) ?: return@launch
                 val actionStates = fpm.getActiveActionStatesFromRepository(fakePlayer.uuid)
                 if (actionStates.isEmpty()) return@launch
